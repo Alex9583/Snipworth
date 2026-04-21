@@ -1,0 +1,20 @@
+node_modules/
+dist/
+dist-e2e/
+.DS_Store
+.idea/
+.vscode/
+*.log
+coverage/
+playwright-report/
+test-results/
+.env
+.env.local
+
+# Husky generates its shim directory at install time
+.husky/_/
+
+# Local-only working docs (never committed)
+CLAUDE.md
+design/
+plan/
