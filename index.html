@@ -4,6 +4,36 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Snipworth — dev</title>
+    <style>
+      /* Anti-FOUC critical path. Mirrors --color-canvas and --color-ink
+         from src/styles/tokens.css (dark :20-24, light :40-45) so first
+         paint matches the active theme before the CSS bundle arrives.
+         Font stack is a coarse fallback only — fontsource is not loaded
+         at this point. Keep in sync if those color values move. */
+      :root,
+      [data-theme='dark'] {
+        --color-canvas: #0a0a0b;
+        --color-ink: #ececee;
+      }
+      [data-theme='light'] {
+        --color-canvas: #fafafa;
+        --color-ink: #18181b;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--color-canvas);
+        color: var(--color-ink);
+        font-family:
+          'Inter Variable',
+          'Inter',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
