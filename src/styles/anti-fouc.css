@@ -1,0 +1,13 @@
+/* Critical-path boot styles. Loaded via <link> in each HTML <head> so
+   first paint matches the active [data-theme] before the Tailwind and
+   @fontsource bundle (via JS-imported globals.css) executes. */
+@import './tokens.css';
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans), sans-serif;
+}

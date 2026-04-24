@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/inter/wght.css';
 @import '@fontsource-variable/jetbrains-mono/wght.css';
-@import './tokens.css';
+@import './anti-fouc.css';
 
 @theme inline {
   --color-canvas: var(--color-canvas);
@@ -35,12 +35,6 @@
 
 html,
 body {
-  margin: 0;
-  padding: 0;
-  background: var(--color-canvas);
-  color: var(--color-ink);
-  /* Trailing sans-serif is a fallback if --font-sans is unset. */
-  font-family: var(--font-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
