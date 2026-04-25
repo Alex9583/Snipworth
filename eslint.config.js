@@ -46,8 +46,19 @@ export default tseslint.config(
   },
 
   {
-    files: ['vite.config.ts', 'eslint.config.js'],
+    files: [
+      'vite.config.ts',
+      'vitest.config.ts',
+      'playwright.config.ts',
+      'eslint.config.js',
+      'manifest.config.ts',
+    ],
     languageOptions: { globals: { ...globals.node } },
+  },
+
+  {
+    files: ['src/background/**/*.ts'],
+    languageOptions: { globals: { ...globals.serviceworker } },
   },
 
   {

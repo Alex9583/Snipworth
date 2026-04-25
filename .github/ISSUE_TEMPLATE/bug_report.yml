@@ -1,0 +1,62 @@
+name: Bug report
+description: Something is broken or behaves unexpectedly.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill out every required section so we can reproduce the issue quickly.
+  - type: textarea
+    id: what-you-did
+    attributes:
+      label: What did you try to do?
+      description: A clear description of the action or workflow you attempted.
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened instead?
+      description: What actually happened? Quote error messages verbatim.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps someone else can follow to hit the same bug.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: chrome-version
+    attributes:
+      label: Chrome version
+      description: 'Open chrome://version — paste the first line.'
+      placeholder: e.g. 138.0.7204.92
+    validations:
+      required: true
+  - type: input
+    id: snipworth-version
+    attributes:
+      label: Snipworth version
+      description: 'Visible on the About screen, or in chrome://extensions.'
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: e.g. macOS 15.4, Windows 11, Ubuntu 24.04
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors
+      description: Open DevTools → Console (and the side panel DevTools if relevant) and paste any errors. Leave blank if none.
+      render: shell

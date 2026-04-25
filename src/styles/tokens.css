@@ -1,0 +1,60 @@
+/* Design tokens — source of truth for the Snipworth theme system.
+   Colors and shadows switch on the [data-theme] attribute; radii and
+   fonts are theme-agnostic. */
+
+:root {
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:
+    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+:root,
+[data-theme='dark'] {
+  --color-canvas: #0a0a0b;
+  --color-surface: #131316;
+  --color-elevated: #1c1c21;
+
+  --color-ink: #ececee;
+  --color-ink-muted: #9b9ba3;
+  --color-ink-subtle: #6b6b73;
+
+  --color-line: #26262c;
+  --color-line-strong: #3a3a42;
+
+  --color-accent: #7c5cff;
+  --color-accent-hover: #967eff;
+  --color-accent-2: #a78bfa;
+
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+}
+
+[data-theme='light'] {
+  --color-canvas: #fafafa;
+  --color-surface: #ffffff;
+  --color-elevated: #f4f4f5;
+
+  --color-ink: #18181b;
+  --color-ink-muted: #52525b;
+  --color-ink-subtle: #a1a1aa;
+
+  --color-line: #e4e4e7;
+  --color-line-strong: #d4d4d8;
+
+  --color-accent: #6d4aff;
+  --color-accent-hover: #5938e6;
+  --color-accent-2: #8b6cff;
+
+  --color-success: #059669;
+  --color-danger: #dc2626;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
