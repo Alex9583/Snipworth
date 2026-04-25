@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Skip the release commits we generate ourselves (prevents an infinite loop).
+    if: "!startsWith(github.event.head_commit.message, 'chore: release v')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          # Persist credentials so the bot can push the release commit and tag back to main.
+          persist-credentials: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Find merged PR and its labels
+        id: pr
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+            });
+            const pr = prs.data.find((p) => p.merged_at);
+            if (!pr) {
+              core.setFailed(
+                `No merged PR associated with commit ${context.sha}. ` +
+                'This usually means a transient GitHub API issue (re-run the workflow), ' +
+                'or a direct push to main (forbidden by policy).'
+              );
+              return;
+            }
+            const labels = pr.labels.map((l) => l.name);
+            if (labels.includes('skip-release')) {
+              core.info('skip-release label set, skipping.');
+              return;
+            }
+            const kind = ['major', 'minor', 'patch'].find((l) => labels.includes(l));
+            if (!kind) {
+              core.setFailed('Merged PR carries no semver label (patch/minor/major).');
+              return;
+            }
+            core.setOutput('kind', kind);
+            core.setOutput('title', pr.title);
+
+      - name: Bump version
+        if: steps.pr.outputs.kind
+        id: bump
+        env:
+          KIND: ${{ steps.pr.outputs.kind }}
+        run: |
+          npm version "$KIND" --no-git-tag-version > /dev/null
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Update CHANGELOG
+        if: steps.pr.outputs.kind
+        uses: actions/github-script@v9
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+          TITLE: ${{ steps.pr.outputs.title }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const version = process.env.VERSION;
+            const title = process.env.TITLE;
+            const date = new Date().toISOString().slice(0, 10);
+            const category = /^(add|introduce)/i.test(title)
+              ? 'Added'
+              : /^fix/i.test(title)
+                ? 'Fixed'
+                : /^(remove|drop)/i.test(title)
+                  ? 'Removed'
+                  : 'Changed';
+            const path = 'CHANGELOG.md';
+            const src = fs.readFileSync(path, 'utf8');
+            const marker = '## [Unreleased]';
+            const idx = src.indexOf(marker);
+            if (idx === -1) {
+              throw new Error(
+                `CHANGELOG.md is missing the '## [Unreleased]' marker. ` +
+                'Restore it at the top of the file (Keep a Changelog format) and re-run.'
+              );
+            }
+            const after = src.indexOf('\n## [', idx + marker.length);
+            const insert = `\n\n## [${version}] - ${date}\n\n### ${category}\n\n- ${title}\n`;
+            if (after === -1) {
+              // No prior version section under Unreleased — append at end of file.
+              fs.writeFileSync(path, src.replace(/\s*$/, '') + insert, 'utf8');
+            } else {
+              const head = src.slice(0, after);
+              const tail = src.slice(after);
+              fs.writeFileSync(path, head + insert + tail, 'utf8');
+            }
+
+      - name: Commit and tag
+        if: steps.pr.outputs.kind
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore: release v$VERSION"
+          git tag "v$VERSION"
+          # --atomic: branch ref and tag ref land together or neither lands.
+          git push --atomic origin main "v$VERSION"
+
+      - name: Create GitHub Release
+        if: steps.pr.outputs.kind
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.bump.outputs.version }}
+          TITLE: ${{ steps.pr.outputs.title }}
+        run: |
+          gh release create "v$VERSION" --title "v$VERSION" --notes "$TITLE" --latest || {
+            echo "::error::Release v$VERSION creation failed; tag and release commit are already on main."
+            echo "::error::Re-run is blocked by the 'chore: release v' guard. Recover manually with 'gh release create' using the same arguments after fixing the underlying cause."
+            exit 1
+          }
