@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate-labels:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce semver + modifier labels
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map((l) => l.name);
+            const semver = ['patch', 'minor', 'major'].filter((l) => labels.includes(l));
+            const errors = [];
+
+            if (semver.length !== 1) {
+              errors.push(
+                `PR must carry exactly one of: patch, minor, major. Found: ${semver.join(', ') || 'none'}`
+              );
+            }
+            if (labels.includes('publish') && labels.includes('skip-release')) {
+              errors.push('Labels "publish" and "skip-release" are mutually exclusive.');
+            }
+            if (labels.includes('breaking') && !labels.includes('major')) {
+              errors.push('Label "breaking" requires "major".');
+            }
+
+            if (errors.length > 0) {
+              core.setFailed(errors.join('\n'));
+            }
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm audit signatures
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:e2e
+        continue-on-error: true # Flip to required at Task 32.
