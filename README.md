@@ -10,6 +10,7 @@ A Chrome extension for developers who share code on social media. Turn any snipp
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![CI](https://img.shields.io/github/actions/workflow/status/Alex9583/Snipworth/ci.yml?branch=main&label=CI)](https://github.com/Alex9583/Snipworth/actions/workflows/ci.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/alextdev)
 
@@ -38,7 +39,7 @@ A Chrome extension for developers who share code on social media. Turn any snipp
 
 ## Development
 
-Requires Node ≥ 20 (npm ships bundled).
+Requires Node ≥ 24 (npm ships bundled).
 
 ```bash
 npm install

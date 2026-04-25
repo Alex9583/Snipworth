@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Buy me a coffee
+    url: https://buymeacoffee.com/alextdev
+    about: Support the project
+  - name: Security vulnerability
+    url: https://github.com/Alex9583/Snipworth/security/advisories/new
+    about: Report privately via GitHub Security Advisory — do not open a public issue.
