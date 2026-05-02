@@ -9,6 +9,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 <!-- Manual notes only. The release workflow appends entries directly under versioned sections below. -->
 
 
+
+## [0.0.3] - 2026-05-02
+
+### Added
+
+- Add MV3 messaging contract, app shell, and service worker plumbing
+
 ## [0.0.2] - 2026-04-25
 
 ### Added
