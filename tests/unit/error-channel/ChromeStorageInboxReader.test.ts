@@ -1,0 +1,70 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { resetChromeMock } from '../../setup/chrome-mock';
+import { ChromeStorageInboxReader } from '@/adapters/secondary/error-channel/ChromeStorageInboxReader';
+import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
+
+const REPORTED_AT = new Date('2026-01-01T00:00:00.000Z');
+
+const aSetupError = ErrorReport.from({
+  id: 'setup-1',
+  kind: 'side_panel_setup_failed',
+  message: 'Could not configure the side panel.',
+  source: 'background',
+  severity: 'error',
+  occurredAt: REPORTED_AT,
+});
+
+beforeEach(() => {
+  resetChromeMock();
+});
+
+describe('ChromeStorageInboxReader — list', () => {
+  it('should_return_loaded_with_empty_array_when_storage_is_empty', async () => {
+    const reader = new ChromeStorageInboxReader();
+
+    const result = await reader.list();
+
+    expect(result).toEqual({ kind: 'loaded', errors: [] });
+  });
+
+  it('should_return_loaded_with_persisted_errors_when_storage_holds_a_valid_queue', async () => {
+    await chrome.storage.local.set({ pending_errors: [aSetupError.toSnapshot()] });
+    const reader = new ChromeStorageInboxReader();
+
+    const result = await reader.list();
+
+    expect(result.kind).toBe('loaded');
+    if (result.kind !== 'loaded') return;
+    expect(result.errors.map((e) => e.toSnapshot())).toEqual([aSetupError.toSnapshot()]);
+  });
+
+  it('should_surface_inbox_unavailable_when_storage_is_corrupt', async () => {
+    await chrome.storage.local.set({ pending_errors: 'not an array' });
+    const reader = new ChromeStorageInboxReader();
+
+    const result = await reader.list();
+
+    expect(result.kind).toBe('inbox_unavailable');
+  });
+
+  it('should_surface_inbox_unavailable_when_one_report_in_the_queue_is_malformed', async () => {
+    await chrome.storage.local.set({
+      pending_errors: [aSetupError.toSnapshot(), { id: '', kind: 'invalid', message: '' }],
+    });
+    const reader = new ChromeStorageInboxReader();
+
+    const result = await reader.list();
+
+    expect(result.kind).toBe('inbox_unavailable');
+  });
+
+  it('should_surface_inbox_unavailable_when_chrome_storage_get_rejects', async () => {
+    const cause = new Error('storage offline');
+    vi.spyOn(chrome.storage.local, 'get').mockRejectedValueOnce(cause);
+    const reader = new ChromeStorageInboxReader();
+
+    const result = await reader.list();
+
+    expect(result).toEqual({ kind: 'inbox_unavailable', cause });
+  });
+});

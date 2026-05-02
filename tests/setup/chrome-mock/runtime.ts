@@ -18,13 +18,42 @@ type MessageListener = (
 
 type InstalledListener = (details: InstalledDetails) => void;
 
+export const SELF_EXTENSION_ID = 'snipworth-test-extension';
+
 const messageListeners = new Set<MessageListener>();
 const installedListeners = new Set<InstalledListener>();
 
+async function fanOutToListeners(
+  message: unknown,
+  sender: MessageSender,
+): Promise<DispatchedMessage> {
+  let resolveResponse: (r: unknown) => void = () => undefined;
+  const responsePromise = new Promise<unknown>((resolve) => {
+    resolveResponse = resolve;
+  });
+  let resolved = false;
+  let asyncExpected = false;
+  const sendResponse = (r: unknown): void => {
+    if (resolved) return;
+    resolved = true;
+    resolveResponse(r);
+  };
+  for (const listener of messageListeners) {
+    const ret = listener(message, sender, sendResponse);
+    if (ret === true) asyncExpected = true;
+  }
+  if (!asyncExpected) {
+    sendResponse(undefined);
+  }
+  return { response: await responsePromise, asyncExpected };
+}
+
 export function buildRuntimeMock(): RuntimeMock {
   return {
+    id: SELF_EXTENSION_ID,
     getURL: (p: string) => `chrome-extension://test/${p}`,
-    sendMessage: () => Promise.resolve(undefined),
+    sendMessage: async (message: unknown) =>
+      (await fanOutToListeners(message, { id: SELF_EXTENSION_ID })).response,
     onMessage: {
       addListener: (cb: MessageListener) => {
         messageListeners.add(cb);
@@ -46,23 +75,16 @@ export function resetRuntime(): void {
   installedListeners.clear();
 }
 
+export interface DispatchedMessage {
+  readonly response: unknown;
+  readonly asyncExpected: boolean;
+}
+
 export function dispatchMessage(
   message: unknown,
-  sender: MessageSender = {},
-): { response: unknown; asyncExpected: boolean } {
-  let response: unknown;
-  let responded = false;
-  let asyncExpected = false;
-  const sendResponse = (r: unknown): void => {
-    if (responded) return;
-    responded = true;
-    response = r;
-  };
-  for (const listener of messageListeners) {
-    const ret = listener(message, sender, sendResponse);
-    if (ret === true) asyncExpected = true;
-  }
-  return { response, asyncExpected };
+  sender: MessageSender = { id: SELF_EXTENSION_ID },
+): Promise<DispatchedMessage> {
+  return fanOutToListeners(message, sender);
 }
 
 export function dispatchInstalled(details: InstalledDetails = { reason: 'install' }): void {

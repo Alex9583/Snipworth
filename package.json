@@ -5,6 +5,14 @@
   "type": "module",
   "description": "Beautiful code snippets, ready to post.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alex9583/Snipworth.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Alex9583/Snipworth/issues"
+  },
+  "homepage": "https://github.com/Alex9583/Snipworth#readme",
   "engines": {
     "node": ">=24",
     "npm": ">=10"
