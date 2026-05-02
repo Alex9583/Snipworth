@@ -33,16 +33,28 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-            });
-            const pr = prs.data.find((p) => p.merged_at);
+            // Eventual-consistency retry: GitHub indexes the squash-commit ↔ PR
+            // association asynchronously, so the first call right after `push to main`
+            // can return an empty array even though the PR is merged.
+            const delaysSec = [0, 5, 10, 20, 40];
+            let pr;
+            for (const delay of delaysSec) {
+              if (delay > 0) {
+                core.info(`No associated PR yet, retrying in ${delay}s…`);
+                await new Promise((r) => setTimeout(r, delay * 1000));
+              }
+              const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+              });
+              pr = data.find((p) => p.merged_at);
+              if (pr) break;
+            }
             if (!pr) {
               core.setFailed(
-                `No merged PR associated with commit ${context.sha}. ` +
-                'This usually means a transient GitHub API issue (re-run the workflow), ' +
+                `No merged PR associated with commit ${context.sha} after retries. ` +
+                'This usually means a prolonged GitHub API indexing delay (re-run the workflow), ' +
                 'or a direct push to main (forbidden by policy).'
               );
               return;

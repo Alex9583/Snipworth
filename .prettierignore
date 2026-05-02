@@ -1,2 +1,5 @@
 package-lock.json
 *.min.*
+
+# Auto-generated
+CHANGELOG.md
