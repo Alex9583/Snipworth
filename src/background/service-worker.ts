@@ -1,5 +1,13 @@
-export {};
+import { routeMessage } from './router';
 
-// Real behavior (sidePanel.setPanelBehavior, contextMenus, onInstalled, onMessage)
-// arrives in Task 9. Extension service workers activate immediately on install;
-// no install handler is needed at this stage.
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err: unknown) => {
+    console.error('[snipworth] setPanelBehavior failed', err);
+  });
+});
+
+// Sync responses return false; switch to true only when sendResponse will fire async.
+chrome.runtime.onMessage.addListener((msg: unknown, _sender, sendResponse) => {
+  sendResponse(routeMessage(msg));
+  return false;
+});

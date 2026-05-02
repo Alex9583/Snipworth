@@ -42,7 +42,8 @@
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "zod": "^4.4.2"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.4.0",
@@ -58,6 +59,7 @@
     "@types/react-dom": "~19.2.0",
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/ui": "^4.1.5",
+    "chrome-types": "^0.1.425",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.10.2",
