@@ -14,7 +14,7 @@ describe('describeCause', () => {
     expect(describeCause({ code: 42, reason: 'limit' })).toBe('{"code":42,"reason":"limit"}');
   });
 
-  it('should_fall_back_to_object_default_string_when_JSON_stringify_throws_on_a_circular_reference', () => {
+  it('should_surface_the_serialization_failure_when_JSON_stringify_throws_on_a_circular_reference', () => {
     interface Node {
       next?: Node;
     }
@@ -23,6 +23,8 @@ describe('describeCause', () => {
 
     const result = describeCause(a);
 
-    expect(result).toBe('[object Object]');
+    expect(result).toMatch(/^\[describeCause: unserializable cause \(/);
+    expect(result).toMatch(/\)]$/);
+    expect(result).toMatch(/circular/i);
   });
 });

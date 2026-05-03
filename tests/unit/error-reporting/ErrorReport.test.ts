@@ -35,7 +35,7 @@ describe('ErrorReport.from', () => {
     expect(report.occurredAt.toISOString()).toBe('2026-03-15T10:00:00.000Z');
   });
 
-  it('should_defensively_copy_occurredAt_so_caller_mutation_does_not_affect_the_report', () => {
+  it('should_isolate_occurredAt_from_caller_mutation_after_construction', () => {
     const mutable = new Date(REPORTED_AT);
 
     const report = ErrorReport.from({

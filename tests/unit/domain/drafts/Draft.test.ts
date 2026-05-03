@@ -1,0 +1,250 @@
+import { describe, it, expect } from 'vitest';
+import {
+  Draft,
+  draftStatuses,
+  InvalidDraft,
+  type DraftCreateInput,
+  type DraftSnapshot,
+} from '@/domain/drafts/Draft';
+import type { DraftId } from '@/domain/drafts/DraftId';
+import { RenderConfig, type RenderConfigInput } from '@/domain/rendering/RenderConfig';
+
+const CREATED_AT = new Date('2026-03-15T10:00:00.000Z');
+const LATER = new Date('2026-03-15T10:30:00.000Z');
+const EARLIER = new Date('2026-03-15T09:30:00.000Z');
+
+const baseConfig: RenderConfigInput = {
+  theme: 'github-dark',
+  fontFamily: 'JetBrains Mono',
+  fontSize: 14,
+  lineHeight: 1.5,
+  paddingX: 24,
+  paddingY: 24,
+  borderRadius: 8,
+  background: { type: 'solid', color: '#1e1e1e' },
+  showWindowControls: true,
+  windowStyle: 'mac',
+  showLineNumbers: false,
+  firstLineNumber: 1,
+  highlightLines: [],
+  shadow: true,
+  shadowBlur: 10,
+  shadowOffsetY: 4,
+  aspectRatio: 'auto',
+  exportScale: 2,
+  exportFormat: 'png',
+};
+
+function buildInput(overrides: Partial<DraftCreateInput> = {}): DraftCreateInput {
+  return {
+    id: 'draft-1' as DraftId,
+    title: 'Hello world',
+    code: 'const x = 1;',
+    language: 'typescript',
+    config: RenderConfig.from(baseConfig),
+    caption: 'Look at this',
+    hashtags: ['typescript'],
+    platform: 'x',
+    thumbnail: null,
+    tags: ['demo'],
+    createdAt: CREATED_AT,
+    ...overrides,
+  };
+}
+
+describe('Draft.create — happy path', () => {
+  it('should_carry_every_input_field_into_the_aggregate', () => {
+    const draft = Draft.create(buildInput());
+    expect(draft.id).toBe('draft-1');
+    expect(draft.title).toBe('Hello world');
+    expect(draft.code).toBe('const x = 1;');
+    expect(draft.language).toBe('typescript');
+    expect(draft.caption).toBe('Look at this');
+    expect(draft.hashtags).toEqual(['typescript']);
+    expect(draft.platform).toBe('x');
+    expect(draft.thumbnail).toBeNull();
+    expect(draft.tags).toEqual(['demo']);
+  });
+
+  it('should_set_status_to_draft_on_creation', () => {
+    const draft = Draft.create(buildInput());
+    expect(draft.status).toBe('draft');
+  });
+
+  it('should_align_updatedAt_with_createdAt_on_creation', () => {
+    const draft = Draft.create(buildInput());
+    expect(draft.updatedAt.toISOString()).toBe(CREATED_AT.toISOString());
+    expect(draft.createdAt.toISOString()).toBe(CREATED_AT.toISOString());
+  });
+
+  it('should_isolate_createdAt_from_caller_mutation_after_construction', () => {
+    const mutable = new Date(CREATED_AT);
+    const draft = Draft.create(buildInput({ createdAt: mutable }));
+    mutable.setFullYear(1999);
+    expect(draft.createdAt.getFullYear()).toBe(2026);
+  });
+
+  it('should_isolate_hashtags_and_tags_from_caller_mutation_after_construction', () => {
+    const tags = ['demo'];
+    const hashtags = ['typescript'];
+    const draft = Draft.create(buildInput({ tags, hashtags }));
+    tags.push('mutation');
+    hashtags.push('mutation');
+    expect(draft.tags).toEqual(['demo']);
+    expect(draft.hashtags).toEqual(['typescript']);
+  });
+
+  it('should_accept_an_empty_title_an_empty_code_and_no_thumbnail', () => {
+    const draft = Draft.create(buildInput({ title: '', code: '', thumbnail: null }));
+    expect(draft.title).toBe('');
+    expect(draft.code).toBe('');
+    expect(draft.thumbnail).toBeNull();
+  });
+
+  it('should_accept_a_thumbnail_as_a_blob', () => {
+    const blob = new Blob(['png-bytes'], { type: 'image/png' });
+    const draft = Draft.create(buildInput({ thumbnail: blob }));
+    expect(draft.thumbnail).toBe(blob);
+  });
+});
+
+describe('Draft.create — invariants', () => {
+  it('should_reject_an_empty_id', () => {
+    expect(() => Draft.create(buildInput({ id: '' as DraftId }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ id: '   ' as DraftId }))).toThrow(/id/);
+  });
+
+  it('should_reject_an_empty_language', () => {
+    expect(() => Draft.create(buildInput({ language: '' }))).toThrow(/language/);
+    expect(() => Draft.create(buildInput({ language: '   ' }))).toThrow(/language/);
+  });
+
+  it('should_reject_an_unknown_platform', () => {
+    expect(() => Draft.create(buildInput({ platform: 'mastodon' as never }))).toThrow(/platform/);
+  });
+
+  it('should_reject_a_non_finite_createdAt', () => {
+    expect(() => Draft.create(buildInput({ createdAt: new Date(Number.NaN) }))).toThrow(
+      /createdAt/,
+    );
+  });
+
+  it('should_reject_a_title_exceeding_200_characters', () => {
+    expect(() => Draft.create(buildInput({ title: 'x'.repeat(201) }))).toThrow(/title/);
+  });
+
+  it('should_reject_a_caption_exceeding_5000_characters', () => {
+    expect(() => Draft.create(buildInput({ caption: 'x'.repeat(5001) }))).toThrow(/caption/);
+  });
+
+  it('should_reject_a_code_exceeding_200_000_characters', () => {
+    expect(() => Draft.create(buildInput({ code: 'x'.repeat(200_001) }))).toThrow(/code/);
+  });
+
+  it('should_reject_more_than_50_tags_or_50_hashtags', () => {
+    const many = Array.from({ length: 51 }, (_, i) => `tag${String(i)}`);
+    expect(() => Draft.create(buildInput({ tags: many }))).toThrow(/tags/);
+    expect(() => Draft.create(buildInput({ hashtags: many }))).toThrow(/hashtags/);
+  });
+
+  it('should_reject_empty_or_whitespace_tags_and_hashtags', () => {
+    expect(() => Draft.create(buildInput({ tags: ['ok', ''] }))).toThrow(/tags/);
+    expect(() => Draft.create(buildInput({ hashtags: ['ok', '   '] }))).toThrow(/hashtags/);
+  });
+
+  it('should_reject_duplicate_tags_or_hashtags', () => {
+    expect(() => Draft.create(buildInput({ tags: ['demo', 'demo'] }))).toThrow(/tags/);
+    expect(() => Draft.create(buildInput({ hashtags: ['typescript', 'typescript'] }))).toThrow(
+      /hashtags/,
+    );
+  });
+});
+
+describe('Draft.fromSnapshot / toSnapshot', () => {
+  function buildSnapshot(): DraftSnapshot {
+    return Draft.create(buildInput()).toSnapshot();
+  }
+
+  it('should_render_dates_as_epoch_milliseconds_in_the_snapshot', () => {
+    const snapshot = buildSnapshot();
+    expect(snapshot.createdAt).toBe(CREATED_AT.getTime());
+    expect(snapshot.updatedAt).toBe(CREATED_AT.getTime());
+  });
+
+  it('should_render_the_render_config_as_a_plain_snapshot', () => {
+    const snapshot = buildSnapshot();
+    expect(snapshot.config).toEqual(RenderConfig.from(baseConfig).toSnapshot());
+  });
+
+  it('should_round_trip_a_snapshot_back_to_an_equivalent_draft', () => {
+    const original = Draft.create(buildInput());
+    const round = Draft.fromSnapshot(original.toSnapshot());
+    expect(round.toSnapshot()).toEqual(original.toSnapshot());
+  });
+
+  it('should_let_fromSnapshot_carry_a_persisted_updatedAt_distinct_from_createdAt', () => {
+    const snapshot: DraftSnapshot = {
+      ...buildSnapshot(),
+      updatedAt: LATER.getTime(),
+    };
+    const draft = Draft.fromSnapshot(snapshot);
+    expect(draft.createdAt.getTime()).toBe(CREATED_AT.getTime());
+    expect(draft.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+
+  it('should_expose_every_status_value_from_the_closed_enum', () => {
+    expect(draftStatuses).toEqual(['draft', 'published', 'archived']);
+  });
+});
+
+describe('Draft.rename', () => {
+  it('should_return_a_new_draft_with_the_updated_title_and_updatedAt', () => {
+    const original = Draft.create(buildInput({ title: 'Old' }));
+    const renamed = original.rename('New', LATER);
+    expect(renamed.title).toBe('New');
+    expect(renamed.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(renamed.id).toBe(original.id);
+  });
+
+  it('should_not_mutate_the_original_draft', () => {
+    const original = Draft.create(buildInput({ title: 'Old' }));
+    original.rename('New', LATER);
+    expect(original.title).toBe('Old');
+    expect(original.updatedAt.getTime()).toBe(CREATED_AT.getTime());
+  });
+
+  it('should_reject_a_rename_with_a_now_earlier_than_createdAt', () => {
+    const original = Draft.create(buildInput());
+    expect(() => original.rename('New', EARLIER)).toThrow(InvalidDraft);
+  });
+
+  it('should_reject_a_title_exceeding_200_characters', () => {
+    const original = Draft.create(buildInput());
+    expect(() => original.rename('x'.repeat(201), LATER)).toThrow(/title/);
+  });
+});
+
+describe('Draft.updateCode', () => {
+  it('should_return_a_new_draft_with_the_updated_code_language_and_updatedAt', () => {
+    const original = Draft.create(buildInput());
+    const updated = original.updateCode('print("hi")', 'python', LATER);
+    expect(updated.code).toBe('print("hi")');
+    expect(updated.language).toBe('python');
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+
+  it('should_reject_an_empty_language', () => {
+    const original = Draft.create(buildInput());
+    expect(() => original.updateCode('code', '', LATER)).toThrow(/language/);
+  });
+});
+
+describe('Draft.replaceConfig', () => {
+  it('should_return_a_new_draft_with_the_updated_config_and_updatedAt', () => {
+    const original = Draft.create(buildInput());
+    const newConfig = RenderConfig.from({ ...baseConfig, fontSize: 18 });
+    const updated = original.replaceConfig(newConfig, LATER);
+    expect(updated.config.fontSize).toBe(18);
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+});

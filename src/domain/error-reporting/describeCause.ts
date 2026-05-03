@@ -3,7 +3,9 @@ export function describeCause(cause: unknown): string {
   if (typeof cause === 'string') return cause;
   try {
     return JSON.stringify(cause);
-  } catch {
-    return String(cause);
+  } catch (serializationError) {
+    const reason =
+      serializationError instanceof Error ? serializationError.message : String(serializationError);
+    return `[describeCause: unserializable cause (${reason})]`;
   }
 }

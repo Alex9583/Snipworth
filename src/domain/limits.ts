@@ -1,0 +1,8 @@
+export const TITLE_MAX = 200;
+export const CODE_MAX = 200_000;
+export const CAPTION_MAX = 5000;
+export const TAG_LIST_MAX = 50;
+export const TAG_MAX = 280;
+export const LANGUAGE_MAX = 64;
+export const THEME_MAX = 128;
+export const ID_MAX = 128;
