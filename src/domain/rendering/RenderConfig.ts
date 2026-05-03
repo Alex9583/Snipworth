@@ -1,7 +1,7 @@
 export const fontFamilies = [
   'JetBrains Mono',
   'Fira Code',
-  'Hack',
+  'Inconsolata',
   'Source Code Pro',
   'Cascadia Code',
 ] as const;

@@ -1,6 +1,10 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/inter/wght.css';
 @import '@fontsource-variable/jetbrains-mono/wght.css';
+@import '@fontsource-variable/fira-code/wght.css';
+@import '@fontsource-variable/source-code-pro/wght.css';
+@import '@fontsource-variable/cascadia-code/wght.css';
+@import '@fontsource-variable/inconsolata/wght.css';
 @import './anti-fouc.css';
 
 @theme inline {
