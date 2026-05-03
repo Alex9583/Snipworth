@@ -28,6 +28,31 @@ const validInput: RenderConfigInput = {
   exportFormat: 'png',
 };
 
+describe('RenderConfig.default', () => {
+  it('should_provide_the_specification_baseline_render_config', () => {
+    const config = RenderConfig.default();
+    expect(config.theme).toBe('github-dark');
+    expect(config.fontFamily).toBe('JetBrains Mono');
+    expect(config.fontSize).toBe(14);
+    expect(config.lineHeight).toBe(1.5);
+    expect(config.paddingX).toBe(32);
+    expect(config.paddingY).toBe(32);
+    expect(config.borderRadius).toBe(10);
+    expect(config.background).toEqual({ type: 'solid', color: '#1C1C21' });
+    expect(config.showWindowControls).toBe(true);
+    expect(config.windowStyle).toBe('mac');
+    expect(config.showLineNumbers).toBe(false);
+    expect(config.firstLineNumber).toBe(1);
+    expect(config.highlightLines).toEqual([]);
+    expect(config.shadow).toBe(true);
+    expect(config.shadowBlur).toBe(30);
+    expect(config.shadowOffsetY).toBe(8);
+    expect(config.aspectRatio).toBe('auto');
+    expect(config.exportScale).toBe(2);
+    expect(config.exportFormat).toBe('png');
+  });
+});
+
 describe('RenderConfig.from — happy path', () => {
   it('should_carry_every_input_field_into_the_value_object', () => {
     const config = RenderConfig.from(validInput);

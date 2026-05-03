@@ -156,6 +156,30 @@ export class RenderConfig {
     return new RenderConfig({ ...snapshot, highlightLines: [...snapshot.highlightLines] });
   }
 
+  static default(): RenderConfig {
+    return RenderConfig.from({
+      theme: 'github-dark',
+      fontFamily: 'JetBrains Mono',
+      fontSize: 14,
+      lineHeight: 1.5,
+      paddingX: 32,
+      paddingY: 32,
+      borderRadius: 10,
+      background: { type: 'solid', color: '#1C1C21' },
+      showWindowControls: true,
+      windowStyle: 'mac',
+      showLineNumbers: false,
+      firstLineNumber: 1,
+      highlightLines: [],
+      shadow: true,
+      shadowBlur: 30,
+      shadowOffsetY: 8,
+      aspectRatio: 'auto',
+      exportScale: 2,
+      exportFormat: 'png',
+    });
+  }
+
   toSnapshot(): RenderConfigSnapshot {
     return {
       theme: this.theme,
