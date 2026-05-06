@@ -55,6 +55,7 @@
     "@fontsource-variable/source-code-pro": "^5.2.7",
     "dexie": "^4.4.2",
     "highlight.js": "^11.11.1",
+    "html-to-image": "^1.11.13",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "shiki": "^4.0.2",
