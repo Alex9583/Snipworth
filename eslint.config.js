@@ -69,8 +69,59 @@ export default tseslint.config(
   },
 
   {
-    files: ['src/background/**/*.ts'],
+    files: [
+      'src/adapters/primary/background/**/*.ts',
+      'src/infrastructure/bootstrap/composeBackground.ts',
+    ],
     languageOptions: { globals: { ...globals.serviceworker } },
+  },
+
+  {
+    files: ['src/application/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['@/adapters/**'], message: 'application must not import adapters' },
+            {
+              group: ['@/infrastructure/**'],
+              message: 'application must not import infrastructure',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/application/ports/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['@/adapters/**'], message: 'ports must not import adapters' },
+            { group: ['@/infrastructure/**'], message: 'ports must not import infrastructure' },
+            { group: ['@/application/use-cases/**'], message: 'ports must not import use-cases' },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/domain/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['@/adapters/**'], message: 'domain must not import adapters' },
+            { group: ['@/infrastructure/**'], message: 'domain must not import infrastructure' },
+            { group: ['@/application/**'], message: 'domain must not import application' },
+          ],
+        },
+      ],
+    },
   },
 
   {

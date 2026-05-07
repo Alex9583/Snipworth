@@ -13,9 +13,9 @@ export default defineManifest({
     128: 'public/icons/icon-128.png',
   },
   action: { default_title: 'Snipworth' },
-  side_panel: { default_path: 'src/sidepanel/index.html' },
+  side_panel: { default_path: 'src/adapters/primary/sidepanel/index.html' },
   background: {
-    service_worker: 'src/background/service-worker.ts',
+    service_worker: 'src/adapters/primary/background/service-worker.ts',
     type: 'module',
   },
   permissions: ['sidePanel', 'contextMenus', 'storage', 'activeTab'],
