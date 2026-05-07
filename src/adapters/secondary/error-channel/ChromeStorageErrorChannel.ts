@@ -9,12 +9,9 @@ import type { ErrorReporter, ReportOutcome } from '@/application/ports/ErrorRepo
 import type { IdGenerator } from '@/application/ports/IdGenerator';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
 import { describeCause } from '@/domain/error-reporting/describeCause';
-import {
-  MAX_DETAILS_BYTES,
-  MAX_QUEUED_REPORTS,
-  PENDING_ERRORS_KEY,
-  pendingErrorsSchema,
-} from './storage-format';
+import { ERROR_DETAILS_MAX } from '@/domain/limits';
+import { parseInbox } from './readInbox';
+import { MAX_QUEUED_REPORTS, PENDING_ERRORS_KEY } from './storage-format';
 
 const BADGE_TEXT = '!';
 const BADGE_COLOR = '#dc2626';
@@ -36,6 +33,10 @@ type StorageWrite =
   | { readonly kind: 'failed'; readonly cause: unknown };
 
 type BadgeOp = { readonly kind: 'ok' } | { readonly kind: 'failed'; readonly cause: unknown };
+
+export type ReconcileOutcome =
+  | { readonly kind: 'reconciled' }
+  | { readonly kind: 'inbox_unavailable'; readonly cause: unknown };
 
 export class ChromeStorageErrorChannel implements ErrorReporter, InboxReader, InboxAcknowledger {
   private writeChain: Promise<unknown> = Promise.resolve();
@@ -63,25 +64,27 @@ export class ChromeStorageErrorChannel implements ErrorReporter, InboxReader, In
     return this.serialize(async () => {
       const raw = await this.readRaw();
       if (raw.kind === 'failed') return { kind: 'inbox_unavailable', cause: raw.cause };
-      if (raw.value === undefined) return { kind: 'loaded', errors: [] };
 
-      const parsed = pendingErrorsSchema.safeParse(raw.value);
-      if (parsed.success) {
-        return {
-          kind: 'loaded',
-          errors: parsed.data.map((s) => ErrorReport.fromSnapshot(s)),
-        };
-      }
+      const parsed = parseInbox(raw.value, { clock: this.clock, ids: this.ids });
+      if (parsed.kind === 'empty') return { kind: 'loaded', errors: [] };
+      if (parsed.kind === 'loaded') return parsed;
 
-      const marker = this.corruptionMarker(parsed.error.issues);
-      const write = await this.writeSnapshots([marker.toSnapshot()]);
+      const write = await this.writeSnapshots([parsed.marker.toSnapshot()]);
       if (write.kind === 'failed') return { kind: 'inbox_unavailable', cause: write.cause };
       const badge = await this.setWarningBadge();
       if (badge.kind === 'failed') {
         await this.appendReports([this.badgeUnavailableReport(badge.cause)]);
       }
-      return { kind: 'loaded', errors: [marker] };
+      return { kind: 'loaded', errors: [parsed.marker] };
     });
+  }
+
+  async reconcile(): Promise<ReconcileOutcome> {
+    const outcome = await this.list();
+    if (outcome.kind === 'inbox_unavailable') {
+      return { kind: 'inbox_unavailable', cause: outcome.cause };
+    }
+    return { kind: 'reconciled' };
   }
 
   acknowledge(ids: readonly string[]): Promise<AckOutcome> {
@@ -150,12 +153,16 @@ export class ChromeStorageErrorChannel implements ErrorReporter, InboxReader, In
   private async readExisting(): Promise<ReadExisting> {
     const raw = await this.readRaw();
     if (raw.kind === 'failed') return { kind: 'failed', cause: raw.cause };
-    if (raw.value === undefined) return { kind: 'ok', errors: [] };
-    const parsed = pendingErrorsSchema.safeParse(raw.value);
-    if (parsed.success) {
-      return { kind: 'ok', errors: parsed.data.map((s) => ErrorReport.fromSnapshot(s)) };
+
+    const parsed = parseInbox(raw.value, { clock: this.clock, ids: this.ids });
+    switch (parsed.kind) {
+      case 'empty':
+        return { kind: 'ok', errors: [] };
+      case 'loaded':
+        return { kind: 'ok', errors: parsed.errors };
+      case 'corrupt':
+        return { kind: 'ok', errors: [], corruption: parsed.marker };
     }
-    return { kind: 'ok', errors: [], corruption: this.corruptionMarker(parsed.error.issues) };
   }
 
   private async readRaw(): Promise<RawRead> {
@@ -167,19 +174,6 @@ export class ChromeStorageErrorChannel implements ErrorReporter, InboxReader, In
     }
   }
 
-  private corruptionMarker(issues: unknown): ErrorReport {
-    return ErrorReport.from({
-      id: this.ids.next(),
-      kind: 'error_inbox_corrupt',
-      message:
-        'Snipworth could not read previously stored errors. They were replaced with this notice.',
-      source: 'background',
-      severity: 'warning',
-      occurredAt: this.clock.now(),
-      details: describeCause(issues).slice(0, MAX_DETAILS_BYTES),
-    });
-  }
-
   private badgeUnavailableReport(cause: unknown): ErrorReport {
     return ErrorReport.from({
       id: this.ids.next(),
@@ -188,11 +182,13 @@ export class ChromeStorageErrorChannel implements ErrorReporter, InboxReader, In
       source: 'background',
       severity: 'warning',
       occurredAt: this.clock.now(),
-      details: describeCause(cause).slice(0, MAX_DETAILS_BYTES),
+      details: describeCause(cause).slice(0, ERROR_DETAILS_MAX),
     });
   }
 
   private serialize<T>(fn: () => Promise<T>): Promise<T> {
+    // Chain `fn` on both fulfilled and rejected states so a failed prior op does not
+    // poison subsequent ops; the chain proceeds whether the previous one succeeded or not.
     const next = this.writeChain.then(fn, fn);
     this.writeChain = next.catch(() => undefined);
     return next;

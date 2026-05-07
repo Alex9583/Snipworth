@@ -387,3 +387,50 @@ describe('ChromeStorageErrorChannel — acknowledge (InboxAcknowledger)', () => 
     expect(outcome).toEqual({ kind: 'inbox_unavailable', cause });
   });
 });
+
+describe('ChromeStorageErrorChannel — reconcile', () => {
+  it('should_replace_corrupt_storage_with_a_marker_when_corruption_is_detected', async () => {
+    await chrome.storage.local.set({ pending_errors: 'not an array' });
+    const clock = new FakeClock(new Date('2026-02-15T12:00:00.000Z'));
+    const channel = makeChannel(clock);
+
+    const outcome = await channel.reconcile();
+
+    expect(outcome).toEqual({ kind: 'reconciled' });
+    const stored = await chrome.storage.local.get(['pending_errors']);
+    expect(stored.pending_errors).toHaveLength(1);
+    expect((stored.pending_errors as { kind: string }[])[0]?.kind).toBe('error_inbox_corrupt');
+  });
+
+  it('should_be_a_no_op_when_storage_is_empty', async () => {
+    const channel = makeChannel();
+
+    const outcome = await channel.reconcile();
+
+    expect(outcome).toEqual({ kind: 'reconciled' });
+    const stored = await chrome.storage.local.get(['pending_errors']);
+    expect(stored.pending_errors).toBeUndefined();
+  });
+
+  it('should_keep_storage_unchanged_when_existing_errors_are_valid', async () => {
+    const channel = makeChannel();
+    await channel.report(aSetupError);
+    const before = await chrome.storage.local.get(['pending_errors']);
+
+    const outcome = await channel.reconcile();
+
+    expect(outcome).toEqual({ kind: 'reconciled' });
+    const after = await chrome.storage.local.get(['pending_errors']);
+    expect(after.pending_errors).toEqual(before.pending_errors);
+  });
+
+  it('should_return_inbox_unavailable_when_storage_get_rejects', async () => {
+    const channel = makeChannel();
+    const cause = new Error('storage offline');
+    queueStorageFault({ area: 'local', op: 'get', cause });
+
+    const outcome = await channel.reconcile();
+
+    expect(outcome).toEqual({ kind: 'inbox_unavailable', cause });
+  });
+});

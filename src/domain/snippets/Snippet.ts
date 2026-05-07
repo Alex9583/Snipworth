@@ -1,3 +1,9 @@
+import {
+  requireFiniteDate,
+  requireMaxLength,
+  requireNonEmpty,
+  requireTagList,
+} from '@/domain/invariants';
 import { CODE_MAX, TAG_LIST_MAX, TITLE_MAX } from '@/domain/limits';
 import type { SnippetId } from '@/domain/snippets/SnippetId';
 
@@ -7,6 +13,10 @@ export class InvalidSnippet extends Error {
     this.name = 'InvalidSnippet';
   }
 }
+
+const fail = (reason: string): never => {
+  throw new InvalidSnippet(reason);
+};
 
 export interface SnippetCreateInput {
   readonly id: SnippetId;
@@ -57,12 +67,12 @@ export class Snippet {
   }
 
   static create(input: SnippetCreateInput): Snippet {
-    requireNonEmpty(input.id, 'id');
-    requireNonEmpty(input.language, 'language');
-    requireFiniteDate(input.createdAt, 'createdAt');
-    requireMaxLength(input.title, TITLE_MAX, 'title');
-    requireMaxLength(input.code, CODE_MAX, 'code');
-    requireTagList(input.tags, 'tags');
+    requireNonEmpty(input.id, 'id', fail);
+    requireNonEmpty(input.language, 'language', fail);
+    requireFiniteDate(input.createdAt, 'createdAt', fail);
+    requireMaxLength(input.title, TITLE_MAX, 'title', fail);
+    requireMaxLength(input.code, CODE_MAX, 'code', fail);
+    requireTagList(input.tags, 'tags', TAG_LIST_MAX, fail);
 
     const createdAt = new Date(input.createdAt);
 
@@ -99,39 +109,5 @@ export class Snippet {
       createdAt: this.createdAt.getTime(),
       updatedAt: this.updatedAt.getTime(),
     };
-  }
-}
-
-function requireNonEmpty(value: string, field: string): void {
-  if (value.trim().length === 0) {
-    throw new InvalidSnippet(`${field} must not be empty`);
-  }
-}
-
-function requireMaxLength(value: string, max: number, field: string): void {
-  if (value.length > max) {
-    throw new InvalidSnippet(`${field} must not exceed ${String(max)} characters`);
-  }
-}
-
-function requireFiniteDate(value: Date, field: string): void {
-  if (!Number.isFinite(value.getTime())) {
-    throw new InvalidSnippet(`${field} must be a valid date`);
-  }
-}
-
-function requireTagList(values: readonly string[], field: string): void {
-  if (values.length > TAG_LIST_MAX) {
-    throw new InvalidSnippet(`${field} must not contain more than ${String(TAG_LIST_MAX)} entries`);
-  }
-  const seen = new Set<string>();
-  for (const value of values) {
-    if (value.trim().length === 0) {
-      throw new InvalidSnippet(`${field} entries must not be empty`);
-    }
-    if (seen.has(value)) {
-      throw new InvalidSnippet(`${field} must not contain duplicates`);
-    }
-    seen.add(value);
   }
 }

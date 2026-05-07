@@ -9,51 +9,64 @@ import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
 import { describeCause } from '@/domain/error-reporting/describeCause';
 
 export function startBackground(): void {
-  const host: BrowserHost = new ChromeBrowserHost();
   const clock = new SystemClock();
   const ids = new RandomUuidGenerator();
   const channel = new ChromeStorageErrorChannel(clock, ids);
-
-  host.onInstalled(async () => {
-    const outcome = await host.enableSidePanelOnActionClick();
-    if (outcome.kind === 'configured') return;
-    await emit(
+  const host: BrowserHost = new ChromeBrowserHost((cause) => {
+    void emit(
       channel,
       ErrorReport.from({
         id: ids.next(),
-        kind: 'side_panel_setup_failed',
-        message: 'Snipworth could not configure the side panel to open on click.',
+        kind: 'handler_crashed',
+        message: 'Snipworth message handler crashed.',
         source: 'background',
         severity: 'error',
         occurredAt: clock.now(),
-        details: describeCause(outcome.cause),
+        details: describeCause(cause),
       }),
     );
   });
 
+  host.onInstalled(async () => {
+    const outcome = await host.enableSidePanelOnActionClick();
+    if (outcome.kind !== 'configured') {
+      await emit(
+        channel,
+        ErrorReport.from({
+          id: ids.next(),
+          kind: 'side_panel_setup_failed',
+          message: 'Snipworth could not configure the side panel to open on click.',
+          source: 'background',
+          severity: 'error',
+          occurredAt: clock.now(),
+          details: describeCause(outcome.cause),
+        }),
+      );
+    }
+    await reconcileInbox(channel);
+  });
+
+  host.onStartup(async () => {
+    await reconcileInbox(channel);
+  });
+
   host.onMessage(async ({ raw, senderId }) => {
     if (senderId !== host.selfId) {
-      return { response: { ok: false, error: 'unauthorized sender' } };
+      return {
+        response: {
+          ok: false,
+          error: {
+            code: 'unauthorized_sender',
+            message: 'Snipworth rejected a message from an unauthorized sender.',
+          },
+        },
+      };
     }
-    try {
-      const result = await route(raw, { clock, ids, inboxAcknowledger: channel });
-      if (result.errorReport) {
-        void emit(channel, result.errorReport);
-      }
-      return { response: result.response };
-    } catch (cause) {
-      const crashed = ErrorReport.from({
-        id: ids.next(),
-        kind: 'router_crashed',
-        message: 'Snipworth router threw while handling a message.',
-        source: 'router',
-        severity: 'error',
-        occurredAt: clock.now(),
-        details: describeCause(cause),
-      });
-      void emit(channel, crashed);
-      return { response: { ok: false, error: 'router crashed' } };
+    const result = await route(raw, { clock, ids, inboxAcknowledger: channel });
+    if (result.errorReport) {
+      void emit(channel, result.errorReport);
     }
+    return { response: result.response };
   });
 }
 
@@ -61,6 +74,16 @@ async function emit(reporter: ErrorReporter, report: ErrorReport): Promise<void>
   const outcome = await reporter.report(report);
   if (outcome.kind === 'reporter_failed') {
     reporterFallback(report, outcome.cause);
+  }
+}
+
+async function reconcileInbox(channel: ChromeStorageErrorChannel): Promise<void> {
+  const outcome = await channel.reconcile();
+  if (outcome.kind === 'inbox_unavailable') {
+    console.error('[snipworth] inbox reconcile failed', {
+      kind: outcome.kind,
+      cause: outcome.cause,
+    });
   }
 }
 

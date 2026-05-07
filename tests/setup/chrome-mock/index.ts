@@ -7,9 +7,15 @@ import { buildTabsMock } from './tabs';
 import type { ChromeMock } from './types';
 
 export type { StorageValue } from './types';
-export { dispatchInstalled, dispatchMessage, SELF_EXTENSION_ID } from './runtime';
+export {
+  dispatchInstalled,
+  dispatchMessage,
+  dispatchStartup,
+  queueRuntimeFault,
+  SELF_EXTENSION_ID,
+} from './runtime';
 export { readBadge, queueActionFault } from './action';
-export { readBehavior } from './side-panel';
+export { readBehavior, queueSidePanelFault } from './side-panel';
 export { queueStorageFault } from './storage';
 
 function buildChromeMock(): ChromeMock {

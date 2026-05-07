@@ -1,5 +1,7 @@
+import { SystemClock } from '@/adapters/secondary/clock/SystemClock';
 import { ChromeStorageInboxReader } from '@/adapters/secondary/error-channel/ChromeStorageInboxReader';
 import { MessagingInboxAcknowledger } from '@/adapters/secondary/error-channel/MessagingInboxAcknowledger';
+import { RandomUuidGenerator } from '@/adapters/secondary/id/RandomUuidGenerator';
 import type { InboxAcknowledger, InboxReader } from '@/application/ports/ErrorInbox';
 
 export interface AppDependencies {
@@ -8,8 +10,10 @@ export interface AppDependencies {
 }
 
 export function composeApp(): AppDependencies {
+  const clock = new SystemClock();
+  const ids = new RandomUuidGenerator();
   return {
-    errorReader: new ChromeStorageInboxReader(),
+    errorReader: new ChromeStorageInboxReader(clock, ids),
     errorAcknowledger: new MessagingInboxAcknowledger(),
   };
 }

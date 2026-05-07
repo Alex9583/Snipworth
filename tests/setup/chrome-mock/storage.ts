@@ -24,7 +24,7 @@ function buildArea(area: StorageArea, store: Map<string, StorageValue>) {
   return {
     get: (keys: string[]) => {
       const fault = consumeFault(area, 'get');
-      if (fault) return Promise.reject(fault.cause);
+      if (fault !== undefined) return Promise.reject(fault.cause);
       const out: Record<string, StorageValue> = {};
       for (const k of keys) {
         const v = store.get(k);
@@ -34,7 +34,7 @@ function buildArea(area: StorageArea, store: Map<string, StorageValue>) {
     },
     set: (items: Record<string, StorageValue>) => {
       const fault = consumeFault(area, 'set');
-      if (fault) return Promise.reject(fault.cause);
+      if (fault !== undefined) return Promise.reject(fault.cause);
       for (const [k, v] of Object.entries(items)) store.set(k, v);
       return Promise.resolve();
     },

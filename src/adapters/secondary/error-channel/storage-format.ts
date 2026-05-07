@@ -5,10 +5,10 @@ import {
   errorSources,
   type ErrorReportSnapshot,
 } from '@/domain/error-reporting/ErrorReport';
+import { ERROR_DETAILS_MAX } from '@/domain/limits';
 
 export const PENDING_ERRORS_KEY = 'pending_errors';
 export const MAX_QUEUED_REPORTS = 50;
-export const MAX_DETAILS_BYTES = 1000;
 
 export const errorReportSnapshotSchema: z.ZodType<ErrorReportSnapshot> = z.strictObject({
   id: z.string().min(1),
@@ -17,7 +17,7 @@ export const errorReportSnapshotSchema: z.ZodType<ErrorReportSnapshot> = z.stric
   occurredAt: z.iso.datetime(),
   source: z.enum(errorSources),
   severity: z.enum(errorSeverities),
-  details: z.string().max(MAX_DETAILS_BYTES).optional(),
+  details: z.string().max(ERROR_DETAILS_MAX).optional(),
 });
 
 export const pendingErrorsSchema = z.array(errorReportSnapshotSchema).max(MAX_QUEUED_REPORTS);

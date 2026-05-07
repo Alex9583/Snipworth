@@ -1,3 +1,9 @@
+import {
+  requireFiniteDate,
+  requireMaxLength,
+  requireNonEmpty,
+  requireTagList,
+} from '@/domain/invariants';
 import { isPlatform, type Platform } from '@/domain/drafts/Platform';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import { CAPTION_MAX, CODE_MAX, TAG_LIST_MAX, TITLE_MAX } from '@/domain/limits';
@@ -12,6 +18,10 @@ export class InvalidDraft extends Error {
     this.name = 'InvalidDraft';
   }
 }
+
+const fail = (reason: string): never => {
+  throw new InvalidDraft(reason);
+};
 
 export interface DraftCreateInput {
   readonly id: DraftId;
@@ -91,15 +101,15 @@ export class Draft {
   }
 
   static create(input: DraftCreateInput): Draft {
-    requireNonEmpty(input.id, 'id');
-    requireNonEmpty(input.language, 'language');
+    requireNonEmpty(input.id, 'id', fail);
+    requireNonEmpty(input.language, 'language', fail);
     requirePlatform(input.platform);
-    requireFiniteDate(input.createdAt, 'createdAt');
-    requireMaxLength(input.title, TITLE_MAX, 'title');
-    requireMaxLength(input.caption, CAPTION_MAX, 'caption');
-    requireMaxLength(input.code, CODE_MAX, 'code');
-    requireTagList(input.tags, 'tags');
-    requireTagList(input.hashtags, 'hashtags');
+    requireFiniteDate(input.createdAt, 'createdAt', fail);
+    requireMaxLength(input.title, TITLE_MAX, 'title', fail);
+    requireMaxLength(input.caption, CAPTION_MAX, 'caption', fail);
+    requireMaxLength(input.code, CODE_MAX, 'code', fail);
+    requireTagList(input.tags, 'tags', TAG_LIST_MAX, fail);
+    requireTagList(input.hashtags, 'hashtags', TAG_LIST_MAX, fail);
 
     const createdAt = new Date(input.createdAt);
 
@@ -157,13 +167,13 @@ export class Draft {
   }
 
   rename(title: string, now: Date): Draft {
-    requireMaxLength(title, TITLE_MAX, 'title');
+    requireMaxLength(title, TITLE_MAX, 'title', fail);
     return this.withUpdate({ title }, now);
   }
 
   updateCode(code: string, language: string, now: Date): Draft {
-    requireNonEmpty(language, 'language');
-    requireMaxLength(code, CODE_MAX, 'code');
+    requireNonEmpty(language, 'language', fail);
+    requireMaxLength(code, CODE_MAX, 'code', fail);
     return this.withUpdate({ code, language }, now);
   }
 
@@ -172,7 +182,7 @@ export class Draft {
   }
 
   private withUpdate(patch: Partial<DraftProps>, now: Date): Draft {
-    requireFiniteDate(now, 'now');
+    requireFiniteDate(now, 'now', fail);
     if (now.getTime() < this.createdAt.getTime()) {
       throw new InvalidDraft('updatedAt must not precede createdAt');
     }
@@ -183,10 +193,10 @@ export class Draft {
       language: this.language,
       config: this.config,
       caption: this.caption,
-      hashtags: this.hashtags,
+      hashtags: [...this.hashtags],
       platform: this.platform,
       thumbnail: this.thumbnail,
-      tags: this.tags,
+      tags: [...this.tags],
       status: this.status,
       createdAt: this.createdAt,
       updatedAt: new Date(now),
@@ -195,42 +205,8 @@ export class Draft {
   }
 }
 
-function requireNonEmpty(value: string, field: string): void {
-  if (value.trim().length === 0) {
-    throw new InvalidDraft(`${field} must not be empty`);
-  }
-}
-
-function requireMaxLength(value: string, max: number, field: string): void {
-  if (value.length > max) {
-    throw new InvalidDraft(`${field} must not exceed ${String(max)} characters`);
-  }
-}
-
 function requirePlatform(value: Platform): void {
   if (!isPlatform(value)) {
     throw new InvalidDraft(`platform "${String(value)}" is not supported`);
-  }
-}
-
-function requireFiniteDate(value: Date, field: string): void {
-  if (!Number.isFinite(value.getTime())) {
-    throw new InvalidDraft(`${field} must be a valid date`);
-  }
-}
-
-function requireTagList(values: readonly string[], field: string): void {
-  if (values.length > TAG_LIST_MAX) {
-    throw new InvalidDraft(`${field} must not contain more than ${String(TAG_LIST_MAX)} entries`);
-  }
-  const seen = new Set<string>();
-  for (const value of values) {
-    if (value.trim().length === 0) {
-      throw new InvalidDraft(`${field} entries must not be empty`);
-    }
-    if (seen.has(value)) {
-      throw new InvalidDraft(`${field} must not contain duplicates`);
-    }
-    seen.add(value);
   }
 }

@@ -50,7 +50,13 @@ describe('router — invalid messages', () => {
 
     const result = await route(null, deps);
 
-    expect(result.response).toEqual({ ok: false, error: 'malformed message' });
+    expect(result.response).toEqual({
+      ok: false,
+      error: {
+        code: 'malformed_request',
+        message: 'Snipworth received a message it did not understand.',
+      },
+    });
   });
 
   it('should_respond_with_malformed_error_when_message_type_is_unknown', async () => {
@@ -58,7 +64,13 @@ describe('router — invalid messages', () => {
 
     const result = await route({ type: 'WHATEVER' }, deps);
 
-    expect(result.response).toEqual({ ok: false, error: 'malformed message' });
+    expect(result.response).toEqual({
+      ok: false,
+      error: {
+        code: 'malformed_request',
+        message: 'Snipworth received a message it did not understand.',
+      },
+    });
   });
 
   it('should_respond_with_malformed_error_when_LOAD_CODE_arrives_at_background', async () => {
@@ -66,7 +78,13 @@ describe('router — invalid messages', () => {
 
     const result = await route({ type: 'LOAD_CODE', code: 'x' }, deps);
 
-    expect(result.response).toEqual({ ok: false, error: 'malformed message' });
+    expect(result.response).toEqual({
+      ok: false,
+      error: {
+        code: 'malformed_request',
+        message: 'Snipworth received a message it did not understand.',
+      },
+    });
   });
 
   it('should_emit_an_invalid_message_error_report_with_the_canonical_user_facing_message', async () => {
@@ -129,7 +147,13 @@ describe('router — ACK_ERRORS', () => {
 
     const result = await route({ type: 'ACK_ERRORS', acknowledgedIds: ['x'] }, deps);
 
-    expect(result.response).toEqual({ ok: false, error: 'inbox unavailable' });
+    expect(result.response).toEqual({
+      ok: false,
+      error: {
+        code: 'inbox_unavailable',
+        message: 'Snipworth could not access its pending error inbox.',
+      },
+    });
   });
 
   it('should_not_emit_an_error_report_for_a_valid_ACK_ERRORS', async () => {

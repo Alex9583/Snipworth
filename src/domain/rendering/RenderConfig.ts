@@ -29,13 +29,13 @@ export type Background =
     }
   | { readonly type: 'transparent' };
 
-const FONT_SIZE_RANGE = [8, 96] as const;
-const LINE_HEIGHT_RANGE = [0.8, 3] as const;
-const PADDING_RANGE = [0, 256] as const;
-const RADIUS_RANGE = [0, 64] as const;
-const SHADOW_BLUR_RANGE = [0, 100] as const;
-const SHADOW_OFFSET_RANGE = [-50, 50] as const;
-const ANGLE_RANGE = [0, 360] as const;
+export const FONT_SIZE_RANGE = [8, 96] as const;
+export const LINE_HEIGHT_RANGE = [0.8, 3] as const;
+export const PADDING_RANGE = [0, 256] as const;
+export const RADIUS_RANGE = [0, 64] as const;
+export const SHADOW_BLUR_RANGE = [0, 100] as const;
+export const SHADOW_OFFSET_RANGE = [-50, 50] as const;
+export const ANGLE_RANGE = [0, 360] as const;
 
 export interface RenderConfigInput {
   readonly theme: string;

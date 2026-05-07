@@ -7,7 +7,7 @@ import type { Clock } from '@/application/ports/Clock';
 import type { InboxAcknowledger } from '@/application/ports/ErrorInbox';
 import type { IdGenerator } from '@/application/ports/IdGenerator';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
-import { MAX_DETAILS_BYTES } from '@/adapters/secondary/error-channel/storage-format';
+import { ERROR_DETAILS_MAX } from '@/domain/limits';
 
 export interface RouteResult {
   readonly response: ExtensionResponse;
@@ -24,7 +24,13 @@ export async function route(rawMessage: unknown, deps: RouteDependencies): Promi
   const parsed = backgroundInboundSchema.safeParse(rawMessage);
   if (!parsed.success) {
     return {
-      response: { ok: false, error: 'malformed message' },
+      response: {
+        ok: false,
+        error: {
+          code: 'malformed_request',
+          message: 'Snipworth received a message it did not understand.',
+        },
+      },
       errorReport: ErrorReport.from({
         id: deps.ids.next(),
         kind: 'invalid_message',
@@ -32,7 +38,7 @@ export async function route(rawMessage: unknown, deps: RouteDependencies): Promi
         source: 'router',
         severity: 'warning',
         occurredAt: deps.clock.now(),
-        details: JSON.stringify(parsed.error.issues).slice(0, MAX_DETAILS_BYTES),
+        details: JSON.stringify(parsed.error.issues).slice(0, ERROR_DETAILS_MAX),
       }),
     };
   }
@@ -49,7 +55,15 @@ async function dispatch(
     case 'ACK_ERRORS': {
       const outcome = await deps.inboxAcknowledger.acknowledge(message.acknowledgedIds);
       if (outcome.kind === 'acknowledged') return { response: { ok: true } };
-      return { response: { ok: false, error: 'inbox unavailable' } };
+      return {
+        response: {
+          ok: false,
+          error: {
+            code: 'inbox_unavailable',
+            message: 'Snipworth could not access its pending error inbox.',
+          },
+        },
+      };
     }
   }
 }

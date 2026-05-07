@@ -1,14 +1,26 @@
-import hljs from 'highlight.js/lib/common';
+import defaultHljs from 'highlight.js/lib/common';
 
-import type { LanguageDetector } from '@/application/ports/LanguageDetector';
-import type { DetectionResult } from '@/domain/language-detection/DetectionResult';
+import type { DetectionOutcome, LanguageDetector } from '@/application/ports/LanguageDetector';
+
+export interface HighlightAutoLike {
+  readonly highlightAuto: (code: string) => { language?: string; relevance: number };
+}
 
 export class HighlightJsLanguageDetector implements LanguageDetector {
-  detect(code: string): DetectionResult {
-    const result = hljs.highlightAuto(code);
-    return {
-      language: result.language ?? 'plaintext',
-      relevance: result.relevance,
-    };
+  constructor(private readonly hljs: HighlightAutoLike = defaultHljs) {}
+
+  detect(code: string): DetectionOutcome {
+    try {
+      const result = this.hljs.highlightAuto(code);
+      return {
+        kind: 'detected',
+        result: {
+          language: result.language ?? 'plaintext',
+          relevance: result.relevance,
+        },
+      };
+    } catch (cause) {
+      return { kind: 'detection_failed', cause };
+    }
   }
 }

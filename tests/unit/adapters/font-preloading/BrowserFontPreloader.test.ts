@@ -44,12 +44,43 @@ describe('BrowserFontPreloader', () => {
     ]);
   });
 
-  it('should_load_resolved_css_family_then_await_fonts_ready_when_preloading', async () => {
+  it('should_return_preloaded_after_loading_the_resolved_css_family_and_awaiting_fonts_ready', async () => {
     const fonts = spyFontFaceSet();
     const preloader = new BrowserFontPreloader(fonts);
 
-    await preloader.preload('JetBrains Mono');
+    const outcome = await preloader.preload('JetBrains Mono');
 
+    expect(outcome).toEqual({ kind: 'preloaded' });
     expect(fonts.events).toEqual(["load:16px 'JetBrains Mono Variable'", 'ready']);
+  });
+
+  it('should_return_preload_failed_when_fonts_load_rejects', async () => {
+    const cause = new Error('network blocked the woff2');
+    const fonts: FontFaceSetLike = {
+      load: () => Promise.reject(cause),
+      get ready(): Promise<FontFaceSet> {
+        return Promise.resolve({} as FontFaceSet);
+      },
+    };
+    const preloader = new BrowserFontPreloader(fonts);
+
+    const outcome = await preloader.preload('JetBrains Mono');
+
+    expect(outcome).toEqual({ kind: 'preload_failed', cause });
+  });
+
+  it('should_return_preload_failed_when_fonts_ready_rejects', async () => {
+    const cause = new Error('document.fonts.ready rejected');
+    const fonts: FontFaceSetLike = {
+      load: () => Promise.resolve([]),
+      get ready(): Promise<FontFaceSet> {
+        return Promise.reject(cause);
+      },
+    };
+    const preloader = new BrowserFontPreloader(fonts);
+
+    const outcome = await preloader.preload('JetBrains Mono');
+
+    expect(outcome).toEqual({ kind: 'preload_failed', cause });
   });
 });

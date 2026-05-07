@@ -6,3 +6,4 @@ export const TAG_MAX = 280;
 export const LANGUAGE_MAX = 64;
 export const THEME_MAX = 128;
 export const ID_MAX = 128;
+export const ERROR_DETAILS_MAX = 1000;

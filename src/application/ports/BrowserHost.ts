@@ -11,11 +11,14 @@ export type RuntimeMessageHandler = (
   context: RuntimeMessageContext,
 ) => Promise<{ readonly response: unknown }>;
 
-export type InstalledHandler = () => void | Promise<void>;
+export type LifecycleHandler = () => void | Promise<void>;
+
+export type HostCrashReporter = (cause: unknown) => void;
 
 export interface BrowserHost {
   readonly selfId: string;
-  onInstalled(handler: InstalledHandler): void;
+  onInstalled(handler: LifecycleHandler): void;
+  onStartup(handler: LifecycleHandler): void;
   onMessage(handler: RuntimeMessageHandler): void;
   enableSidePanelOnActionClick(): Promise<ConfigureSidePanelOutcome>;
 }

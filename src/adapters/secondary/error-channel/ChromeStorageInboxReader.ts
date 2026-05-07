@@ -1,8 +1,15 @@
+import type { Clock } from '@/application/ports/Clock';
 import type { InboxRead, InboxReader } from '@/application/ports/ErrorInbox';
-import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
-import { PENDING_ERRORS_KEY, pendingErrorsSchema } from './storage-format';
+import type { IdGenerator } from '@/application/ports/IdGenerator';
+import { parseInbox } from './readInbox';
+import { PENDING_ERRORS_KEY } from './storage-format';
 
 export class ChromeStorageInboxReader implements InboxReader {
+  constructor(
+    private readonly clock: Clock,
+    private readonly ids: IdGenerator,
+  ) {}
+
   async list(): Promise<InboxRead> {
     let raw: Record<string, unknown>;
     try {
@@ -10,15 +17,9 @@ export class ChromeStorageInboxReader implements InboxReader {
     } catch (cause) {
       return { kind: 'inbox_unavailable', cause };
     }
-    const stored: unknown = raw[PENDING_ERRORS_KEY];
-    if (stored === undefined) return { kind: 'loaded', errors: [] };
-    const parsed = pendingErrorsSchema.safeParse(stored);
-    if (parsed.success) {
-      return {
-        kind: 'loaded',
-        errors: parsed.data.map((s) => ErrorReport.fromSnapshot(s)),
-      };
-    }
-    return { kind: 'inbox_unavailable', cause: parsed.error };
+    const parsed = parseInbox(raw[PENDING_ERRORS_KEY], { clock: this.clock, ids: this.ids });
+    if (parsed.kind === 'empty') return { kind: 'loaded', errors: [] };
+    if (parsed.kind === 'loaded') return parsed;
+    return { kind: 'loaded', errors: [parsed.marker] };
   }
 }

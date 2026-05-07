@@ -18,6 +18,10 @@ export class MessagingInboxAcknowledger implements InboxAcknowledger {
       return { kind: 'inbox_unavailable', cause: parsed.error };
     }
     if (parsed.data.ok) return { kind: 'acknowledged' };
-    return { kind: 'inbox_unavailable', cause: new Error(parsed.data.error) };
+    const { code, message } = parsed.data.error;
+    if (code === 'inbox_unavailable') {
+      return { kind: 'inbox_unavailable', cause: new Error(message) };
+    }
+    return { kind: 'background_failed', code, message };
   }
 }

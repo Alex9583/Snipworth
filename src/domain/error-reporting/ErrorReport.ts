@@ -2,7 +2,7 @@ export const errorKinds = [
   'side_panel_setup_failed',
   'invalid_message',
   'error_inbox_corrupt',
-  'router_crashed',
+  'handler_crashed',
   'badge_unavailable',
 ] as const;
 

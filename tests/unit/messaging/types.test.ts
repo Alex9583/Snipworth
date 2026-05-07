@@ -207,8 +207,13 @@ describe('extensionResponseSchema', () => {
     expect(extensionResponseSchema.safeParse({ ok: true }).success).toBe(true);
   });
 
-  it('should_accept_an_error_response', () => {
-    expect(extensionResponseSchema.safeParse({ ok: false, error: 'boom' }).success).toBe(true);
+  it('should_accept_an_error_response_with_a_known_code_and_message', () => {
+    expect(
+      extensionResponseSchema.safeParse({
+        ok: false,
+        error: { code: 'inbox_unavailable', message: 'boom' },
+      }).success,
+    ).toBe(true);
   });
 
   it('should_reject_a_response_when_ok_true_carries_an_error_field', () => {
@@ -219,8 +224,26 @@ describe('extensionResponseSchema', () => {
     expect(extensionResponseSchema.safeParse({ ok: false }).success).toBe(false);
   });
 
-  it('should_reject_a_response_when_error_is_not_a_string', () => {
-    expect(extensionResponseSchema.safeParse({ ok: false, error: 42 }).success).toBe(false);
+  it('should_reject_a_response_when_error_is_a_bare_string', () => {
+    expect(extensionResponseSchema.safeParse({ ok: false, error: 'boom' }).success).toBe(false);
+  });
+
+  it('should_reject_a_response_when_error_code_is_unknown', () => {
+    expect(
+      extensionResponseSchema.safeParse({
+        ok: false,
+        error: { code: 'something_else', message: 'boom' },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('should_reject_a_response_when_error_message_is_missing', () => {
+    expect(
+      extensionResponseSchema.safeParse({
+        ok: false,
+        error: { code: 'inbox_unavailable' },
+      }).success,
+    ).toBe(false);
   });
 });
 
@@ -238,7 +261,12 @@ describe('responseSchemaFor — PING', () => {
   });
 
   it('should_accept_an_error_response', () => {
-    expect(responseSchemaFor.PING.safeParse({ ok: false, error: 'nope' }).success).toBe(true);
+    expect(
+      responseSchemaFor.PING.safeParse({
+        ok: false,
+        error: { code: 'handler_crashed', message: 'nope' },
+      }).success,
+    ).toBe(true);
   });
 });
 
@@ -254,7 +282,12 @@ describe.each(['LOAD_CODE', 'ACK_ERRORS'] as const)(
     });
 
     it('should_accept_an_error_response', () => {
-      expect(responseSchemaFor[key].safeParse({ ok: false, error: 'nope' }).success).toBe(true);
+      expect(
+        responseSchemaFor[key].safeParse({
+          ok: false,
+          error: { code: 'handler_crashed', message: 'nope' },
+        }).success,
+      ).toBe(true);
     });
   },
 );

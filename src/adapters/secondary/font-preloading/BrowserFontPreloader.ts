@@ -1,4 +1,4 @@
-import type { FontPreloader } from '@/application/ports/FontPreloader';
+import type { FontPreloader, PreloadFontOutcome } from '@/application/ports/FontPreloader';
 import type { FontFamily } from '@/domain/rendering/RenderConfig';
 
 export type FontFaceSetLike = Pick<FontFaceSet, 'load' | 'ready'>;
@@ -24,9 +24,14 @@ export class BrowserFontPreloader implements FontPreloader {
     return CSS_FAMILY_BY_FONT[family];
   }
 
-  async preload(family: FontFamily): Promise<void> {
+  async preload(family: FontFamily): Promise<PreloadFontOutcome> {
     const cssFamily = this.cssFamilyFor(family);
-    await this.fonts.load(`${String(PROBE_FONT_SIZE_PX)}px '${cssFamily}'`);
-    await this.fonts.ready;
+    try {
+      await this.fonts.load(`${String(PROBE_FONT_SIZE_PX)}px '${cssFamily}'`);
+      await this.fonts.ready;
+      return { kind: 'preloaded' };
+    } catch (cause) {
+      return { kind: 'preload_failed', cause };
+    }
   }
 }

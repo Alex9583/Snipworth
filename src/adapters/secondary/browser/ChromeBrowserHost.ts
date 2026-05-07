@@ -1,17 +1,26 @@
 import type {
   BrowserHost,
   ConfigureSidePanelOutcome,
-  InstalledHandler,
+  HostCrashReporter,
+  LifecycleHandler,
   RuntimeMessageHandler,
 } from '@/application/ports/BrowserHost';
 
 export class ChromeBrowserHost implements BrowserHost {
+  constructor(private readonly onCrash: HostCrashReporter) {}
+
   get selfId(): string {
     return chrome.runtime.id;
   }
 
-  onInstalled(handler: InstalledHandler): void {
+  onInstalled(handler: LifecycleHandler): void {
     chrome.runtime.onInstalled.addListener(() => {
+      void handler();
+    });
+  }
+
+  onStartup(handler: LifecycleHandler): void {
+    chrome.runtime.onStartup.addListener(() => {
       void handler();
     });
   }
@@ -23,8 +32,14 @@ export class ChromeBrowserHost implements BrowserHost {
           sendResponse(result.response);
         })
         .catch((cause: unknown) => {
-          console.error('[snipworth] browser host handler rejected', cause);
-          sendResponse({ ok: false, error: 'handler crashed' });
+          this.onCrash(cause);
+          sendResponse({
+            ok: false,
+            error: {
+              code: 'handler_crashed',
+              message: 'Snipworth message handler crashed.',
+            },
+          });
         });
       return true;
     });

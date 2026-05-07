@@ -7,11 +7,16 @@ import {
   reportButtonLabel,
   reportIssueUrl,
   unexpectedEventsLabel,
+  type DismissFailure,
 } from './strings';
 
 type Status =
   | { readonly kind: 'loading' }
-  | { readonly kind: 'loaded'; readonly errors: readonly ErrorReport[] }
+  | {
+      readonly kind: 'loaded';
+      readonly errors: readonly ErrorReport[];
+      readonly dismissFailure?: DismissFailure;
+    }
   | { readonly kind: 'unavailable'; readonly cause: unknown };
 
 export function ErrorBanner({
@@ -25,22 +30,14 @@ export function ErrorBanner({
 
   useEffect(() => {
     let mounted = true;
-    reader
-      .list()
-      .then((result) => {
-        if (!mounted) return;
-        if (result.kind === 'inbox_unavailable') {
-          console.error('[snipworth] inbox list returned unavailable', result.cause);
-          setStatus({ kind: 'unavailable', cause: result.cause });
-        } else {
-          setStatus({ kind: 'loaded', errors: result.errors });
-        }
-      })
-      .catch((cause: unknown) => {
-        if (!mounted) return;
-        console.error('[snipworth] inbox list rejected', cause);
-        setStatus({ kind: 'unavailable', cause });
-      });
+    void reader.list().then((result) => {
+      if (!mounted) return;
+      if (result.kind === 'inbox_unavailable') {
+        setStatus({ kind: 'unavailable', cause: result.cause });
+      } else {
+        setStatus({ kind: 'loaded', errors: result.errors });
+      }
+    });
     return () => {
       mounted = false;
     };
@@ -55,23 +52,34 @@ export function ErrorBanner({
       ? unexpectedEventsLabel(status.errors.length)
       : inboxUnavailableLabel();
   const dismissDisabled = status.kind !== 'loaded';
+  const dismissFailure = status.kind === 'loaded' ? status.dismissFailure : undefined;
 
   const dismiss = async () => {
     if (status.kind !== 'loaded') return;
     const ids = status.errors.map((e) => e.id);
-    let outcome;
-    try {
-      outcome = await acknowledger.acknowledge(ids);
-    } catch (cause) {
-      console.error('[snipworth] inbox acknowledge rejected', cause);
-      setStatus({ kind: 'unavailable', cause });
-      return;
-    }
-    if (outcome.kind === 'inbox_unavailable') {
-      console.error('[snipworth] inbox acknowledge returned unavailable', outcome.cause);
-      setStatus({ kind: 'unavailable', cause: outcome.cause });
-    } else {
-      setStatus({ kind: 'loaded', errors: [] });
+    const outcome = await acknowledger.acknowledge(ids);
+    switch (outcome.kind) {
+      case 'acknowledged':
+        setStatus({ kind: 'loaded', errors: [] });
+        return;
+      case 'inbox_unavailable':
+        setStatus({
+          kind: 'loaded',
+          errors: status.errors,
+          dismissFailure: { kind: 'inbox_unavailable', cause: outcome.cause },
+        });
+        return;
+      case 'background_failed':
+        setStatus({
+          kind: 'loaded',
+          errors: status.errors,
+          dismissFailure: {
+            kind: 'background_failed',
+            code: outcome.code,
+            message: outcome.message,
+          },
+        });
+        return;
     }
   };
 
@@ -82,7 +90,7 @@ export function ErrorBanner({
     >
       <span className="flex-1">{label}</span>
       <a
-        href={reportIssueUrl(visibleErrors)}
+        href={reportIssueUrl(visibleErrors, dismissFailure)}
         target="_blank"
         rel="noreferrer noopener"
         className="underline"
