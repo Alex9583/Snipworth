@@ -10,6 +10,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 
 
 
+
+## [0.0.4] - 2026-05-07
+
+### Added
+
+- Add domain model, application ports and secondary adapters
+
 ## [0.0.3] - 2026-05-02
 
 ### Added
