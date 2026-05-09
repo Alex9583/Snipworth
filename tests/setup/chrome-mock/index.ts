@@ -1,5 +1,5 @@
 import { buildActionMock, resetAction } from './action';
-import { buildContextMenusMock } from './context-menus';
+import { buildContextMenusMock, resetContextMenus } from './context-menus';
 import { buildRuntimeMock, resetRuntime } from './runtime';
 import { buildSidePanelMock, resetSidePanel } from './side-panel';
 import { buildStorageMock, resetStorage } from './storage';
@@ -8,15 +8,19 @@ import type { ChromeMock } from './types';
 
 export type { StorageValue } from './types';
 export {
+  clearRuntimeLastError,
   dispatchInstalled,
   dispatchMessage,
   dispatchStartup,
   queueRuntimeFault,
   SELF_EXTENSION_ID,
+  setRuntimeLastError,
+  withRuntimeLastError,
 } from './runtime';
 export { readBadge, queueActionFault } from './action';
-export { readBehavior, queueSidePanelFault } from './side-panel';
-export { queueStorageFault } from './storage';
+export { readBehavior, readSidePanelOpens, queueSidePanelFault } from './side-panel';
+export { queueStorageFault, readSession } from './storage';
+export { dispatchContextMenuClick, readCreatedMenus } from './context-menus';
 
 function buildChromeMock(): ChromeMock {
   return {
@@ -34,6 +38,7 @@ export function resetChromeMock(): void {
   resetStorage();
   resetAction();
   resetSidePanel();
+  resetContextMenus();
   globalThis.chrome = buildChromeMock() as typeof chrome;
 }
 

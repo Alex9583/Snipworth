@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { App } from '@/adapters/primary/app/App';
 import type { BlobDownloader, DownloadOutcome } from '@/application/ports/BlobDownloader';
 import type { ClipboardCopier, CopyImageOutcome } from '@/application/ports/ClipboardCopier';
@@ -10,9 +10,14 @@ import type {
   InboxReader,
 } from '@/application/ports/ErrorInbox';
 import type { ExportImageOutcome, ImageExporter } from '@/application/ports/ImageExporter';
+import type { DetectionOutcome, LanguageDetector } from '@/application/ports/LanguageDetector';
+import { capturedLanguageLabel, detectionFallbackLabel } from '@/adapters/primary/app/strings';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
+import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
+import { CapturedSelection } from '@/domain/capture/CapturedSelection';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
+import { FakeCaptureInbox } from '../../setup/fakes/FakeCaptureInbox';
 import { FakeClock } from '../../setup/fakes/FakeClock';
 
 class EmptyInboxReader implements InboxReader {
@@ -59,6 +64,14 @@ class StubBlobDownloader implements BlobDownloader {
   }
 }
 
+class StubDetector implements LanguageDetector {
+  constructor(private readonly outcome: DetectionOutcome) {}
+
+  detect(): DetectionOutcome {
+    return this.outcome;
+  }
+}
+
 type AppProps = Parameters<typeof App>[0];
 
 function anExportedPng(): ExportImageOutcome {
@@ -82,6 +95,12 @@ function aDownloadingUseCase(): DownloadSnippetAsImage {
   );
 }
 
+function aLoadingUseCase(language = 'typescript'): LoadCapturedCode {
+  return new LoadCapturedCode(
+    new StubDetector({ kind: 'detected', result: { language, relevance: 12 } }),
+  );
+}
+
 function renderApp(overrides: Partial<AppProps> = {}) {
   const defaults: AppProps = {
     mode: 'panel',
@@ -89,9 +108,11 @@ function renderApp(overrides: Partial<AppProps> = {}) {
     errorAcknowledger: new NoopInboxAcknowledger(),
     copySnippetAsImage: aCopyingUseCase(),
     downloadSnippetAsImage: aDownloadingUseCase(),
+    loadCapturedCode: aLoadingUseCase(),
+    captureInbox: new FakeCaptureInbox(),
     clock: new FakeClock(),
   };
-  return render(<App {...defaults} {...overrides} />);
+  return { ...render(<App {...defaults} {...overrides} />), defaults };
 }
 
 describe('App', () => {
@@ -122,5 +143,55 @@ describe('App', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Snipworth encountered an unexpected event.',
     );
+  });
+
+  it('should_render_the_preview_placeholder_when_no_capture_has_arrived', () => {
+    renderApp();
+
+    expect(screen.getByText('Preview placeholder')).toBeInTheDocument();
+  });
+
+  it('should_render_the_captured_code_when_a_capture_arrives', () => {
+    const captureInbox = new FakeCaptureInbox();
+    renderApp({ captureInbox });
+
+    act(() => {
+      captureInbox.dispatch(CapturedSelection.from({ code: 'const x = 1;', sourceUrl: undefined }));
+    });
+
+    expect(screen.getByTestId('capture-preview')).toHaveTextContent('const x = 1;');
+    expect(screen.queryByText('Preview placeholder')).not.toBeInTheDocument();
+  });
+
+  it('should_render_the_detected_language_label_when_a_capture_arrives', () => {
+    const captureInbox = new FakeCaptureInbox();
+    renderApp({
+      captureInbox,
+      loadCapturedCode: aLoadingUseCase('python'),
+    });
+
+    act(() => {
+      captureInbox.dispatch(CapturedSelection.from({ code: 'print(1)', sourceUrl: undefined }));
+    });
+
+    expect(screen.getByTestId('capture-language')).toHaveTextContent(
+      capturedLanguageLabel('python'),
+    );
+  });
+
+  it('should_render_a_fallback_notice_when_language_detection_failed', () => {
+    const captureInbox = new FakeCaptureInbox();
+    renderApp({
+      captureInbox,
+      loadCapturedCode: new LoadCapturedCode({
+        detect: () => ({ kind: 'detection_failed', cause: new Error('boom') }),
+      }),
+    });
+
+    act(() => {
+      captureInbox.dispatch(CapturedSelection.from({ code: 'a', sourceUrl: undefined }));
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent(detectionFallbackLabel());
   });
 });

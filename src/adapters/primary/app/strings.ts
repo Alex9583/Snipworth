@@ -138,6 +138,14 @@ export function previewPlaceholderLabel(): string {
   return 'Preview placeholder';
 }
 
+export function capturedLanguageLabel(language: string): string {
+  return `Detected language: ${language}`;
+}
+
+export function detectionFallbackLabel(): string {
+  return 'Could not auto-detect the language; falling back to plain text.';
+}
+
 export function copyStatusLabel(outcome: CopySnippetOutcome): string {
   switch (outcome.kind) {
     case 'copied':

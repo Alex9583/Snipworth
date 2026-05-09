@@ -4,6 +4,9 @@ export const errorKinds = [
   'error_inbox_corrupt',
   'handler_crashed',
   'badge_unavailable',
+  'context_menu_install_failed',
+  'capture_storage_failed',
+  'capture_panel_open_failed',
 ] as const;
 
 export type ErrorKind = (typeof errorKinds)[number];

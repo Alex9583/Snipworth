@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
+  dispatchContextMenuClick,
   dispatchInstalled,
   dispatchMessage,
   dispatchStartup,
@@ -7,8 +8,13 @@ import {
   queueStorageFault,
   readBadge,
   readBehavior,
+  readCreatedMenus,
+  readSession,
+  readSidePanelOpens,
   resetChromeMock,
 } from '../../setup/chrome-mock';
+import { CAPTURE_MENU_ID } from '@/adapters/secondary/browser/ChromeBrowserHost';
+import { PENDING_CAPTURE_KEY } from '@/adapters/secondary/capture/pendingCaptureKey';
 
 beforeEach(async () => {
   vi.resetModules();
@@ -141,6 +147,17 @@ describe('service worker — onInstalled', () => {
     });
   });
 
+  it('should_install_the_capture_context_menu', async () => {
+    dispatchInstalled();
+
+    await vi.waitFor(() => {
+      const menus = readCreatedMenus();
+      expect(menus).toHaveLength(1);
+      expect(menus[0]?.id).toBe(CAPTURE_MENU_ID);
+      expect(menus[0]?.properties.contexts).toEqual(['selection']);
+    });
+  });
+
   it('should_persist_a_pending_error_when_set_panel_behavior_rejects_with_an_Error', async () => {
     queueSidePanelFault({ op: 'setPanelBehavior', cause: new Error('boom') });
     dispatchInstalled();
@@ -192,5 +209,81 @@ describe('service worker — onStartup', () => {
     await Promise.resolve();
     const stored = await chrome.storage.local.get(['pending_errors']);
     expect(stored.pending_errors).toBeUndefined();
+  });
+});
+
+describe('service worker — context menu capture', () => {
+  it('should_write_the_pending_capture_to_session_storage_when_the_capture_menu_is_clicked', async () => {
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText: 'const x = 1;',
+        pageUrl: 'https://example.com/page',
+      },
+      { id: 11 } as chrome.tabs.Tab,
+    );
+
+    await vi.waitFor(() => {
+      expect(readSession(PENDING_CAPTURE_KEY)).toEqual({
+        code: 'const x = 1;',
+        sourceUrl: 'https://example.com/page',
+      });
+    });
+  });
+
+  it('should_open_the_side_panel_for_the_clicked_tab_when_the_capture_menu_is_clicked', async () => {
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText: 'a',
+      },
+      { id: 42 } as chrome.tabs.Tab,
+    );
+
+    await vi.waitFor(() => {
+      expect(readSidePanelOpens()).toEqual([{ tabId: 42 }]);
+    });
+  });
+
+  it('should_persist_a_pending_error_when_storage_set_for_the_capture_fails', async () => {
+    queueStorageFault({ area: 'session', op: 'set', cause: new Error('quota exceeded') });
+
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText: 'a',
+      },
+      { id: 1 } as chrome.tabs.Tab,
+    );
+
+    await vi.waitFor(async () => {
+      const stored = await chrome.storage.local.get(['pending_errors']);
+      expect(stored.pending_errors).toMatchObject([
+        { kind: 'capture_storage_failed', source: 'background', details: 'quota exceeded' },
+      ]);
+    });
+  });
+
+  it('should_persist_a_pending_error_when_opening_the_side_panel_fails', async () => {
+    queueSidePanelFault({ op: 'open', cause: new Error('no such tab') });
+
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText: 'a',
+      },
+      { id: 1 } as chrome.tabs.Tab,
+    );
+
+    await vi.waitFor(async () => {
+      const stored = await chrome.storage.local.get(['pending_errors']);
+      expect(stored.pending_errors).toMatchObject([
+        { kind: 'capture_panel_open_failed', source: 'background', details: 'no such tab' },
+      ]);
+    });
   });
 });
