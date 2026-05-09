@@ -7,10 +7,15 @@ import '@/styles/globals.css';
 const root = document.getElementById('root');
 if (!root) throw new Error('#root element not found');
 
-const { errorReader, errorAcknowledger } = composeApp();
+const { errorReader, errorAcknowledger, copySnippetAsImage } = composeApp();
 
 createRoot(root).render(
   <StrictMode>
-    <App mode="tab" errorReader={errorReader} errorAcknowledger={errorAcknowledger} />
+    <App
+      mode="tab"
+      errorReader={errorReader}
+      errorAcknowledger={errorAcknowledger}
+      copySnippetAsImage={copySnippetAsImage}
+    />
   </StrictMode>,
 );

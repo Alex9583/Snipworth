@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { App } from '@/adapters/primary/app/App';
+import type { ClipboardCopier, CopyImageOutcome } from '@/application/ports/ClipboardCopier';
 import type {
   AckOutcome,
   InboxAcknowledger,
   InboxRead,
   InboxReader,
 } from '@/application/ports/ErrorInbox';
+import type { ExportImageOutcome, ImageExporter } from '@/application/ports/ImageExporter';
+import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
 
 class EmptyInboxReader implements InboxReader {
@@ -29,27 +32,53 @@ class NoopInboxAcknowledger implements InboxAcknowledger {
   }
 }
 
+class StubImageExporter implements ImageExporter {
+  constructor(private readonly outcome: ExportImageOutcome) {}
+
+  export(): Promise<ExportImageOutcome> {
+    return Promise.resolve(this.outcome);
+  }
+}
+
+class StubClipboardCopier implements ClipboardCopier {
+  constructor(private readonly outcome: CopyImageOutcome) {}
+
+  copyImage(): Promise<CopyImageOutcome> {
+    return Promise.resolve(this.outcome);
+  }
+}
+
+type AppProps = Parameters<typeof App>[0];
+
+function aCopyingUseCase(): CopySnippetAsImage {
+  return new CopySnippetAsImage(
+    new StubImageExporter({
+      kind: 'exported',
+      blob: new Blob(['png-bytes'], { type: 'image/png' }),
+    }),
+    new StubClipboardCopier({ kind: 'copied' }),
+  );
+}
+
+function renderApp(overrides: Partial<AppProps> = {}) {
+  const defaults: AppProps = {
+    mode: 'panel',
+    errorReader: new EmptyInboxReader(),
+    errorAcknowledger: new NoopInboxAcknowledger(),
+    copySnippetAsImage: aCopyingUseCase(),
+  };
+  return render(<App {...defaults} {...overrides} />);
+}
+
 describe('App', () => {
   it('should_render_the_boot_label_with_the_provided_mode', () => {
-    render(
-      <App
-        mode="panel"
-        errorReader={new EmptyInboxReader()}
-        errorAcknowledger={new NoopInboxAcknowledger()}
-      />,
-    );
+    renderApp({ mode: 'panel' });
 
     expect(screen.getByText('App boot OK in panel mode.')).toBeInTheDocument();
   });
 
   it('should_render_the_tab_mode_label_when_mode_is_tab', () => {
-    render(
-      <App
-        mode="tab"
-        errorReader={new EmptyInboxReader()}
-        errorAcknowledger={new NoopInboxAcknowledger()}
-      />,
-    );
+    renderApp({ mode: 'tab' });
 
     expect(screen.getByText('App boot OK in tab mode.')).toBeInTheDocument();
   });
@@ -63,13 +92,8 @@ describe('App', () => {
       severity: 'error',
       occurredAt: new Date('2026-01-01T00:00:00.000Z'),
     });
-    render(
-      <App
-        mode="panel"
-        errorReader={new StubInboxReader([setupError])}
-        errorAcknowledger={new NoopInboxAcknowledger()}
-      />,
-    );
+
+    renderApp({ errorReader: new StubInboxReader([setupError]) });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Snipworth encountered an unexpected event.',

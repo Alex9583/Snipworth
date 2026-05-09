@@ -1,4 +1,5 @@
 import type { BackgroundFailureCode } from '@/application/ports/BackgroundFailure';
+import type { CopySnippetOutcome } from '@/application/use-cases/CopySnippetAsImage';
 import type { ErrorReport, ErrorReportSnapshot } from '@/domain/error-reporting/ErrorReport';
 import { describeCause } from '@/domain/error-reporting/describeCause';
 
@@ -125,4 +126,25 @@ export function dismissButtonLabel(): string {
 
 export function appBootLabel(mode: string): string {
   return `App boot OK in ${mode} mode.`;
+}
+
+export function copyButtonLabel(): string {
+  return 'Copy as PNG';
+}
+
+export function previewPlaceholderLabel(): string {
+  return 'Preview placeholder';
+}
+
+export function copyStatusLabel(outcome: CopySnippetOutcome): string {
+  switch (outcome.kind) {
+    case 'copied':
+      return 'Copied to clipboard';
+    case 'denied':
+      return 'Clipboard permission denied — please allow clipboard access';
+    case 'copy_failed':
+      return 'Could not copy to clipboard';
+    case 'export_failed':
+      return 'Could not export the snippet as an image';
+  }
 }
