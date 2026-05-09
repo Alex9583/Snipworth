@@ -1,6 +1,8 @@
 import type { BackgroundFailureCode } from '@/application/ports/BackgroundFailure';
 import type { CopySnippetOutcome } from '@/application/use-cases/CopySnippetAsImage';
+import type { DownloadSnippetOutcome } from '@/application/use-cases/DownloadSnippetAsImage';
 import type { ErrorReport, ErrorReportSnapshot } from '@/domain/error-reporting/ErrorReport';
+import type { ExportFormat } from '@/domain/rendering/RenderConfig';
 import { describeCause } from '@/domain/error-reporting/describeCause';
 
 const ISSUES_NEW_PATH = '/issues/new';
@@ -144,6 +146,21 @@ export function copyStatusLabel(outcome: CopySnippetOutcome): string {
       return 'Clipboard permission denied — please allow clipboard access';
     case 'copy_failed':
       return 'Could not copy to clipboard';
+    case 'export_failed':
+      return 'Could not export the snippet as an image';
+  }
+}
+
+export function downloadButtonLabel(format: ExportFormat): string {
+  return `Download as ${format.toUpperCase()}`;
+}
+
+export function downloadStatusLabel(outcome: DownloadSnippetOutcome): string {
+  switch (outcome.kind) {
+    case 'downloaded':
+      return 'Downloaded';
+    case 'download_failed':
+      return 'Could not save the file';
     case 'export_failed':
       return 'Could not export the snippet as an image';
   }

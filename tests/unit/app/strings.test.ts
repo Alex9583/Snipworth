@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   appBootLabel,
   dismissButtonLabel,
+  downloadButtonLabel,
+  downloadStatusLabel,
   inboxUnavailableLabel,
   ISSUE_BODY_MAX_BYTES,
   reportButtonLabel,
@@ -94,5 +96,33 @@ describe('dismissButtonLabel', () => {
 describe('appBootLabel', () => {
   it('should_interpolate_the_mode_into_the_boot_message', () => {
     expect(appBootLabel('panel')).toBe('App boot OK in panel mode.');
+  });
+});
+
+describe('downloadButtonLabel', () => {
+  it('should_render_the_png_download_label_in_uppercase', () => {
+    expect(downloadButtonLabel('png')).toBe('Download as PNG');
+  });
+
+  it('should_render_the_svg_download_label_in_uppercase', () => {
+    expect(downloadButtonLabel('svg')).toBe('Download as SVG');
+  });
+});
+
+describe('downloadStatusLabel', () => {
+  it('should_describe_a_successful_download', () => {
+    expect(downloadStatusLabel({ kind: 'downloaded' })).toBe('Downloaded');
+  });
+
+  it('should_describe_a_failed_download', () => {
+    expect(downloadStatusLabel({ kind: 'download_failed', cause: new Error('boom') })).toBe(
+      'Could not save the file',
+    );
+  });
+
+  it('should_describe_an_export_failure_during_download', () => {
+    expect(downloadStatusLabel({ kind: 'export_failed', cause: new Error('boom') })).toBe(
+      'Could not export the snippet as an image',
+    );
   });
 });

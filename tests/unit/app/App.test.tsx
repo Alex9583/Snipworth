@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { App } from '@/adapters/primary/app/App';
+import type { BlobDownloader, DownloadOutcome } from '@/application/ports/BlobDownloader';
 import type { ClipboardCopier, CopyImageOutcome } from '@/application/ports/ClipboardCopier';
 import type {
   AckOutcome,
@@ -10,7 +11,9 @@ import type {
 } from '@/application/ports/ErrorInbox';
 import type { ExportImageOutcome, ImageExporter } from '@/application/ports/ImageExporter';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
+import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
+import { FakeClock } from '../../setup/fakes/FakeClock';
 
 class EmptyInboxReader implements InboxReader {
   list(): Promise<InboxRead> {
@@ -48,15 +51,34 @@ class StubClipboardCopier implements ClipboardCopier {
   }
 }
 
+class StubBlobDownloader implements BlobDownloader {
+  constructor(private readonly outcome: DownloadOutcome) {}
+
+  download(): Promise<DownloadOutcome> {
+    return Promise.resolve(this.outcome);
+  }
+}
+
 type AppProps = Parameters<typeof App>[0];
+
+function anExportedPng(): ExportImageOutcome {
+  return {
+    kind: 'exported',
+    blob: new Blob(['png-bytes'], { type: 'image/png' }),
+  };
+}
 
 function aCopyingUseCase(): CopySnippetAsImage {
   return new CopySnippetAsImage(
-    new StubImageExporter({
-      kind: 'exported',
-      blob: new Blob(['png-bytes'], { type: 'image/png' }),
-    }),
+    new StubImageExporter(anExportedPng()),
     new StubClipboardCopier({ kind: 'copied' }),
+  );
+}
+
+function aDownloadingUseCase(): DownloadSnippetAsImage {
+  return new DownloadSnippetAsImage(
+    new StubImageExporter(anExportedPng()),
+    new StubBlobDownloader({ kind: 'downloaded' }),
   );
 }
 
@@ -66,6 +88,8 @@ function renderApp(overrides: Partial<AppProps> = {}) {
     errorReader: new EmptyInboxReader(),
     errorAcknowledger: new NoopInboxAcknowledger(),
     copySnippetAsImage: aCopyingUseCase(),
+    downloadSnippetAsImage: aDownloadingUseCase(),
+    clock: new FakeClock(),
   };
   return render(<App {...defaults} {...overrides} />);
 }
