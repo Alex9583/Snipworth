@@ -11,6 +11,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 
 
 
+
+## [0.0.5] - 2026-05-09
+
+### Added
+
+- Add UI component library for the side panel
+
 ## [0.0.4] - 2026-05-07
 
 ### Added
