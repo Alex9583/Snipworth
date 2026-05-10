@@ -6,8 +6,8 @@ import { ExportControls } from '@/adapters/primary/app/ui/ExportControls';
 interface RenderOpts {
   scale?: 1 | 2 | 4;
   format?: 'png' | 'svg';
-  baseWidth?: number;
-  baseHeight?: number;
+  baseWidth?: number | null;
+  baseHeight?: number | null;
   onScaleChange?: (s: 1 | 2 | 4) => void;
   onFormatChange?: (f: 'png' | 'svg') => void;
   onCopy?: () => void;
@@ -15,10 +15,12 @@ interface RenderOpts {
 }
 
 function renderControls(opts: RenderOpts = {}) {
+  const baseWidth = opts.baseWidth === null ? undefined : (opts.baseWidth ?? 800);
+  const baseHeight = opts.baseHeight === null ? undefined : (opts.baseHeight ?? 500);
   return render(
     <ExportControls
-      baseWidth={opts.baseWidth ?? 800}
-      baseHeight={opts.baseHeight ?? 500}
+      baseWidth={baseWidth}
+      baseHeight={baseHeight}
       scale={opts.scale ?? 2}
       format={opts.format ?? 'png'}
       onScaleChange={opts.onScaleChange ?? vi.fn()}
@@ -62,6 +64,12 @@ describe('ExportControls', () => {
     renderControls({ baseWidth: 333.6, baseHeight: 200.4, scale: 2 });
 
     expect(screen.getByText(/667\s*×\s*401\s*px/)).toBeInTheDocument();
+  });
+
+  it('should_hide_the_estimated_dimensions_when_base_size_is_unknown', () => {
+    renderControls({ baseWidth: null, baseHeight: null });
+
+    expect(screen.queryByText(/px$/)).not.toBeInTheDocument();
   });
 
   it('should_emit_onScaleChange_when_user_picks_a_different_scale', async () => {

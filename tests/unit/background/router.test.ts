@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { route } from '@/adapters/primary/background/router';
 import type { AckOutcome, InboxAcknowledger } from '@/application/ports/ErrorInbox';
+import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
 import { FakeClock } from '../../setup/fakes/FakeClock';
 import { FixedIdGenerator } from '../../setup/fakes/FixedIdGenerator';
+import { SpyErrorReporter } from '../../setup/fakes/SpyErrorReporter';
 
 class FakeInboxAcknowledger implements InboxAcknowledger {
   readonly calls: (readonly string[])[] = [];
@@ -23,6 +25,19 @@ function makeDeps() {
     clock: new FakeClock(),
     ids: new FixedIdGenerator('router'),
     inboxAcknowledger: new FakeInboxAcknowledger(),
+    errorReporter: new SpyErrorReporter(),
+  };
+}
+
+function aReportSnapshot(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: 'panel-1',
+    kind: 'preferences_load_failed',
+    message: 'Snipworth could not load saved preferences.',
+    occurredAt: '2026-05-09T14:23:05.000Z',
+    source: 'side_panel',
+    severity: 'warning',
+    ...overrides,
   };
 }
 
@@ -162,5 +177,42 @@ describe('router — ACK_ERRORS', () => {
     const result = await route({ type: 'ACK_ERRORS', acknowledgedIds: ['x'] }, deps);
 
     expect(result.errorReport).toBeUndefined();
+  });
+});
+
+describe('router — REPORT_ERROR', () => {
+  it('should_forward_the_report_to_the_error_reporter', async () => {
+    const deps = makeDeps();
+    const snapshot = aReportSnapshot();
+
+    await route({ type: 'REPORT_ERROR', report: snapshot }, deps);
+
+    expect(deps.errorReporter.reports).toHaveLength(1);
+    expect(deps.errorReporter.reports[0]?.toSnapshot()).toEqual(
+      ErrorReport.fromSnapshot(snapshot as never).toSnapshot(),
+    );
+  });
+
+  it('should_respond_ok_when_report_succeeds', async () => {
+    const deps = makeDeps();
+
+    const result = await route({ type: 'REPORT_ERROR', report: aReportSnapshot() }, deps);
+
+    expect(result.response).toEqual({ ok: true });
+  });
+
+  it('should_respond_inbox_unavailable_when_reporter_fails', async () => {
+    const deps = makeDeps();
+    deps.errorReporter.failNextReportWith(new Error('storage offline'));
+
+    const result = await route({ type: 'REPORT_ERROR', report: aReportSnapshot() }, deps);
+
+    expect(result.response).toEqual({
+      ok: false,
+      error: {
+        code: 'inbox_unavailable',
+        message: 'Snipworth could not persist the reported error.',
+      },
+    });
   });
 });

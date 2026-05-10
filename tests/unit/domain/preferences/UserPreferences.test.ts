@@ -15,7 +15,6 @@ const validInput: UserPreferencesInput = {
   theme: 'system',
   onboardingCompleted: false,
   persistStorageRequested: false,
-  lastExportScale: 2,
 };
 
 describe('UserPreferences.default', () => {
@@ -26,7 +25,6 @@ describe('UserPreferences.default', () => {
     expect(snapshot.theme).toBe('system');
     expect(snapshot.onboardingCompleted).toBe(false);
     expect(snapshot.persistStorageRequested).toBe(false);
-    expect(snapshot.lastExportScale).toBe(2);
     expect(snapshot.defaultConfig).toEqual(RenderConfig.default().toSnapshot());
   });
 });
@@ -36,7 +34,6 @@ describe('UserPreferences.from — happy path', () => {
     const prefs = UserPreferences.from({
       ...validInput,
       theme: 'dark',
-      lastExportScale: 4,
       autoDetectLanguage: false,
       onboardingCompleted: true,
       persistStorageRequested: true,
@@ -49,7 +46,6 @@ describe('UserPreferences.from — happy path', () => {
       theme: 'dark',
       onboardingCompleted: true,
       persistStorageRequested: true,
-      lastExportScale: 4,
     });
   });
 
@@ -68,12 +64,6 @@ describe('UserPreferences.from — invariants', () => {
     );
     expect(() => UserPreferences.from({ ...validInput, theme: 'midnight' as never })).toThrow(
       /theme/,
-    );
-  });
-
-  it('should_reject_an_unsupported_lastExportScale', () => {
-    expect(() => UserPreferences.from({ ...validInput, lastExportScale: 3 as never })).toThrow(
-      /lastExportScale/,
     );
   });
 
@@ -97,10 +87,10 @@ describe('UserPreferences.with', () => {
 
   it('should_preserve_unspecified_fields', () => {
     const prefs = UserPreferences.from(validInput);
-    const next = prefs.with({ lastExportScale: 4 });
+    const next = prefs.with({ persistStorageRequested: true });
     expect(next.toSnapshot()).toEqual({
       ...prefs.toSnapshot(),
-      lastExportScale: 4,
+      persistStorageRequested: true,
     });
   });
 
@@ -127,7 +117,6 @@ describe('UserPreferences.toSnapshot / fromSnapshot', () => {
     const original = UserPreferences.from({
       ...validInput,
       theme: 'dark',
-      lastExportScale: 4,
       defaultPlatform: 'instagram',
     });
     const round = UserPreferences.fromSnapshot(original.toSnapshot());

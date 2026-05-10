@@ -20,5 +20,3 @@ export const loadCodeResponseSchema = z.discriminatedUnion('ok', [
   z.strictObject({ ok: z.literal(true) }),
   errorResponseSchema,
 ]);
-
-export type LoadCodeResponse = z.infer<typeof loadCodeResponseSchema>;

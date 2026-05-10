@@ -99,7 +99,12 @@ export function startBackground(): void {
         },
       };
     }
-    const result = await route(raw, { clock, ids, inboxAcknowledger: channel });
+    const result = await route(raw, {
+      clock,
+      ids,
+      inboxAcknowledger: channel,
+      errorReporter: channel,
+    });
     if (result.errorReport) {
       void emit(ctx, result.errorReport);
     }

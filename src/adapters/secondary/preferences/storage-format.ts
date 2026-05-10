@@ -14,7 +14,6 @@ export const userPreferencesWireSchema = z.object({
   theme: z.enum(themeModes).optional(),
   onboardingCompleted: z.boolean().optional(),
   persistStorageRequested: z.boolean().optional(),
-  lastExportScale: z.union([z.literal(1), z.literal(2), z.literal(4)]).optional(),
 });
 
 export type UserPreferencesWire = z.infer<typeof userPreferencesWireSchema>;

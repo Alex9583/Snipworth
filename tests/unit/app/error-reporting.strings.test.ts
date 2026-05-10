@@ -1,15 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  appBootLabel,
-  dismissButtonLabel,
-  downloadButtonLabel,
-  downloadStatusLabel,
-  inboxUnavailableLabel,
   ISSUE_BODY_MAX_BYTES,
-  reportButtonLabel,
   reportIssueUrl,
   unexpectedEventsLabel,
-} from '@/adapters/primary/app/strings';
+} from '@/adapters/primary/app/error-reporting.strings';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
 
 const REPORTED_AT = new Date('2026-01-01T00:00:00.000Z');
@@ -72,57 +66,5 @@ describe('unexpectedEventsLabel', () => {
 
   it('should_render_plural_when_count_is_more_than_one', () => {
     expect(unexpectedEventsLabel(2)).toBe('Snipworth encountered 2 unexpected events.');
-  });
-});
-
-describe('inboxUnavailableLabel', () => {
-  it('should_describe_the_unavailable_inbox', () => {
-    expect(inboxUnavailableLabel()).toBe('Snipworth could not read its pending error inbox.');
-  });
-});
-
-describe('reportButtonLabel', () => {
-  it('should_render_the_report_button_label', () => {
-    expect(reportButtonLabel()).toBe('Report');
-  });
-});
-
-describe('dismissButtonLabel', () => {
-  it('should_render_the_dismiss_button_label', () => {
-    expect(dismissButtonLabel()).toBe('Dismiss');
-  });
-});
-
-describe('appBootLabel', () => {
-  it('should_interpolate_the_mode_into_the_boot_message', () => {
-    expect(appBootLabel('panel')).toBe('App boot OK in panel mode.');
-  });
-});
-
-describe('downloadButtonLabel', () => {
-  it('should_render_the_png_download_label_in_uppercase', () => {
-    expect(downloadButtonLabel('png')).toBe('Download as PNG');
-  });
-
-  it('should_render_the_svg_download_label_in_uppercase', () => {
-    expect(downloadButtonLabel('svg')).toBe('Download as SVG');
-  });
-});
-
-describe('downloadStatusLabel', () => {
-  it('should_describe_a_successful_download', () => {
-    expect(downloadStatusLabel({ kind: 'downloaded' })).toBe('Downloaded');
-  });
-
-  it('should_describe_a_failed_download', () => {
-    expect(downloadStatusLabel({ kind: 'download_failed', cause: new Error('boom') })).toBe(
-      'Could not save the file',
-    );
-  });
-
-  it('should_describe_an_export_failure_during_download', () => {
-    expect(downloadStatusLabel({ kind: 'export_failed', cause: new Error('boom') })).toBe(
-      'Could not export the snippet as an image',
-    );
   });
 });

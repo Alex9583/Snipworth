@@ -1,24 +1,32 @@
-import { describe, it, expect } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
+
 import { App } from '@/adapters/primary/app/App';
-import type { BlobDownloader, DownloadOutcome } from '@/application/ports/BlobDownloader';
-import type { ClipboardCopier, CopyImageOutcome } from '@/application/ports/ClipboardCopier';
 import type {
   AckOutcome,
   InboxAcknowledger,
   InboxRead,
   InboxReader,
 } from '@/application/ports/ErrorInbox';
-import type { ExportImageOutcome, ImageExporter } from '@/application/ports/ImageExporter';
-import type { DetectionOutcome, LanguageDetector } from '@/application/ports/LanguageDetector';
-import { capturedLanguageLabel, detectionFallbackLabel } from '@/adapters/primary/app/strings';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
-import { CapturedSelection } from '@/domain/capture/CapturedSelection';
+import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
+
 import { FakeCaptureInbox } from '../../setup/fakes/FakeCaptureInbox';
 import { FakeClock } from '../../setup/fakes/FakeClock';
+import { FakeSyntaxHighlighter } from '../../setup/fakes/FakeSyntaxHighlighter';
+import { FakeUserPreferencesStore } from '../../setup/fakes/FakeUserPreferencesStore';
+import { FixedIdGenerator } from '../../setup/fakes/FixedIdGenerator';
+import { anExportedPng } from '../../setup/fakes/imageOutcomes';
+import { SpyBlobDownloader } from '../../setup/fakes/SpyBlobDownloader';
+import { SpyClipboardCopier } from '../../setup/fakes/SpyClipboardCopier';
+import { SpyErrorReporter } from '../../setup/fakes/SpyErrorReporter';
+import { SpyFontPreloader } from '../../setup/fakes/SpyFontPreloader';
+import { SpyImageExporter } from '../../setup/fakes/SpyImageExporter';
+import { StubLanguageDetector } from '../../setup/fakes/StubLanguageDetector';
 
 class EmptyInboxReader implements InboxReader {
   list(): Promise<InboxRead> {
@@ -40,90 +48,98 @@ class NoopInboxAcknowledger implements InboxAcknowledger {
   }
 }
 
-class StubImageExporter implements ImageExporter {
-  constructor(private readonly outcome: ExportImageOutcome) {}
-
-  export(): Promise<ExportImageOutcome> {
-    return Promise.resolve(this.outcome);
-  }
+function aFailingCopyUseCase(cause: unknown = new Error('boom')): CopySnippetAsImage {
+  return new CopySnippetAsImage(
+    new SpyFontPreloader(),
+    new SpyImageExporter({ kind: 'rasterization_failed', cause }),
+    new SpyClipboardCopier({ kind: 'copied' }),
+  );
 }
 
-class StubClipboardCopier implements ClipboardCopier {
-  constructor(private readonly outcome: CopyImageOutcome) {}
-
-  copyImage(): Promise<CopyImageOutcome> {
-    return Promise.resolve(this.outcome);
-  }
+function aFailingDownloadUseCase(cause: unknown = new Error('boom')): DownloadSnippetAsImage {
+  return new DownloadSnippetAsImage(
+    new SpyFontPreloader(),
+    new SpyImageExporter({ kind: 'rasterization_failed', cause }),
+    new SpyBlobDownloader({ kind: 'downloaded' }),
+  );
 }
 
-class StubBlobDownloader implements BlobDownloader {
-  constructor(private readonly outcome: DownloadOutcome) {}
-
-  download(): Promise<DownloadOutcome> {
-    return Promise.resolve(this.outcome);
-  }
+interface FailureCapture {
+  readonly useCase: ReportSidePanelFailure;
+  readonly reporter: SpyErrorReporter;
 }
 
-class StubDetector implements LanguageDetector {
-  constructor(private readonly outcome: DetectionOutcome) {}
-
-  detect(): DetectionOutcome {
-    return this.outcome;
-  }
+function captureFailures(): FailureCapture {
+  const reporter = new SpyErrorReporter();
+  return {
+    useCase: new ReportSidePanelFailure(reporter, new FakeClock(), new FixedIdGenerator('panel')),
+    reporter,
+  };
 }
 
 type AppProps = Parameters<typeof App>[0];
 
-function anExportedPng(): ExportImageOutcome {
-  return {
-    kind: 'exported',
-    blob: new Blob(['png-bytes'], { type: 'image/png' }),
-  };
-}
-
 function aCopyingUseCase(): CopySnippetAsImage {
   return new CopySnippetAsImage(
-    new StubImageExporter(anExportedPng()),
-    new StubClipboardCopier({ kind: 'copied' }),
+    new SpyFontPreloader(),
+    new SpyImageExporter(anExportedPng()),
+    new SpyClipboardCopier({ kind: 'copied' }),
   );
 }
 
 function aDownloadingUseCase(): DownloadSnippetAsImage {
   return new DownloadSnippetAsImage(
-    new StubImageExporter(anExportedPng()),
-    new StubBlobDownloader({ kind: 'downloaded' }),
+    new SpyFontPreloader(),
+    new SpyImageExporter(anExportedPng()),
+    new SpyBlobDownloader({ kind: 'downloaded' }),
   );
 }
 
-function aLoadingUseCase(language = 'typescript'): LoadCapturedCode {
+function aLoadingUseCase(): LoadCapturedCode {
   return new LoadCapturedCode(
-    new StubDetector({ kind: 'detected', result: { language, relevance: 12 } }),
+    new StubLanguageDetector({
+      kind: 'detected',
+      result: { language: 'typescript', relevance: 12 },
+    }),
   );
 }
 
-function renderApp(overrides: Partial<AppProps> = {}) {
-  const defaults: AppProps = {
+function defaultAppProps(): AppProps {
+  return {
     mode: 'panel',
     errorReader: new EmptyInboxReader(),
     errorAcknowledger: new NoopInboxAcknowledger(),
+    reportSidePanelFailure: captureFailures().useCase,
     copySnippetAsImage: aCopyingUseCase(),
     downloadSnippetAsImage: aDownloadingUseCase(),
     loadCapturedCode: aLoadingUseCase(),
     captureInbox: new FakeCaptureInbox(),
+    syntaxHighlighter: new FakeSyntaxHighlighter(),
+    userPreferencesStore: new FakeUserPreferencesStore(),
     clock: new FakeClock(),
   };
-  return { ...render(<App {...defaults} {...overrides} />), defaults };
+}
+
+async function renderApp(overrides: Partial<AppProps> = {}) {
+  const defaults = defaultAppProps();
+  const props = { ...defaults, ...overrides };
+  let result!: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<App {...props} />);
+    await Promise.resolve();
+  });
+  return { ...result, defaults };
 }
 
 describe('App', () => {
-  it('should_render_the_boot_label_with_the_provided_mode', () => {
-    renderApp({ mode: 'panel' });
+  it('should_render_the_boot_label_with_the_provided_mode', async () => {
+    await renderApp({ mode: 'panel' });
 
     expect(screen.getByText('App boot OK in panel mode.')).toBeInTheDocument();
   });
 
-  it('should_render_the_tab_mode_label_when_mode_is_tab', () => {
-    renderApp({ mode: 'tab' });
+  it('should_render_the_tab_mode_label_when_mode_is_tab', async () => {
+    await renderApp({ mode: 'tab' });
 
     expect(screen.getByText('App boot OK in tab mode.')).toBeInTheDocument();
   });
@@ -138,60 +154,45 @@ describe('App', () => {
       occurredAt: new Date('2026-01-01T00:00:00.000Z'),
     });
 
-    renderApp({ errorReader: new StubInboxReader([setupError]) });
+    await renderApp({ errorReader: new StubInboxReader([setupError]) });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Snipworth encountered an unexpected event.',
     );
   });
 
-  it('should_render_the_preview_placeholder_when_no_capture_has_arrived', () => {
-    renderApp();
-
-    expect(screen.getByText('Preview placeholder')).toBeInTheDocument();
-  });
-
-  it('should_render_the_captured_code_when_a_capture_arrives', () => {
-    const captureInbox = new FakeCaptureInbox();
-    renderApp({ captureInbox });
-
-    act(() => {
-      captureInbox.dispatch(CapturedSelection.from({ code: 'const x = 1;', sourceUrl: undefined }));
+  it('should_report_a_snippet_export_failure_when_copy_use_case_returns_export_failed', async () => {
+    const failures = captureFailures();
+    const user = userEvent.setup();
+    await renderApp({
+      reportSidePanelFailure: failures.useCase,
+      copySnippetAsImage: aFailingCopyUseCase(new Error('rasterization went wrong')),
     });
 
-    expect(screen.getByTestId('capture-preview')).toHaveTextContent('const x = 1;');
-    expect(screen.queryByText('Preview placeholder')).not.toBeInTheDocument();
-  });
+    await user.click(screen.getByRole('button', { name: /copy/i }));
+    await screen.findByRole('status');
 
-  it('should_render_the_detected_language_label_when_a_capture_arrives', () => {
-    const captureInbox = new FakeCaptureInbox();
-    renderApp({
-      captureInbox,
-      loadCapturedCode: aLoadingUseCase('python'),
-    });
-
-    act(() => {
-      captureInbox.dispatch(CapturedSelection.from({ code: 'print(1)', sourceUrl: undefined }));
-    });
-
-    expect(screen.getByTestId('capture-language')).toHaveTextContent(
-      capturedLanguageLabel('python'),
+    const exportFailures = failures.reporter.reports.filter(
+      (r) => r.kind === 'snippet_export_failed',
     );
+    expect(exportFailures).toHaveLength(1);
+    expect(exportFailures[0]?.details).toBe('rasterization went wrong');
   });
 
-  it('should_render_a_fallback_notice_when_language_detection_failed', () => {
-    const captureInbox = new FakeCaptureInbox();
-    renderApp({
-      captureInbox,
-      loadCapturedCode: new LoadCapturedCode({
-        detect: () => ({ kind: 'detection_failed', cause: new Error('boom') }),
-      }),
+  it('should_report_a_snippet_export_failure_when_download_use_case_returns_export_failed', async () => {
+    const failures = captureFailures();
+    const user = userEvent.setup();
+    await renderApp({
+      reportSidePanelFailure: failures.useCase,
+      downloadSnippetAsImage: aFailingDownloadUseCase(new Error('rasterization went wrong')),
     });
 
-    act(() => {
-      captureInbox.dispatch(CapturedSelection.from({ code: 'a', sourceUrl: undefined }));
-    });
+    await user.click(screen.getByRole('button', { name: /download/i }));
+    await screen.findByRole('status');
 
-    expect(screen.getByRole('status')).toHaveTextContent(detectionFallbackLabel());
+    const exportFailures = failures.reporter.reports.filter(
+      (r) => r.kind === 'snippet_export_failed',
+    );
+    expect(exportFailures).toHaveLength(1);
   });
 });

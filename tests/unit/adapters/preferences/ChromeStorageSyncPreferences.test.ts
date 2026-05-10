@@ -19,7 +19,7 @@ describe('ChromeStorageSyncPreferences — load', () => {
 
   it('should_merge_defaults_when_stored_data_is_partial', async () => {
     await chrome.storage.sync.set({
-      [PREFS_KEY]: { theme: 'dark', lastExportScale: 4 },
+      [PREFS_KEY]: { theme: 'dark', persistStorageRequested: true },
     });
     const store = new ChromeStorageSyncPreferences();
 
@@ -32,7 +32,7 @@ describe('ChromeStorageSyncPreferences — load', () => {
     expect(outcome.preferences.toSnapshot()).toEqual({
       ...baseline,
       theme: 'dark',
-      lastExportScale: 4,
+      persistStorageRequested: true,
     });
   });
 
@@ -73,7 +73,7 @@ describe('ChromeStorageSyncPreferences — load', () => {
 describe('ChromeStorageSyncPreferences — save', () => {
   it('should_persist_a_user_preferences_snapshot', async () => {
     const store = new ChromeStorageSyncPreferences();
-    const prefs = UserPreferences.default().with({ theme: 'dark', lastExportScale: 4 });
+    const prefs = UserPreferences.default().with({ theme: 'dark', persistStorageRequested: true });
 
     const outcome = await store.save(prefs);
 

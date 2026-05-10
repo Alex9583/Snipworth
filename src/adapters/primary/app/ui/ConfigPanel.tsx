@@ -1,22 +1,17 @@
-import { fontFamilies, type FontFamily } from '@/domain/rendering/RenderConfig';
+import {
+  fontFamilies,
+  type Background,
+  type FontFamily,
+  type RenderConfigSnapshot,
+} from '@/domain/rendering/RenderConfig';
 import { Card } from './Card';
 import { Slider } from './Slider';
 
-const bundledThemes = ['github-dark', 'github-light'] as const;
-export type ConfigPanelTheme = (typeof bundledThemes)[number];
-
-export interface ConfigPanelValue {
-  readonly theme: ConfigPanelTheme;
-  readonly fontFamily: FontFamily;
-  readonly fontSize: number;
-  readonly paddingX: number;
-  readonly paddingY: number;
-  readonly background: string;
-}
+const CURATED_THEMES = ['github-dark', 'github-light'] as const;
 
 interface ConfigPanelProps {
-  value: ConfigPanelValue;
-  onChange: (patch: Partial<ConfigPanelValue>) => void;
+  value: RenderConfigSnapshot;
+  onChange: (patch: Partial<RenderConfigSnapshot>) => void;
 }
 
 const FONT_SIZE_MIN = 10;
@@ -24,17 +19,20 @@ const FONT_SIZE_MAX = 24;
 const PADDING_MIN = 0;
 const PADDING_MAX = 96;
 
+const FALLBACK_BACKGROUND_COLOR = '#1C1C21';
+
 const FIELD_CLASSES = 'flex flex-col gap-1 text-sm';
 const LABEL_TEXT_CLASSES = 'text-ink-muted';
 const SELECT_CLASSES = 'bg-elevated text-ink h-8 rounded-sm px-2 text-sm';
 
 export function ConfigPanel({ value, onChange }: ConfigPanelProps) {
+  const themeOptions = optionListWith(CURATED_THEMES, value.theme);
   return (
     <Card className="flex flex-col gap-4">
       <SelectField
         label="Theme"
         value={value.theme}
-        options={bundledThemes}
+        options={themeOptions}
         onChange={(theme) => {
           onChange({ theme });
         }}
@@ -44,7 +42,7 @@ export function ConfigPanel({ value, onChange }: ConfigPanelProps) {
         value={value.fontFamily}
         options={fontFamilies}
         onChange={(fontFamily) => {
-          onChange({ fontFamily });
+          onChange({ fontFamily: fontFamily as FontFamily });
         }}
       />
       <SliderField
@@ -76,30 +74,39 @@ export function ConfigPanel({ value, onChange }: ConfigPanelProps) {
       />
       <ColorField
         label="Background color"
-        value={value.background}
-        onChange={(background) => {
-          onChange({ background });
+        value={readSolidColor(value.background)}
+        onChange={(color) => {
+          onChange({ background: { type: 'solid', color } });
         }}
       />
     </Card>
   );
 }
 
-interface SelectFieldProps<T extends string> {
-  label: string;
-  value: T;
-  options: readonly T[];
-  onChange: (next: T) => void;
+function readSolidColor(background: Background): string {
+  return background.type === 'solid' ? background.color : FALLBACK_BACKGROUND_COLOR;
 }
 
-function SelectField<T extends string>({ label, value, options, onChange }: SelectFieldProps<T>) {
+function optionListWith(curated: readonly string[], current: string): readonly string[] {
+  if (curated.includes(current)) return curated;
+  return [current, ...curated];
+}
+
+interface SelectFieldProps {
+  label: string;
+  value: string;
+  options: readonly string[];
+  onChange: (next: string) => void;
+}
+
+function SelectField({ label, value, options, onChange }: SelectFieldProps) {
   return (
     <label className={FIELD_CLASSES}>
       <span className={LABEL_TEXT_CLASSES}>{label}</span>
       <select
         value={value}
         onChange={(event) => {
-          onChange(event.target.value as T);
+          onChange(event.target.value);
         }}
         className={SELECT_CLASSES}
       >

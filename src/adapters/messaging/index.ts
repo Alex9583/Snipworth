@@ -11,11 +11,17 @@ import {
   type LoadCodeRequest,
 } from './variants/load-code';
 import { pingRequestSchema, pingResponseSchema, type PingRequest } from './variants/ping';
+import {
+  reportErrorRequestSchema,
+  reportErrorResponseSchema,
+  type ReportErrorRequest,
+} from './variants/report-error';
 
 const messageVariantSchema = z.discriminatedUnion('type', [
   pingRequestSchema,
   loadCodeRequestSchema,
   ackErrorsRequestSchema,
+  reportErrorRequestSchema,
 ]);
 
 const stripPrototype = (value: unknown): unknown =>
@@ -24,11 +30,12 @@ const stripPrototype = (value: unknown): unknown =>
 export const extensionMessageSchema = z.preprocess(stripPrototype, messageVariantSchema);
 
 export type ExtensionMessage = z.infer<typeof messageVariantSchema>;
-export type { PingRequest, LoadCodeRequest, AckErrorsRequest };
+export type { PingRequest, LoadCodeRequest, AckErrorsRequest, ReportErrorRequest };
 
 const backgroundInboundVariantSchema = z.discriminatedUnion('type', [
   pingRequestSchema,
   ackErrorsRequestSchema,
+  reportErrorRequestSchema,
 ]);
 
 export const backgroundInboundSchema = z.preprocess(stripPrototype, backgroundInboundVariantSchema);
@@ -39,6 +46,7 @@ export const responseSchemaFor = {
   PING: pingResponseSchema,
   LOAD_CODE: loadCodeResponseSchema,
   ACK_ERRORS: ackErrorsResponseSchema,
+  REPORT_ERROR: reportErrorResponseSchema,
 } as const satisfies Record<ExtensionMessage['type'], z.ZodType>;
 
 export type ResponseFor<M extends ExtensionMessage> = z.infer<

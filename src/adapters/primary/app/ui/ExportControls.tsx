@@ -4,13 +4,14 @@ import {
   type ExportFormat,
   type ExportScale,
 } from '@/domain/rendering/RenderConfig';
+import { EXPORT_CONTROLS } from './ExportControls.strings';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Segmented, type SegmentedOption } from './Segmented';
 
 interface ExportControlsProps {
-  readonly baseWidth: number;
-  readonly baseHeight: number;
+  readonly baseWidth?: number;
+  readonly baseHeight?: number;
   readonly scale: ExportScale;
   readonly format: ExportFormat;
   readonly onScaleChange: (scale: ExportScale) => void;
@@ -39,30 +40,39 @@ export function ExportControls({
   onCopy,
   onDownload,
 }: ExportControlsProps) {
-  const exportWidth = Math.round(baseWidth * scale);
-  const exportHeight = Math.round(baseHeight * scale);
+  const hasDimensions = baseWidth !== undefined && baseHeight !== undefined;
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <FieldLabel>Format</FieldLabel>
+        <FieldLabel>{EXPORT_CONTROLS.formatLabel}</FieldLabel>
         <Segmented
-          label="Format"
+          label={EXPORT_CONTROLS.formatLabel}
           value={format}
           options={FORMAT_OPTIONS}
           onChange={onFormatChange}
         />
-        <FieldLabel>Quality</FieldLabel>
-        <Segmented label="Quality" value={scale} options={SCALE_OPTIONS} onChange={onScaleChange} />
+        <FieldLabel>{EXPORT_CONTROLS.qualityLabel}</FieldLabel>
+        <Segmented
+          label={EXPORT_CONTROLS.qualityLabel}
+          value={scale}
+          options={SCALE_OPTIONS}
+          onChange={onScaleChange}
+        />
       </div>
-      <p className="text-ink-muted font-mono text-xs">
-        Estimated: {exportWidth} × {exportHeight} px
-      </p>
+      {hasDimensions && (
+        <p className="text-ink-muted font-mono text-xs">
+          {EXPORT_CONTROLS.estimatedSize(
+            Math.round(baseWidth * scale),
+            Math.round(baseHeight * scale),
+          )}
+        </p>
+      )}
       <div className="flex gap-2">
         <Button onClick={onCopy} size="sm">
-          Copy image
+          {EXPORT_CONTROLS.copyButton}
         </Button>
         <Button onClick={onDownload} size="sm" variant="outline">
-          Download
+          {EXPORT_CONTROLS.downloadButton}
         </Button>
       </div>
     </Card>

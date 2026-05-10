@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 import type { InboxAcknowledger, InboxReader } from '@/application/ports/ErrorInbox';
 import type { ErrorReport } from '@/domain/error-reporting/ErrorReport';
 import {
-  dismissButtonLabel,
-  inboxUnavailableLabel,
-  reportButtonLabel,
+  ERROR_REPORTING,
   reportIssueUrl,
   unexpectedEventsLabel,
   type DismissFailure,
-} from './strings';
+} from './error-reporting.strings';
 
 type Status =
   | { readonly kind: 'loading' }
@@ -50,7 +48,7 @@ export function ErrorBanner({
   const label =
     status.kind === 'loaded'
       ? unexpectedEventsLabel(status.errors.length)
-      : inboxUnavailableLabel();
+      : ERROR_REPORTING.inboxUnavailable;
   const dismissDisabled = status.kind !== 'loaded';
   const dismissFailure = status.kind === 'loaded' ? status.dismissFailure : undefined;
 
@@ -95,7 +93,7 @@ export function ErrorBanner({
         rel="noreferrer noopener"
         className="underline"
       >
-        {reportButtonLabel()}
+        {ERROR_REPORTING.reportButton}
       </a>
       <button
         type="button"
@@ -105,7 +103,7 @@ export function ErrorBanner({
         disabled={dismissDisabled}
         className="underline disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {dismissButtonLabel()}
+        {ERROR_REPORTING.dismissButton}
       </button>
     </aside>
   );

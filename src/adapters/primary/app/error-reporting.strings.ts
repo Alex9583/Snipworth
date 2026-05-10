@@ -1,8 +1,5 @@
 import type { BackgroundFailureCode } from '@/application/ports/BackgroundFailure';
-import type { CopySnippetOutcome } from '@/application/use-cases/CopySnippetAsImage';
-import type { DownloadSnippetOutcome } from '@/application/use-cases/DownloadSnippetAsImage';
 import type { ErrorReport, ErrorReportSnapshot } from '@/domain/error-reporting/ErrorReport';
-import type { ExportFormat } from '@/domain/rendering/RenderConfig';
 import { describeCause } from '@/domain/error-reporting/describeCause';
 
 const ISSUES_NEW_PATH = '/issues/new';
@@ -15,6 +12,12 @@ export type DismissFailure =
       readonly code: BackgroundFailureCode;
       readonly message: string;
     };
+
+export const ERROR_REPORTING = {
+  inboxUnavailable: 'Snipworth could not read its pending error inbox.',
+  reportButton: 'Report',
+  dismissButton: 'Dismiss',
+} as const;
 
 const repoUrl: string = (() => {
   if (typeof __SNIPWORTH_REPO_URL__ !== 'string' || __SNIPWORTH_REPO_URL__.length === 0) {
@@ -31,6 +34,12 @@ export function reportIssueUrl(
 ): string {
   const body = renderBody(errors, dismissFailure);
   return `${repoUrl}${ISSUES_NEW_PATH}?body=${encodeURIComponent(body)}`;
+}
+
+export function unexpectedEventsLabel(count: number): string {
+  return count === 1
+    ? 'Snipworth encountered an unexpected event.'
+    : `Snipworth encountered ${String(count)} unexpected events.`;
 }
 
 function renderBody(
@@ -106,70 +115,4 @@ function renderBodyFromSnapshots(
     lines.push('', dismissSection);
   }
   return lines.join('\n');
-}
-
-export function unexpectedEventsLabel(count: number): string {
-  return count === 1
-    ? 'Snipworth encountered an unexpected event.'
-    : `Snipworth encountered ${String(count)} unexpected events.`;
-}
-
-export function inboxUnavailableLabel(): string {
-  return 'Snipworth could not read its pending error inbox.';
-}
-
-export function reportButtonLabel(): string {
-  return 'Report';
-}
-
-export function dismissButtonLabel(): string {
-  return 'Dismiss';
-}
-
-export function appBootLabel(mode: string): string {
-  return `App boot OK in ${mode} mode.`;
-}
-
-export function copyButtonLabel(): string {
-  return 'Copy as PNG';
-}
-
-export function previewPlaceholderLabel(): string {
-  return 'Preview placeholder';
-}
-
-export function capturedLanguageLabel(language: string): string {
-  return `Detected language: ${language}`;
-}
-
-export function detectionFallbackLabel(): string {
-  return 'Could not auto-detect the language; falling back to plain text.';
-}
-
-export function copyStatusLabel(outcome: CopySnippetOutcome): string {
-  switch (outcome.kind) {
-    case 'copied':
-      return 'Copied to clipboard';
-    case 'denied':
-      return 'Clipboard permission denied — please allow clipboard access';
-    case 'copy_failed':
-      return 'Could not copy to clipboard';
-    case 'export_failed':
-      return 'Could not export the snippet as an image';
-  }
-}
-
-export function downloadButtonLabel(format: ExportFormat): string {
-  return `Download as ${format.toUpperCase()}`;
-}
-
-export function downloadStatusLabel(outcome: DownloadSnippetOutcome): string {
-  switch (outcome.kind) {
-    case 'downloaded':
-      return 'Downloaded';
-    case 'download_failed':
-      return 'Could not save the file';
-    case 'export_failed':
-      return 'Could not export the snippet as an image';
-  }
 }
