@@ -13,6 +13,7 @@
     "url": "https://github.com/Alex9583/Snipworth/issues"
   },
   "homepage": "https://github.com/Alex9583/Snipworth#readme",
+  "funding": "https://buymeacoffee.com/alextdev",
   "engines": {
     "node": ">=24",
     "npm": ">=10"
@@ -30,6 +31,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "icons:gen": "node scripts/generate-icons.mjs",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -68,6 +70,7 @@
     "@eslint/compat": "^1.4.1",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.59.1",
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.2.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

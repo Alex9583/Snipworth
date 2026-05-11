@@ -132,16 +132,25 @@ async function renderApp(overrides: Partial<AppProps> = {}) {
 }
 
 describe('App', () => {
-  it('should_render_the_boot_label_with_the_provided_mode', async () => {
-    await renderApp({ mode: 'panel' });
+  it('should_render_the_app_header_with_the_brand_logo', async () => {
+    await renderApp();
 
-    expect(screen.getByText('App boot OK in panel mode.')).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /snipworth logo/i })).toBeInTheDocument();
   });
 
-  it('should_render_the_tab_mode_label_when_mode_is_tab', async () => {
-    await renderApp({ mode: 'tab' });
+  it('should_render_three_tabs_for_code_preview_and_config', async () => {
+    await renderApp();
 
-    expect(screen.getByText('App boot OK in tab mode.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /code/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /preview/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /config/i })).toBeInTheDocument();
+  });
+
+  it('should_show_the_code_tab_as_active_by_default', async () => {
+    await renderApp();
+
+    expect(screen.getByRole('tab', { name: /code/i })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('should_render_the_error_banner_alert_when_inbox_holds_an_error', async () => {
@@ -161,6 +170,19 @@ describe('App', () => {
     );
   });
 
+  it('should_reveal_the_export_controls_when_user_switches_to_the_preview_tab', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await act(async () => {
+      await user.click(screen.getByRole('tab', { name: /preview/i }));
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByRole('button', { name: /copy/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /download/i })).toBeInTheDocument();
+  });
+
   it('should_report_a_snippet_export_failure_when_copy_use_case_returns_export_failed', async () => {
     const failures = captureFailures();
     const user = userEvent.setup();
@@ -169,7 +191,11 @@ describe('App', () => {
       copySnippetAsImage: aFailingCopyUseCase(new Error('rasterization went wrong')),
     });
 
-    await user.click(screen.getByRole('button', { name: /copy/i }));
+    await act(async () => {
+      await user.click(screen.getByRole('tab', { name: /preview/i }));
+      await Promise.resolve();
+    });
+    await user.click(await screen.findByRole('button', { name: /copy/i }));
     await screen.findByRole('status');
 
     const exportFailures = failures.reporter.reports.filter(
@@ -187,7 +213,11 @@ describe('App', () => {
       downloadSnippetAsImage: aFailingDownloadUseCase(new Error('rasterization went wrong')),
     });
 
-    await user.click(screen.getByRole('button', { name: /download/i }));
+    await act(async () => {
+      await user.click(screen.getByRole('tab', { name: /preview/i }));
+      await Promise.resolve();
+    });
+    await user.click(await screen.findByRole('button', { name: /download/i }));
     await screen.findByRole('status');
 
     const exportFailures = failures.reporter.reports.filter(

@@ -1,4 +1,4 @@
-import { Suspense, useDeferredValue, useMemo, useRef } from 'react';
+import { Suspense, useDeferredValue, useMemo, useRef, useState } from 'react';
 
 import type { CopySnippetOutcome } from '@/application/use-cases/CopySnippetAsImage';
 import type { DownloadSnippetOutcome } from '@/application/use-cases/DownloadSnippetAsImage';
@@ -9,24 +9,29 @@ import type { AppMode } from './AppMode';
 import { ErrorBanner } from './ErrorBanner';
 import { HighlightedPreview } from './HighlightedPreview';
 import { createHighlightCache } from './highlightCache';
-import { APP, appBootLabel } from './app.strings';
+import { APP } from './app.strings';
 import { EXPORT_CONTROLS, copyStatusLabel, downloadStatusLabel } from './ui/ExportControls.strings';
+import { AppFooter } from './ui/AppFooter';
+import { AppHeader } from './ui/AppHeader';
 import { CodeInput } from './ui/CodeInput';
 import { ConfigPanel } from './ui/ConfigPanel';
 import { ExportControls } from './ui/ExportControls';
 import { LanguagePicker } from './ui/LanguagePicker';
+import { CodeIcon, EyeIcon, SettingsIcon } from './ui/icons';
+import { Tabs } from './ui/Tabs';
 import { useCapturedCode } from './useCapturedCode';
 import { useCopyAction } from './useCopyAction';
 import { useDownloadAction } from './useDownloadAction';
-import { usePreviewSize } from './usePreviewSize';
 import { useUserPreferences } from './useUserPreferences';
 
 type AppProps = AppDependencies & { readonly mode: AppMode };
 
+type TabValue = 'code' | 'preview' | 'config';
+
 const FALLBACK_BACKGROUND_CSS = '#1C1C21';
+const CODE_PLACEHOLDER = 'Paste or type code…';
 
 export function App({
-  mode,
   errorReader,
   errorAcknowledger,
   reportSidePanelFailure,
@@ -38,8 +43,8 @@ export function App({
   userPreferencesStore,
   clock,
 }: AppProps) {
+  const [activeTab, setActiveTab] = useState<TabValue>('code');
   const previewRef = useRef<HTMLDivElement>(null);
-  const previewSize = usePreviewSize(previewRef);
 
   const { code, setCode, language, detection, pickLanguage } = useCapturedCode(
     captureInbox,
@@ -89,55 +94,89 @@ export function App({
   );
 
   return (
-    <main className="flex min-h-screen flex-col gap-4 p-4">
-      <ErrorBanner reader={errorReader} acknowledger={errorAcknowledger} />
-      <p className="text-ink-muted">{appBootLabel(mode)}</p>
+    <div className="bg-canvas text-ink flex h-screen flex-col">
+      <AppHeader />
+      <main className="flex min-h-0 flex-1 flex-col gap-2 p-3">
+        <ErrorBanner reader={errorReader} acknowledger={errorAcknowledger} />
+        <Tabs
+          value={activeTab}
+          onChange={(next) => {
+            setActiveTab(next as TabValue);
+          }}
+        >
+          <Tabs.List className="w-full">
+            <Tabs.Trigger value="code" iconLeft={<CodeIcon size={13} />} className="flex-1">
+              {APP.tabCodeLabel}
+            </Tabs.Trigger>
+            <Tabs.Trigger value="preview" iconLeft={<EyeIcon size={13} />} className="flex-1">
+              {APP.tabPreviewLabel}
+            </Tabs.Trigger>
+            <Tabs.Trigger value="config" iconLeft={<SettingsIcon size={13} />} className="flex-1">
+              {APP.tabConfigLabel}
+            </Tabs.Trigger>
+          </Tabs.List>
+        </Tabs>
 
-      <div className="grid gap-4 md:grid-cols-[1fr_320px]">
-        <div className="flex flex-col gap-2">
-          <LanguagePicker value={language} detection={detection} onChange={pickLanguage} />
-          <CodeInput
-            value={code}
-            onChange={setCode}
-            label="Code"
-            placeholder="Paste or type code…"
-          />
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          {activeTab === 'code' && (
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <LanguagePicker value={language} detection={detection} onChange={pickLanguage} />
+              <CodeInput
+                value={code}
+                onChange={setCode}
+                label={APP.tabCodeLabel}
+                placeholder={CODE_PLACEHOLDER}
+                className="flex-1"
+              />
+            </div>
+          )}
+
+          {activeTab === 'preview' && (
+            <Suspense fallback={<p className="text-ink-muted">{APP.previewLoading}</p>}>
+              <div className="flex min-h-0 flex-1 flex-col gap-2">
+                <div className="flex min-h-0 flex-1 items-center justify-center">
+                  <HighlightedPreview
+                    ref={previewRef}
+                    getHighlight={getHighlight}
+                    code={deferredCode}
+                    language={language}
+                    theme={renderConfig.theme}
+                    fontFamily={renderConfig.fontFamily}
+                    paddingX={renderConfig.paddingX}
+                    paddingY={renderConfig.paddingY}
+                    background={solidBackgroundCss(renderConfig.background)}
+                    className="w-full"
+                  />
+                </div>
+                <ExportControls
+                  scale={renderConfig.exportScale}
+                  format={renderConfig.exportFormat}
+                  onScaleChange={(scale) => {
+                    patchConfig({ exportScale: scale });
+                  }}
+                  onFormatChange={(format) => {
+                    patchConfig({ exportFormat: format });
+                  }}
+                  onCopy={copyHandle.onCopy}
+                  onDownload={downloadHandle.onDownload}
+                />
+                {copyHandle.status && <p role="status">{copyStatusLabel(copyHandle.status)}</p>}
+                {downloadHandle.status && (
+                  <p role="status">{downloadStatusLabel(downloadHandle.status)}</p>
+                )}
+              </div>
+            </Suspense>
+          )}
+
+          {activeTab === 'config' && (
+            <div className="min-h-0 flex-1 overflow-auto">
+              <ConfigPanel value={renderConfig} onChange={patchConfig} />
+            </div>
+          )}
         </div>
-        <ConfigPanel value={renderConfig} onChange={patchConfig} />
-      </div>
-
-      <Suspense fallback={<p className="text-ink-muted">{APP.previewLoading}</p>}>
-        <HighlightedPreview
-          ref={previewRef}
-          getHighlight={getHighlight}
-          code={deferredCode}
-          language={language}
-          theme={renderConfig.theme}
-          fontFamily={renderConfig.fontFamily}
-          paddingX={renderConfig.paddingX}
-          paddingY={renderConfig.paddingY}
-          background={solidBackgroundCss(renderConfig.background)}
-        />
-      </Suspense>
-
-      <ExportControls
-        baseWidth={previewSize?.width}
-        baseHeight={previewSize?.height}
-        scale={renderConfig.exportScale}
-        format={renderConfig.exportFormat}
-        onScaleChange={(scale) => {
-          patchConfig({ exportScale: scale });
-        }}
-        onFormatChange={(format) => {
-          patchConfig({ exportFormat: format });
-        }}
-        onCopy={copyHandle.onCopy}
-        onDownload={downloadHandle.onDownload}
-      />
-
-      {copyHandle.status && <p role="status">{copyStatusLabel(copyHandle.status)}</p>}
-      {downloadHandle.status && <p role="status">{downloadStatusLabel(downloadHandle.status)}</p>}
-    </main>
+      </main>
+      <AppFooter />
+    </div>
   );
 }
 

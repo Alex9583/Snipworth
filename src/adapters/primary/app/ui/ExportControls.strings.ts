@@ -6,8 +6,6 @@ export const EXPORT_CONTROLS = {
   qualityLabel: 'Quality',
   copyButton: 'Copy image',
   downloadButton: 'Download',
-  estimatedSize: (width: number, height: number): string =>
-    `Estimated: ${String(width)} × ${String(height)} px`,
   copyExportFailedMessage: 'Snipworth could not copy the snippet image.',
   downloadExportFailedMessage: 'Snipworth could not save the snippet image.',
 } as const;

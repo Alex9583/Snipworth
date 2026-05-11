@@ -33,7 +33,7 @@ export function Preview({
   return (
     <div
       ref={ref}
-      className={clsx('rounded-lg', className)}
+      className={clsx('overflow-x-auto rounded-lg', className)}
       style={{
         padding: `${String(paddingY)}px ${String(paddingX)}px`,
         background,

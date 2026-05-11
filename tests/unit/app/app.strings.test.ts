@@ -1,8 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { appBootLabel } from '@/adapters/primary/app/app.strings';
+import { APP } from '@/adapters/primary/app/app.strings';
 
-describe('appBootLabel', () => {
-  it('should_interpolate_the_mode_into_the_boot_message', () => {
-    expect(appBootLabel('panel')).toBe('App boot OK in panel mode.');
+describe('APP strings', () => {
+  it('should_expose_a_preview_loading_label', () => {
+    expect(APP.previewLoading).toBe('Preparing preview…');
+  });
+
+  it('should_expose_the_three_tab_labels_for_code_preview_and_config', () => {
+    expect(APP.tabCodeLabel).toBe('Code');
+    expect(APP.tabPreviewLabel).toBe('Preview');
+    expect(APP.tabConfigLabel).toBe('Config');
+  });
+
+  it('should_split_the_brand_name_into_an_accent_prefix_and_a_neutral_suffix', () => {
+    expect(APP.brandPrefix + APP.brandSuffix).toBe('Snipworth');
+  });
+
+  it('should_expose_an_accessible_logo_label_for_screen_readers', () => {
+    expect(APP.logoLabel).toBe('Snipworth logo');
   });
 });

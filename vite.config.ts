@@ -6,12 +6,14 @@ import manifest from './manifest.config';
 import pkg from './package.json' with { type: 'json' };
 
 const repoHttpsUrl = pkg.repository.url.replace(/^git\+/, '').replace(/\.git$/, '');
+const bmacUrl = pkg.funding;
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), crx({ manifest })],
   resolve: { tsconfigPaths: true },
   define: {
     __SNIPWORTH_REPO_URL__: JSON.stringify(repoHttpsUrl),
+    __SNIPWORTH_BMAC_URL__: JSON.stringify(bmacUrl),
   },
   build: {
     rollupOptions: {
