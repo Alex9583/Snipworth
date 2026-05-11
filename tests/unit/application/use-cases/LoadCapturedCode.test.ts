@@ -20,7 +20,7 @@ class CapturingDetector implements LanguageDetector {
 }
 
 describe('LoadCapturedCode', () => {
-  it('should_return_the_detected_language_with_a_detected_status_when_detection_succeeds', () => {
+  it('should_return_the_detected_language_with_an_auto_detected_status_when_detection_succeeds', () => {
     const useCase = new LoadCapturedCode(
       new StubDetector({
         kind: 'detected',
@@ -39,7 +39,7 @@ describe('LoadCapturedCode', () => {
       code: 'const x: number = 1;',
       language: 'typescript',
       sourceUrl: 'https://example.com/x',
-      detection: { kind: 'detected' },
+      detection: { kind: 'auto-detected' },
     });
   });
 

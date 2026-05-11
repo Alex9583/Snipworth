@@ -15,6 +15,7 @@ interface LanguagePickerProps {
 
 const DEFAULT_LABEL = 'Language';
 const FALLBACK_BADGE_LABEL = 'auto-detected fallback';
+const AUTO_BADGE_LABEL = 'auto';
 
 export function LanguagePicker({
   value,
@@ -34,6 +35,7 @@ export function LanguagePicker({
             <span className="ml-1">{FALLBACK_BADGE_LABEL}</span>
           </Badge>
         ) : null}
+        {detection.kind === 'auto-detected' ? <Badge>{AUTO_BADGE_LABEL}</Badge> : null}
         <select
           value={value}
           onChange={(event) => {

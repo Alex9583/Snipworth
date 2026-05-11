@@ -19,7 +19,7 @@ import { ExportControls } from './ui/ExportControls';
 import { LanguagePicker } from './ui/LanguagePicker';
 import { CodeIcon, EyeIcon, SettingsIcon } from './ui/icons';
 import { Tabs } from './ui/Tabs';
-import { useCapturedCode } from './useCapturedCode';
+import { useEditorLanguageState } from './useEditorLanguageState';
 import { useCopyAction } from './useCopyAction';
 import { useDownloadAction } from './useDownloadAction';
 import { useUserPreferences } from './useUserPreferences';
@@ -38,6 +38,7 @@ export function App({
   copySnippetAsImage,
   downloadSnippetAsImage,
   loadCapturedCode,
+  autoDetectLanguage,
   captureInbox,
   syntaxHighlighter,
   userPreferencesStore,
@@ -46,9 +47,10 @@ export function App({
   const [activeTab, setActiveTab] = useState<TabValue>('code');
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const { code, setCode, language, detection, pickLanguage } = useCapturedCode(
+  const { code, setCode, language, detection, pickLanguage } = useEditorLanguageState(
     captureInbox,
     loadCapturedCode,
+    autoDetectLanguage,
   );
 
   const { renderConfig, patchConfig } = useUserPreferences(

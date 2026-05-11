@@ -12,6 +12,7 @@ import { HtmlToImageExporter } from '@/adapters/secondary/image-export/HtmlToIma
 import { HighlightJsLanguageDetector } from '@/adapters/secondary/language-detection/HighlightJsLanguageDetector';
 import { ChromeStorageSyncPreferences } from '@/adapters/secondary/preferences/ChromeStorageSyncPreferences';
 import { ShikiSyntaxHighlighter } from '@/adapters/secondary/syntax-highlighting/ShikiSyntaxHighlighter';
+import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
@@ -25,6 +26,7 @@ export function composeApp(): AppDependencies {
   const imageExporter = new HtmlToImageExporter();
   const fontPreloader = new BrowserFontPreloader();
   const errorReporter = new MessagingErrorReporter();
+  const languageDetector = new HighlightJsLanguageDetector();
   return {
     errorReader: new ChromeStorageInboxReader(clock, ids),
     errorAcknowledger: new MessagingInboxAcknowledger(),
@@ -39,7 +41,8 @@ export function composeApp(): AppDependencies {
       imageExporter,
       new BrowserBlobDownloader(),
     ),
-    loadCapturedCode: new LoadCapturedCode(new HighlightJsLanguageDetector()),
+    loadCapturedCode: new LoadCapturedCode(languageDetector),
+    autoDetectLanguage: new AutoDetectLanguage(languageDetector),
     captureInbox: new ChromeStorageCaptureInbox(),
     syntaxHighlighter: new ShikiSyntaxHighlighter(),
     userPreferencesStore: new ChromeStorageSyncPreferences(),

@@ -9,6 +9,7 @@ import type {
   InboxRead,
   InboxReader,
 } from '@/application/ports/ErrorInbox';
+import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
@@ -113,6 +114,12 @@ function defaultAppProps(): AppProps {
     copySnippetAsImage: aCopyingUseCase(),
     downloadSnippetAsImage: aDownloadingUseCase(),
     loadCapturedCode: aLoadingUseCase(),
+    autoDetectLanguage: new AutoDetectLanguage(
+      new StubLanguageDetector({
+        kind: 'detected',
+        result: { language: 'typescript', relevance: 12 },
+      }),
+    ),
     captureInbox: new FakeCaptureInbox(),
     syntaxHighlighter: new FakeSyntaxHighlighter(),
     userPreferencesStore: new FakeUserPreferencesStore(),

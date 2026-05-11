@@ -3,6 +3,7 @@ import type { Clock } from '@/application/ports/Clock';
 import type { InboxAcknowledger, InboxReader } from '@/application/ports/ErrorInbox';
 import type { SyntaxHighlighter } from '@/application/ports/SyntaxHighlighter';
 import type { UserPreferencesStore } from '@/application/ports/UserPreferencesStore';
+import type { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import type { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import type { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import type { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
@@ -15,6 +16,7 @@ export interface AppDependencies {
   readonly copySnippetAsImage: CopySnippetAsImage;
   readonly downloadSnippetAsImage: DownloadSnippetAsImage;
   readonly loadCapturedCode: LoadCapturedCode;
+  readonly autoDetectLanguage: AutoDetectLanguage;
   readonly captureInbox: CaptureInbox;
   readonly syntaxHighlighter: SyntaxHighlighter;
   readonly userPreferencesStore: UserPreferencesStore;
