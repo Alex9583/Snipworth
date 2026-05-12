@@ -84,7 +84,7 @@ export function startBackground(): void {
       code: request.code,
       sourceUrl: request.sourceUrl,
     });
-    await deliverCapture.execute(selection, { tabId: request.tabId });
+    await deliverCapture.execute(selection, request.panelOpening);
   });
 
   host.onMessage(async ({ raw, senderId }) => {

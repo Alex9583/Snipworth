@@ -11,8 +11,6 @@ interface HighlightedPreviewProps {
   readonly language: string;
   readonly theme: string;
   readonly fontFamily?: FontFamily;
-  readonly paddingX?: number;
-  readonly paddingY?: number;
   readonly background?: string;
   readonly className?: string;
   readonly ref?: Ref<HTMLDivElement>;
@@ -24,8 +22,6 @@ export function HighlightedPreview({
   language,
   theme,
   fontFamily,
-  paddingX,
-  paddingY,
   background,
   className,
   ref,
@@ -35,8 +31,6 @@ export function HighlightedPreview({
     <Preview
       hast={highlighted.hast}
       fontFamily={fontFamily}
-      paddingX={paddingX}
-      paddingY={paddingY}
       background={background}
       className={className}
       ref={ref}

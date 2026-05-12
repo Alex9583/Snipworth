@@ -26,8 +26,6 @@ describe('ConfigPanel', () => {
     expect(screen.getByLabelText('Theme')).toBeInTheDocument();
     expect(screen.getByLabelText('Font family')).toBeInTheDocument();
     expect(screen.getByRole('slider', { name: 'Font size' })).toBeInTheDocument();
-    expect(screen.getByRole('slider', { name: 'Padding X' })).toBeInTheDocument();
-    expect(screen.getByRole('slider', { name: 'Padding Y' })).toBeInTheDocument();
     expect(screen.getByLabelText('Background color')).toBeInTheDocument();
   });
 

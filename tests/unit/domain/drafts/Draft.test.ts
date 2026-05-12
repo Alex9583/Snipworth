@@ -18,8 +18,6 @@ const baseConfig: RenderConfigInput = {
   fontFamily: 'JetBrains Mono',
   fontSize: 14,
   lineHeight: 1.5,
-  paddingX: 24,
-  paddingY: 24,
   borderRadius: 8,
   background: { type: 'solid', color: '#1e1e1e' },
   showWindowControls: true,

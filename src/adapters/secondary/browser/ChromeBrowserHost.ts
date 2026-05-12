@@ -86,12 +86,32 @@ export class ChromeBrowserHost implements BrowserHost {
   onCaptureRequested(handler: CaptureRequestedHandler): void {
     chrome.contextMenus.onClicked.addListener((info, tab) => {
       if (info.menuItemId !== CAPTURE_MENU_ID) return;
-      const code = info.selectionText;
+      const fallback = info.selectionText;
       const tabId = tab?.id;
-      if (code === undefined || code.length === 0 || tabId === undefined) return;
-      Promise.resolve(handler({ code, sourceUrl: info.pageUrl, tabId })).catch((cause: unknown) => {
-        this.onCrash(cause);
-      });
+      if (fallback === undefined || fallback.length === 0 || tabId === undefined) return;
+      const panelOpening = chrome.sidePanel.open({ tabId }).then(
+        () => ({ kind: 'panel_opened' }) as const,
+        (cause: unknown) => ({ kind: 'panel_open_failed', cause }) as const,
+      );
+      this.readPageSelection(tabId, fallback)
+        .then((code) => handler({ code, sourceUrl: info.pageUrl, tabId, panelOpening }))
+        .catch((cause: unknown) => {
+          this.onCrash(cause);
+        });
     });
+  }
+
+  private async readPageSelection(tabId: number, fallback: string): Promise<string> {
+    try {
+      const injection = chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => window.getSelection()?.toString() ?? '',
+      }) as Promise<{ readonly result?: unknown }[]>;
+      const results = await injection;
+      const first = results[0]?.result;
+      return typeof first === 'string' && first.length > 0 ? first : fallback;
+    } catch {
+      return fallback;
+    }
   }
 }

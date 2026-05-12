@@ -3,7 +3,6 @@ export { AppHeader } from './AppHeader';
 export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
-export { CodeInput } from './CodeInput';
 export { ConfigPanel } from './ConfigPanel';
 export { ExportControls } from './ExportControls';
 export { IconBtn } from './IconBtn';

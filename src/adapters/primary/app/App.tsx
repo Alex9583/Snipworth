@@ -8,12 +8,12 @@ import type { AppDependencies } from './AppDependencies';
 import type { AppMode } from './AppMode';
 import { ErrorBanner } from './ErrorBanner';
 import { HighlightedPreview } from './HighlightedPreview';
+import { LiveCodeEditor } from './LiveCodeEditor';
 import { createHighlightCache } from './highlightCache';
 import { APP } from './app.strings';
 import { EXPORT_CONTROLS, copyStatusLabel, downloadStatusLabel } from './ui/ExportControls.strings';
 import { AppFooter } from './ui/AppFooter';
 import { AppHeader } from './ui/AppHeader';
-import { CodeInput } from './ui/CodeInput';
 import { ConfigPanel } from './ui/ConfigPanel';
 import { ExportControls } from './ui/ExportControls';
 import { LanguagePicker } from './ui/LanguagePicker';
@@ -121,34 +121,37 @@ export function App({
 
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           {activeTab === 'code' && (
-            <div className="flex min-h-0 flex-1 flex-col gap-2">
-              <LanguagePicker value={language} detection={detection} onChange={pickLanguage} />
-              <CodeInput
-                value={code}
-                onChange={setCode}
-                label={APP.tabCodeLabel}
-                placeholder={CODE_PLACEHOLDER}
-                className="flex-1"
-              />
-            </div>
+            <LiveCodeEditor
+              value={code}
+              onChange={setCode}
+              language={language}
+              theme={renderConfig.theme}
+              getHighlight={getHighlight}
+              label={APP.tabCodeLabel}
+              placeholder={CODE_PLACEHOLDER}
+              className="flex-1"
+              topRightSlot={
+                <LanguagePicker value={language} detection={detection} onChange={pickLanguage} />
+              }
+            />
           )}
 
           {activeTab === 'preview' && (
             <Suspense fallback={<p className="text-ink-muted">{APP.previewLoading}</p>}>
               <div className="flex min-h-0 flex-1 flex-col gap-2">
-                <div className="flex min-h-0 flex-1 items-center justify-center">
-                  <HighlightedPreview
-                    ref={previewRef}
-                    getHighlight={getHighlight}
-                    code={deferredCode}
-                    language={language}
-                    theme={renderConfig.theme}
-                    fontFamily={renderConfig.fontFamily}
-                    paddingX={renderConfig.paddingX}
-                    paddingY={renderConfig.paddingY}
-                    background={solidBackgroundCss(renderConfig.background)}
-                    className="w-full"
-                  />
+                <div className="min-h-0 flex-1 overflow-auto">
+                  <div className="flex min-h-full items-center justify-center">
+                    <HighlightedPreview
+                      ref={previewRef}
+                      getHighlight={getHighlight}
+                      code={deferredCode}
+                      language={language}
+                      theme={renderConfig.theme}
+                      fontFamily={renderConfig.fontFamily}
+                      background={solidBackgroundCss(renderConfig.background)}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
                 <ExportControls
                   scale={renderConfig.exportScale}

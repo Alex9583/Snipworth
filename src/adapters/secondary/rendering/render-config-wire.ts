@@ -8,7 +8,6 @@ import {
   FONT_SIZE_RANGE,
   fontFamilies,
   LINE_HEIGHT_RANGE,
-  PADDING_RANGE,
   RADIUS_RANGE,
   SHADOW_BLUR_RANGE,
   SHADOW_OFFSET_RANGE,
@@ -30,13 +29,11 @@ const backgroundWireSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('transparent') }),
 ]);
 
-export const renderConfigWireSchema: z.ZodType<RenderConfigSnapshot> = z.strictObject({
+export const renderConfigWireSchema: z.ZodType<RenderConfigSnapshot> = z.object({
   theme: z.string().min(1).max(THEME_MAX),
   fontFamily: z.enum(fontFamilies),
   fontSize: bounded(FONT_SIZE_RANGE),
   lineHeight: bounded(LINE_HEIGHT_RANGE),
-  paddingX: bounded(PADDING_RANGE),
-  paddingY: bounded(PADDING_RANGE),
   borderRadius: bounded(RADIUS_RANGE),
   background: backgroundWireSchema,
   showWindowControls: z.boolean(),

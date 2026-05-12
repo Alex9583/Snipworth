@@ -144,9 +144,9 @@ describe('useUserPreferences', () => {
       expect(result.current.hasLoaded).toBe(true);
 
       act(() => {
-        result.current.patchConfig({ paddingX: 40 });
-        result.current.patchConfig({ paddingX: 48 });
-        result.current.patchConfig({ paddingX: 56 });
+        result.current.patchConfig({ fontSize: 12 });
+        result.current.patchConfig({ fontSize: 14 });
+        result.current.patchConfig({ fontSize: 16 });
       });
       await act(async () => {
         vi.advanceTimersByTime(300);
@@ -154,7 +154,7 @@ describe('useUserPreferences', () => {
       });
 
       expect(store.saves).toHaveLength(1);
-      expect(store.saves[0]?.defaultConfig.paddingX).toBe(56);
+      expect(store.saves[0]?.defaultConfig.fontSize).toBe(16);
     } finally {
       vi.useRealTimers();
     }

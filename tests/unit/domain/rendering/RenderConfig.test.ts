@@ -11,8 +11,6 @@ const validInput: RenderConfigInput = {
   fontFamily: 'JetBrains Mono',
   fontSize: 14,
   lineHeight: 1.5,
-  paddingX: 24,
-  paddingY: 24,
   borderRadius: 8,
   background: { type: 'solid', color: '#1e1e1e' },
   showWindowControls: true,
@@ -35,8 +33,6 @@ describe('RenderConfig.default', () => {
     expect(config.fontFamily).toBe('JetBrains Mono');
     expect(config.fontSize).toBe(14);
     expect(config.lineHeight).toBe(1.5);
-    expect(config.paddingX).toBe(32);
-    expect(config.paddingY).toBe(32);
     expect(config.borderRadius).toBe(10);
     expect(config.background).toEqual({ type: 'solid', color: '#1C1C21' });
     expect(config.showWindowControls).toBe(true);
@@ -60,8 +56,6 @@ describe('RenderConfig.from — happy path', () => {
     expect(config.fontFamily).toBe('JetBrains Mono');
     expect(config.fontSize).toBe(14);
     expect(config.lineHeight).toBe(1.5);
-    expect(config.paddingX).toBe(24);
-    expect(config.paddingY).toBe(24);
     expect(config.borderRadius).toBe(8);
     expect(config.background).toEqual({ type: 'solid', color: '#1e1e1e' });
     expect(config.showWindowControls).toBe(true);
@@ -167,10 +161,6 @@ describe('RenderConfig.from — numeric invariants', () => {
     ['fontSize', Number.NaN, /fontSize/],
     ['lineHeight', 0.7, /lineHeight must be in/],
     ['lineHeight', 3.1, /lineHeight must be in/],
-    ['paddingX', -1, /paddingX must be in/],
-    ['paddingX', 257, /paddingX must be in/],
-    ['paddingY', -1, /paddingY must be in/],
-    ['paddingY', 257, /paddingY must be in/],
     ['borderRadius', -1, /borderRadius must be in/],
     ['borderRadius', 65, /borderRadius must be in/],
     ['shadowBlur', -1, /shadowBlur must be in/],

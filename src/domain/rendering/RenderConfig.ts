@@ -31,7 +31,6 @@ export type Background =
 
 export const FONT_SIZE_RANGE = [8, 96] as const;
 export const LINE_HEIGHT_RANGE = [0.8, 3] as const;
-export const PADDING_RANGE = [0, 256] as const;
 export const RADIUS_RANGE = [0, 64] as const;
 export const SHADOW_BLUR_RANGE = [0, 100] as const;
 export const SHADOW_OFFSET_RANGE = [-50, 50] as const;
@@ -42,8 +41,6 @@ export interface RenderConfigInput {
   readonly fontFamily: FontFamily;
   readonly fontSize: number;
   readonly lineHeight: number;
-  readonly paddingX: number;
-  readonly paddingY: number;
   readonly borderRadius: number;
   readonly background: Background;
   readonly showWindowControls: boolean;
@@ -64,8 +61,6 @@ export interface RenderConfigSnapshot {
   readonly fontFamily: FontFamily;
   readonly fontSize: number;
   readonly lineHeight: number;
-  readonly paddingX: number;
-  readonly paddingY: number;
   readonly borderRadius: number;
   readonly background: Background;
   readonly showWindowControls: boolean;
@@ -93,8 +88,6 @@ export class RenderConfig {
   readonly fontFamily: FontFamily;
   readonly fontSize: number;
   readonly lineHeight: number;
-  readonly paddingX: number;
-  readonly paddingY: number;
   readonly borderRadius: number;
   readonly background: Background;
   readonly showWindowControls: boolean;
@@ -114,8 +107,6 @@ export class RenderConfig {
     this.fontFamily = props.fontFamily;
     this.fontSize = props.fontSize;
     this.lineHeight = props.lineHeight;
-    this.paddingX = props.paddingX;
-    this.paddingY = props.paddingY;
     this.borderRadius = props.borderRadius;
     this.background = props.background;
     this.showWindowControls = props.showWindowControls;
@@ -136,8 +127,6 @@ export class RenderConfig {
     requireMember(input.fontFamily, fontFamilies, 'fontFamily');
     requireRange(input.fontSize, FONT_SIZE_RANGE, 'fontSize');
     requireRange(input.lineHeight, LINE_HEIGHT_RANGE, 'lineHeight');
-    requireRange(input.paddingX, PADDING_RANGE, 'paddingX');
-    requireRange(input.paddingY, PADDING_RANGE, 'paddingY');
     requireRange(input.borderRadius, RADIUS_RANGE, 'borderRadius');
     requireMember(input.windowStyle, windowStyles, 'windowStyle');
     requireMember(input.aspectRatio, aspectRatios, 'aspectRatio');
@@ -162,8 +151,6 @@ export class RenderConfig {
       fontFamily: 'JetBrains Mono',
       fontSize: 14,
       lineHeight: 1.5,
-      paddingX: 32,
-      paddingY: 32,
       borderRadius: 10,
       background: { type: 'solid', color: '#1C1C21' },
       showWindowControls: true,
@@ -186,8 +173,6 @@ export class RenderConfig {
       fontFamily: this.fontFamily,
       fontSize: this.fontSize,
       lineHeight: this.lineHeight,
-      paddingX: this.paddingX,
-      paddingY: this.paddingY,
       borderRadius: this.borderRadius,
       background: this.background,
       showWindowControls: this.showWindowControls,

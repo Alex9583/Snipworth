@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -26,6 +26,10 @@ function Harness({ run, onOutcome }: HarnessProps) {
 }
 
 describe('useAsyncAction', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('should_expose_the_resolved_outcome_as_status_when_run_resolves', async () => {
     const user = userEvent.setup();
     render(<Harness run={() => Promise.resolve({ kind: 'success' })} />);
@@ -82,6 +86,26 @@ describe('useAsyncAction', () => {
     });
 
     expect(observed).toEqual([{ kind: 'late' }]);
+  });
+
+  it('should_clear_the_status_after_5_seconds_so_it_does_not_linger_on_screen', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      render(<Harness run={() => Promise.resolve({ kind: 'copied' })} />);
+
+      await user.click(screen.getByRole('button', { name: 'trigger' }));
+      expect(await screen.findByTestId('status')).toHaveTextContent('copied');
+
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+        await Promise.resolve();
+      });
+
+      expect(screen.queryByTestId('status')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should_invoke_the_latest_listener_when_the_listener_changes_between_trigger_and_resolution', async () => {

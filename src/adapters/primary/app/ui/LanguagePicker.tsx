@@ -26,30 +26,28 @@ export function LanguagePicker({
 }: LanguagePickerProps) {
   const options = optionListFor(value);
   return (
-    <div className={clsx('flex flex-col gap-1', className)}>
-      <label className="text-ink-muted flex items-center gap-2 text-xs">
-        <span>{label}</span>
-        {detection.kind === 'fallback' ? (
-          <Badge>
-            <span aria-hidden>⚠</span>
-            <span className="ml-1">{FALLBACK_BADGE_LABEL}</span>
-          </Badge>
-        ) : null}
-        {detection.kind === 'auto-detected' ? <Badge>{AUTO_BADGE_LABEL}</Badge> : null}
-        <select
-          value={value}
-          onChange={(event) => {
-            onChange(event.target.value);
-          }}
-          className="bg-elevated text-ink ml-auto h-7 rounded-sm px-2 text-sm"
-        >
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div className={clsx('inline-flex items-center gap-1', className)}>
+      {detection.kind === 'fallback' ? (
+        <Badge>
+          <span aria-hidden>⚠</span>
+          <span className="ml-1">{FALLBACK_BADGE_LABEL}</span>
+        </Badge>
+      ) : null}
+      {detection.kind === 'auto-detected' ? <Badge>{AUTO_BADGE_LABEL}</Badge> : null}
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+        className="bg-elevated text-ink h-7 rounded-sm px-2 text-xs"
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

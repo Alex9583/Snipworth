@@ -16,8 +16,6 @@ interface ConfigPanelProps {
 
 const FONT_SIZE_MIN = 10;
 const FONT_SIZE_MAX = 24;
-const PADDING_MIN = 0;
-const PADDING_MAX = 96;
 
 const FALLBACK_BACKGROUND_COLOR = '#1C1C21';
 
@@ -52,24 +50,6 @@ export function ConfigPanel({ value, onChange }: ConfigPanelProps) {
         max={FONT_SIZE_MAX}
         onChange={(fontSize) => {
           onChange({ fontSize });
-        }}
-      />
-      <SliderField
-        label="Padding X"
-        value={value.paddingX}
-        min={PADDING_MIN}
-        max={PADDING_MAX}
-        onChange={(paddingX) => {
-          onChange({ paddingX });
-        }}
-      />
-      <SliderField
-        label="Padding Y"
-        value={value.paddingY}
-        min={PADDING_MIN}
-        max={PADDING_MAX}
-        onChange={(paddingY) => {
-          onChange({ paddingY });
         }}
       />
       <ColorField

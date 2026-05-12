@@ -7,6 +7,8 @@ export interface AsyncActionHandle<T> {
   readonly status: T | null;
 }
 
+const STATUS_AUTO_DISMISS_MS = 5000;
+
 export function useAsyncAction<T>(
   run: () => Promise<T> | null,
   onOutcome?: AsyncOutcomeListener<T>,
@@ -17,6 +19,16 @@ export function useAsyncAction<T>(
   useEffect(() => {
     onOutcomeRef.current = onOutcome;
   }, [onOutcome]);
+
+  useEffect(() => {
+    if (status === null) return;
+    const handle = setTimeout(() => {
+      setStatus(null);
+    }, STATUS_AUTO_DISMISS_MS);
+    return () => {
+      clearTimeout(handle);
+    };
+  }, [status]);
 
   const trigger = useCallback(() => {
     const promise = run();

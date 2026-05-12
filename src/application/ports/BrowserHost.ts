@@ -19,10 +19,15 @@ export type LifecycleHandler = () => void | Promise<void>;
 
 export type HostCrashReporter = (cause: unknown) => void;
 
+export type PanelOpenOutcome =
+  | { readonly kind: 'panel_opened' }
+  | { readonly kind: 'panel_open_failed'; readonly cause: unknown };
+
 export interface CaptureRequest {
   readonly code: string;
   readonly sourceUrl: string | undefined;
   readonly tabId: number;
+  readonly panelOpening: Promise<PanelOpenOutcome>;
 }
 
 export type CaptureRequestedHandler = (request: CaptureRequest) => void | Promise<void>;

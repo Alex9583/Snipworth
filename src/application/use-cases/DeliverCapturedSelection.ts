@@ -1,11 +1,8 @@
-import type {
-  CaptureCourier,
-  CaptureDeliveryTarget,
-  DeliverCaptureOutcome,
-} from '@/application/ports/CaptureCourier';
+import type { CaptureCourier } from '@/application/ports/CaptureCourier';
 import type { Clock } from '@/application/ports/Clock';
 import type { ErrorReporter } from '@/application/ports/ErrorReporter';
 import type { IdGenerator } from '@/application/ports/IdGenerator';
+import type { PanelOpenOutcome } from '@/application/ports/BrowserHost';
 import type { CapturedSelection } from '@/domain/capture/CapturedSelection';
 import { ErrorReport, type ErrorKind } from '@/domain/error-reporting/ErrorReport';
 import { describeCause } from '@/domain/error-reporting/describeCause';
@@ -17,47 +14,55 @@ export interface DeliverCapturedSelectionDeps {
   readonly ids: IdGenerator;
 }
 
+export type DeliverCapturedSelectionOutcome =
+  | { readonly kind: 'delivered' }
+  | { readonly kind: 'panel_open_failed'; readonly cause: unknown }
+  | { readonly kind: 'storage_failed'; readonly cause: unknown };
+
 export class DeliverCapturedSelection {
   constructor(private readonly deps: DeliverCapturedSelectionDeps) {}
 
   async execute(
     selection: CapturedSelection,
-    target: CaptureDeliveryTarget,
-  ): Promise<DeliverCaptureOutcome> {
-    const outcome = await this.deps.courier.deliver(selection, target);
-    if (outcome.kind === 'delivered') return outcome;
-    await this.deps.reporter.report(this.buildReport(outcome));
-    return outcome;
+    panelOpening: Promise<PanelOpenOutcome>,
+  ): Promise<DeliverCapturedSelectionOutcome> {
+    const panelOutcome = await panelOpening;
+    if (panelOutcome.kind === 'panel_open_failed') {
+      await this.report('capture_panel_open_failed', panelOutcome.cause);
+    }
+    const storageOutcome = await this.deps.courier.deliver(selection);
+    if (storageOutcome.kind === 'storage_failed') {
+      await this.report('capture_storage_failed', storageOutcome.cause);
+      return { kind: 'storage_failed', cause: storageOutcome.cause };
+    }
+    if (panelOutcome.kind === 'panel_open_failed') {
+      return { kind: 'panel_open_failed', cause: panelOutcome.cause };
+    }
+    return { kind: 'delivered' };
   }
 
-  private buildReport(outcome: Exclude<DeliverCaptureOutcome, { kind: 'delivered' }>): ErrorReport {
-    const { kind, message } = failureCopy(outcome.kind);
-    return ErrorReport.from({
-      id: this.deps.ids.next(),
-      kind,
-      message,
-      source: 'background',
-      severity: 'error',
-      occurredAt: this.deps.clock.now(),
-      details: describeCause(outcome.cause),
-    });
+  private async report(kind: ErrorKind, cause: unknown): Promise<void> {
+    await this.deps.reporter.report(
+      ErrorReport.from({
+        id: this.deps.ids.next(),
+        kind,
+        message: messageFor(kind),
+        source: 'background',
+        severity: 'error',
+        occurredAt: this.deps.clock.now(),
+        details: describeCause(cause),
+      }),
+    );
   }
 }
 
-function failureCopy(outcomeKind: 'storage_failed' | 'panel_open_failed'): {
-  readonly kind: ErrorKind;
-  readonly message: string;
-} {
-  switch (outcomeKind) {
-    case 'storage_failed':
-      return {
-        kind: 'capture_storage_failed',
-        message: 'Snipworth could not stage the captured selection.',
-      };
-    case 'panel_open_failed':
-      return {
-        kind: 'capture_panel_open_failed',
-        message: 'Snipworth could not open the side panel for the captured selection.',
-      };
+function messageFor(kind: ErrorKind): string {
+  switch (kind) {
+    case 'capture_storage_failed':
+      return 'Snipworth could not stage the captured selection.';
+    case 'capture_panel_open_failed':
+      return 'Snipworth could not open the side panel for the captured selection.';
+    default:
+      return 'Snipworth encountered an unexpected event.';
   }
 }

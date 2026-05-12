@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   dispatchContextMenuClick,
   dispatchMessage,
+  queueExecuteScriptFault,
+  queueExecuteScriptResult,
   queueSidePanelFault,
   readCreatedMenus,
   resetChromeMock,
@@ -17,6 +19,10 @@ import {
 beforeEach(() => {
   resetChromeMock();
 });
+
+async function flushAsync(): Promise<void> {
+  for (let i = 0; i < 4; i++) await Promise.resolve();
+}
 
 describe('ChromeBrowserHost — onMessage', () => {
   it('should_send_the_handler_response_when_handler_resolves', async () => {
@@ -132,13 +138,15 @@ describe('ChromeBrowserHost — onCaptureRequested', () => {
       },
       { id: 7 } as chrome.tabs.Tab,
     );
-    await Promise.resolve();
+    await flushAsync();
 
-    expect(handler).toHaveBeenCalledWith({
-      code: 'const x = 1;',
-      sourceUrl: 'https://example.com/page',
-      tabId: 7,
-    });
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'const x = 1;',
+        sourceUrl: 'https://example.com/page',
+        tabId: 7,
+      }),
+    );
   });
 
   it('should_pass_an_undefined_source_url_when_pageUrl_is_missing', async () => {
@@ -154,9 +162,15 @@ describe('ChromeBrowserHost — onCaptureRequested', () => {
       },
       { id: 1 } as chrome.tabs.Tab,
     );
-    await Promise.resolve();
+    await flushAsync();
 
-    expect(handler).toHaveBeenCalledWith({ code: 'a', sourceUrl: undefined, tabId: 1 });
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'a',
+        sourceUrl: undefined,
+        tabId: 1,
+      }),
+    );
   });
 
   it('should_ignore_clicks_on_other_menu_items', async () => {
@@ -172,7 +186,7 @@ describe('ChromeBrowserHost — onCaptureRequested', () => {
       },
       { id: 1 } as chrome.tabs.Tab,
     );
-    await Promise.resolve();
+    await flushAsync();
 
     expect(handler).not.toHaveBeenCalled();
   });
@@ -185,7 +199,7 @@ describe('ChromeBrowserHost — onCaptureRequested', () => {
     dispatchContextMenuClick({ menuItemId: CAPTURE_MENU_ID, editable: false }, {
       id: 1,
     } as chrome.tabs.Tab);
-    await Promise.resolve();
+    await flushAsync();
 
     expect(handler).not.toHaveBeenCalled();
   });
@@ -199,7 +213,7 @@ describe('ChromeBrowserHost — onCaptureRequested', () => {
       { menuItemId: CAPTURE_MENU_ID, editable: false, selectionText: 'a' },
       undefined,
     );
-    await Promise.resolve();
+    await flushAsync();
 
     expect(handler).not.toHaveBeenCalled();
   });
@@ -213,9 +227,96 @@ describe('ChromeBrowserHost — onCaptureRequested', () => {
     dispatchContextMenuClick({ menuItemId: CAPTURE_MENU_ID, editable: false, selectionText: 'a' }, {
       id: 1,
     } as chrome.tabs.Tab);
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushAsync();
 
     expect(onCrash).toHaveBeenCalledWith(cause);
+  });
+
+  it('should_pass_the_page_selection_with_newlines_preserved_when_script_injection_succeeds', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    const multilineCode =
+      'const compose = (...fns) => res =>\n  fns.reduce((accum, next) =>\n    next(accum), res)';
+    queueExecuteScriptResult(multilineCode);
+
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText:
+          'const compose = (...fns) => res =>   fns.reduce((accum, next) =>     next(accum), res)',
+        pageUrl: 'https://example.com/snippet',
+      },
+      { id: 9 } as chrome.tabs.Tab,
+    );
+    await flushAsync();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: multilineCode,
+        sourceUrl: 'https://example.com/snippet',
+        tabId: 9,
+      }),
+    );
+  });
+
+  it('should_fall_back_to_selection_text_when_script_injection_fails', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    queueExecuteScriptFault(new Error('chrome:// page restricted'));
+
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText: 'const x = 1;',
+        pageUrl: 'https://example.com/page',
+      },
+      { id: 3 } as chrome.tabs.Tab,
+    );
+    await flushAsync();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'const x = 1;',
+        sourceUrl: 'https://example.com/page',
+        tabId: 3,
+      }),
+    );
+  });
+
+  it('should_resolve_panelOpening_with_panel_opened_when_chrome_side_panel_open_succeeds', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    dispatchContextMenuClick({ menuItemId: CAPTURE_MENU_ID, editable: false, selectionText: 'a' }, {
+      id: 4,
+    } as chrome.tabs.Tab);
+    await flushAsync();
+
+    const request = handler.mock.calls[0]?.[0] as { panelOpening: Promise<unknown> };
+    await expect(request.panelOpening).resolves.toEqual({ kind: 'panel_opened' });
+  });
+
+  it('should_resolve_panelOpening_with_panel_open_failed_when_chrome_side_panel_open_rejects', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    const cause = new Error('no user gesture');
+    queueSidePanelFault({ op: 'open', cause });
+
+    dispatchContextMenuClick({ menuItemId: CAPTURE_MENU_ID, editable: false, selectionText: 'a' }, {
+      id: 5,
+    } as chrome.tabs.Tab);
+    await flushAsync();
+
+    const request = handler.mock.calls[0]?.[0] as { panelOpening: Promise<unknown> };
+    await expect(request.panelOpening).resolves.toEqual({ kind: 'panel_open_failed', cause });
   });
 });
