@@ -72,11 +72,34 @@ describe('ConfigPanel', () => {
   });
 
   it('should_include_the_current_theme_as_an_option_when_it_is_outside_the_curated_set', () => {
-    const value: RenderConfigSnapshot = { ...defaults, theme: 'nord' };
+    const value: RenderConfigSnapshot = { ...defaults, theme: 'unknown-theme' };
     render(<ConfigPanel value={value} onChange={noop} />);
 
-    expect(screen.getByLabelText('Theme')).toHaveValue('nord');
-    expect(screen.getByRole('option', { name: 'nord' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Theme')).toHaveValue('unknown-theme');
+    expect(screen.getByRole('option', { name: 'unknown-theme' })).toBeInTheDocument();
+  });
+
+  it('should_group_curated_themes_under_dark_and_light_optgroups', () => {
+    render(<ConfigPanel value={defaults} onChange={noop} />);
+
+    const themeSelect = screen.getByLabelText('Theme');
+    const darkGroup = themeSelect.querySelector('optgroup[label="Dark"]');
+    const lightGroup = themeSelect.querySelector('optgroup[label="Light"]');
+
+    expect(darkGroup).not.toBeNull();
+    expect(lightGroup).not.toBeNull();
+    expect(darkGroup?.querySelector('option[value="dracula"]')).not.toBeNull();
+    expect(lightGroup?.querySelector('option[value="github-light"]')).not.toBeNull();
+  });
+
+  it('should_emit_a_theme_patch_when_user_selects_a_theme_from_the_dark_group', async () => {
+    const user = userEvent.setup();
+    const handler = recordingPatchHandler();
+    render(<ConfigPanel value={defaults} onChange={handler.onChange} />);
+
+    await user.selectOptions(screen.getByLabelText('Theme'), 'dracula');
+
+    expect(handler.patches).toEqual([{ theme: 'dracula' }]);
   });
 
   it('should_display_a_pixel_hint_next_to_the_font_size_slider', () => {

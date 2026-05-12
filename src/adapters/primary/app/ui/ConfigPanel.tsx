@@ -6,10 +6,12 @@ import {
   type FontFamily,
   type RenderConfigSnapshot,
 } from '@/domain/rendering/RenderConfig';
+import { isAvailableTheme, themesByVariant } from '@/domain/rendering/themes';
 import { Slider } from './Slider';
 import { CONFIG_PANEL, pxHintLabel } from './ConfigPanel.strings';
 
-const CURATED_THEMES = ['github-dark', 'github-light'] as const;
+const DARK_THEMES = themesByVariant('dark');
+const LIGHT_THEMES = themesByVariant('light');
 
 const FONT_SIZE_MIN = 10;
 const FONT_SIZE_MAX = 24;
@@ -28,13 +30,10 @@ interface ConfigPanelProps {
 }
 
 export function ConfigPanel({ value, onChange }: ConfigPanelProps) {
-  const themeOptions = optionListWith(CURATED_THEMES, value.theme);
   return (
     <div className="flex flex-col">
-      <SelectRow
-        label={CONFIG_PANEL.themeLabel}
+      <ThemeRow
         value={value.theme}
-        options={themeOptions}
         onChange={(theme) => {
           onChange({ theme });
         }}
@@ -71,9 +70,41 @@ function readSolidColor(background: Background): string {
   return background.type === 'solid' ? background.color : FALLBACK_BACKGROUND_COLOR;
 }
 
-function optionListWith(curated: readonly string[], current: string): readonly string[] {
-  if (curated.includes(current)) return curated;
-  return [current, ...curated];
+interface ThemeRowProps {
+  value: string;
+  onChange: (next: string) => void;
+}
+
+function ThemeRow({ value, onChange }: ThemeRowProps) {
+  const showFallback = !isAvailableTheme(value);
+  return (
+    <ConfigRow label={CONFIG_PANEL.themeLabel}>
+      <select
+        aria-label={CONFIG_PANEL.themeLabel}
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+        className={CONTROL_CLASSES}
+      >
+        {showFallback && <option value={value}>{value}</option>}
+        <optgroup label={CONFIG_PANEL.themeDarkGroupLabel}>
+          {DARK_THEMES.map((theme) => (
+            <option key={theme.name} value={theme.name}>
+              {theme.displayName}
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label={CONFIG_PANEL.themeLightGroupLabel}>
+          {LIGHT_THEMES.map((theme) => (
+            <option key={theme.name} value={theme.name}>
+              {theme.displayName}
+            </option>
+          ))}
+        </optgroup>
+      </select>
+    </ConfigRow>
+  );
 }
 
 interface ConfigRowProps {

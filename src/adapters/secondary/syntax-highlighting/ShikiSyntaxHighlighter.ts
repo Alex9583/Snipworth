@@ -7,8 +7,7 @@ import {
   isSupportedLanguage,
   type SupportedLanguage,
 } from '@/domain/syntax-highlighting/SupportedLanguages';
-
-type BundledTheme = 'github-dark' | 'github-light';
+import { isAvailableTheme, type ThemeName } from '@/domain/rendering/themes';
 
 const LANGUAGE_LOADERS = {
   'bash': () => import('@shikijs/langs/bash'),
@@ -51,26 +50,36 @@ const LANGUAGE_LOADERS = {
 
 const THEME_LOADERS = {
   'github-dark': () => import('@shikijs/themes/github-dark'),
+  'dracula': () => import('@shikijs/themes/dracula'),
+  'one-dark-pro': () => import('@shikijs/themes/one-dark-pro'),
+  'tokyo-night': () => import('@shikijs/themes/tokyo-night'),
+  'monokai': () => import('@shikijs/themes/monokai'),
+  'catppuccin-mocha': () => import('@shikijs/themes/catppuccin-mocha'),
+  'vitesse-dark': () => import('@shikijs/themes/vitesse-dark'),
+  'night-owl': () => import('@shikijs/themes/night-owl'),
   'github-light': () => import('@shikijs/themes/github-light'),
-} as const satisfies Record<BundledTheme, () => Promise<unknown>>;
+  'min-light': () => import('@shikijs/themes/min-light'),
+  'vitesse-light': () => import('@shikijs/themes/vitesse-light'),
+  'catppuccin-latte': () => import('@shikijs/themes/catppuccin-latte'),
+} as const satisfies Record<ThemeName, () => Promise<unknown>>;
 
 const CORE_LANGUAGES = [
   'typescript',
   'javascript',
   'python',
 ] as const satisfies readonly SupportedLanguage[];
-const CORE_THEMES = ['github-dark', 'github-light'] as const satisfies readonly BundledTheme[];
+const CORE_THEMES = ['github-dark', 'github-light'] as const satisfies readonly ThemeName[];
 
 const FALLBACK_LANGUAGE = 'text';
-const FALLBACK_THEME: BundledTheme = 'github-dark';
+const FALLBACK_THEME: ThemeName = 'github-dark';
 
-const createHighlighter = createBundledHighlighter<SupportedLanguage, BundledTheme>({
+const createHighlighter = createBundledHighlighter<SupportedLanguage, ThemeName>({
   langs: LANGUAGE_LOADERS,
   themes: THEME_LOADERS,
   engine: () => createJavaScriptRegexEngine(),
 });
 
-type Highlighter = HighlighterGeneric<SupportedLanguage, BundledTheme>;
+type Highlighter = HighlighterGeneric<SupportedLanguage, ThemeName>;
 
 export class ShikiSyntaxHighlighter implements SyntaxHighlighter {
   private highlighterPromise: Promise<Highlighter> | null = null;
@@ -78,7 +87,7 @@ export class ShikiSyntaxHighlighter implements SyntaxHighlighter {
   async highlight(code: string, language: string, theme: string): Promise<HighlightedCode> {
     const highlighter = await this.getHighlighter();
     const resolvedLanguage = resolveLanguage(language);
-    const resolvedTheme = isBundledTheme(theme) ? theme : FALLBACK_THEME;
+    const resolvedTheme = isAvailableTheme(theme) ? theme : FALLBACK_THEME;
 
     if (
       resolvedLanguage !== FALLBACK_LANGUAGE &&
@@ -120,8 +129,4 @@ function canonicalLanguage(name: string): SupportedLanguage {
 
 function isLanguageLoaded(highlighter: Highlighter, name: string): boolean {
   return highlighter.getLoadedLanguages().includes(canonicalLanguage(name));
-}
-
-function isBundledTheme(name: string): name is BundledTheme {
-  return name in THEME_LOADERS;
 }
