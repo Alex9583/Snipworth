@@ -1,18 +1,15 @@
 import { Suspense, useDeferredValue, useMemo, useRef, useState } from 'react';
 
-import type { CopySnippetOutcome } from '@/application/use-cases/CopySnippetAsImage';
-import type { DownloadSnippetOutcome } from '@/application/use-cases/DownloadSnippetAsImage';
-import type { Background } from '@/domain/rendering/RenderConfig';
-
 import type { AppDependencies } from './AppDependencies';
-import type { AppMode } from './AppMode';
 import { ErrorBanner } from './ErrorBanner';
 import { HighlightedPreview } from './HighlightedPreview';
 import { LiveCodeEditor } from './LiveCodeEditor';
 import { Onboarding } from './onboarding/Onboarding';
 import { createHighlightCache } from './highlightCache';
 import { APP } from './app.strings';
-import { EXPORT_CONTROLS, copyStatusLabel, downloadStatusLabel } from './ui/ExportControls.strings';
+import { SIDE_PANEL_APP } from './SidePanelApp.strings';
+import { solidBackgroundCss } from './previewBackground';
+import { copyStatusLabel, downloadStatusLabel } from './ui/ExportControls.strings';
 import { AppFooter } from './ui/AppFooter';
 import { AppHeader } from './ui/AppHeader';
 import { ConfigPanel } from './ui/ConfigPanel';
@@ -22,19 +19,13 @@ import { LanguagePicker } from './ui/LanguagePicker';
 import { CodeIcon, EyeIcon, SettingsIcon } from './ui/icons';
 import { Tabs } from './ui/Tabs';
 import { useEditorLanguageState } from './useEditorLanguageState';
-import { useCopyAction } from './useCopyAction';
-import { useDownloadAction } from './useDownloadAction';
 import { useOpenFullTabAction } from './useOpenFullTabAction';
+import { useSnippetExportHandles } from './useSnippetExportHandles';
 import { useUserPreferences } from './useUserPreferences';
-
-type AppProps = AppDependencies & { readonly mode: AppMode };
 
 type TabValue = 'code' | 'preview' | 'config';
 
-const FALLBACK_BACKGROUND_CSS = '#1C1C21';
-const CODE_PLACEHOLDER = 'Paste or type code…';
-
-export function App({
+export function SidePanelApp({
   errorReader,
   errorAcknowledger,
   reportSidePanelFailure,
@@ -45,10 +36,9 @@ export function App({
   captureInbox,
   syntaxHighlighter,
   userPreferencesStore,
-  fullTabOpener,
+  openFullTabEditor,
   clock,
-  mode,
-}: AppProps) {
+}: AppDependencies) {
   const [activeTab, setActiveTab] = useState<TabValue>('code');
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -67,39 +57,16 @@ export function App({
 
   const getHighlight = useMemo(() => createHighlightCache(syntaxHighlighter), [syntaxHighlighter]);
 
-  const onCopyOutcome = (outcome: CopySnippetOutcome): void => {
-    if (outcome.kind === 'copied') return;
-    void reportSidePanelFailure.execute({
-      kind: 'snippet_export_failed',
-      message: EXPORT_CONTROLS.copyExportFailedMessage,
-      cause: 'cause' in outcome ? outcome.cause : undefined,
-    });
-  };
-
-  const onDownloadOutcome = (outcome: DownloadSnippetOutcome): void => {
-    if (outcome.kind === 'downloaded') return;
-    void reportSidePanelFailure.execute({
-      kind: 'snippet_export_failed',
-      message: EXPORT_CONTROLS.downloadExportFailedMessage,
-      cause: 'cause' in outcome ? outcome.cause : undefined,
-    });
-  };
-
-  const copyHandle = useCopyAction(
+  const { copyHandle, downloadHandle } = useSnippetExportHandles({
     copySnippetAsImage,
-    previewRef,
-    renderConfig.fontFamily,
-    onCopyOutcome,
-  );
-  const downloadHandle = useDownloadAction(
     downloadSnippetAsImage,
+    reportSidePanelFailure,
     previewRef,
-    renderConfig.fontFamily,
-    renderConfig.exportFormat,
+    fontFamily: renderConfig.fontFamily,
+    exportFormat: renderConfig.exportFormat,
     clock,
-    onDownloadOutcome,
-  );
-  const onOpenFullTab = useOpenFullTabAction(fullTabOpener, (outcome) => {
+  });
+  const onOpenFullTab = useOpenFullTabAction(openFullTabEditor, code, (outcome) => {
     if (outcome.kind === 'opened') return;
     void reportSidePanelFailure.execute({
       kind: 'open_full_tab_failed',
@@ -115,7 +82,7 @@ export function App({
   if (!prefs.onboardingCompleted) {
     return (
       <div className="bg-canvas text-ink flex h-screen flex-col">
-        <AppHeader mode={mode} onOpenFullTab={onOpenFullTab} />
+        <AppHeader onOpenFullTab={onOpenFullTab} />
         <Onboarding
           onComplete={() => {
             void completeOnboarding();
@@ -127,7 +94,7 @@ export function App({
 
   return (
     <div className="bg-canvas text-ink flex h-screen flex-col">
-      <AppHeader mode={mode} onOpenFullTab={onOpenFullTab} />
+      <AppHeader onOpenFullTab={onOpenFullTab} />
       <main className="flex min-h-0 flex-1 flex-col gap-2 p-3">
         <ErrorBanner reader={errorReader} acknowledger={errorAcknowledger} />
         <Tabs
@@ -136,15 +103,15 @@ export function App({
             setActiveTab(next as TabValue);
           }}
         >
-          <Tabs.List className="w-full">
+          <Tabs.List className="w-full" label={SIDE_PANEL_APP.tabsLabel}>
             <Tabs.Trigger value="code" iconLeft={<CodeIcon size={13} />} className="flex-1">
-              {APP.tabCodeLabel}
+              {SIDE_PANEL_APP.tabCodeLabel}
             </Tabs.Trigger>
             <Tabs.Trigger value="preview" iconLeft={<EyeIcon size={13} />} className="flex-1">
-              {APP.tabPreviewLabel}
+              {SIDE_PANEL_APP.tabPreviewLabel}
             </Tabs.Trigger>
             <Tabs.Trigger value="config" iconLeft={<SettingsIcon size={13} />} className="flex-1">
-              {APP.tabConfigLabel}
+              {SIDE_PANEL_APP.tabConfigLabel}
             </Tabs.Trigger>
           </Tabs.List>
         </Tabs>
@@ -158,8 +125,8 @@ export function App({
                 language={language}
                 theme={renderConfig.theme}
                 getHighlight={getHighlight}
-                label={APP.tabCodeLabel}
-                placeholder={CODE_PLACEHOLDER}
+                label={SIDE_PANEL_APP.tabCodeLabel}
+                placeholder={APP.codePlaceholder}
                 className="flex-1"
                 topRightSlot={
                   <LanguagePicker value={language} detection={detection} onChange={pickLanguage} />
@@ -216,8 +183,4 @@ export function App({
       <AppFooter />
     </div>
   );
-}
-
-function solidBackgroundCss(background: Background): string {
-  return background.type === 'solid' ? background.color : FALLBACK_BACKGROUND_CSS;
 }

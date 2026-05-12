@@ -6,12 +6,6 @@ describe('APP strings', () => {
     expect(APP.previewLoading).toBe('Preparing preview…');
   });
 
-  it('should_expose_the_three_tab_labels_for_code_preview_and_config', () => {
-    expect(APP.tabCodeLabel).toBe('Code');
-    expect(APP.tabPreviewLabel).toBe('Preview');
-    expect(APP.tabConfigLabel).toBe('Config');
-  });
-
   it('should_split_the_brand_name_into_an_accent_prefix_and_a_neutral_suffix', () => {
     expect(APP.brandPrefix + APP.brandSuffix).toBe('Snipworth');
   });

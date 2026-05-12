@@ -8,10 +8,12 @@ type StorageChange = chrome.storage.StorageChange;
 export class ChromeStorageCaptureInbox implements CaptureInbox {
   private chain: Promise<unknown> = Promise.resolve();
 
+  constructor(private readonly storageKey: string = PENDING_CAPTURE_KEY) {}
+
   subscribe(handler: CaptureHandler): Unsubscribe {
     const listener = (changes: Record<string, StorageChange>, areaName: string): void => {
       if (areaName !== 'session') return;
-      const change = changes[PENDING_CAPTURE_KEY];
+      const change = changes[this.storageKey];
       if (change === undefined) return;
       if (toCapturedSelection(change.newValue) === undefined) return;
       void this.consumePending(handler);
@@ -25,10 +27,10 @@ export class ChromeStorageCaptureInbox implements CaptureInbox {
 
   private consumePending(handler: CaptureHandler): Promise<void> {
     return this.serialize(async () => {
-      const stored = await chrome.storage.session.get([PENDING_CAPTURE_KEY]);
-      const selection = toCapturedSelection(stored[PENDING_CAPTURE_KEY]);
+      const stored = await chrome.storage.session.get([this.storageKey]);
+      const selection = toCapturedSelection(stored[this.storageKey]);
       if (selection === undefined) return;
-      await chrome.storage.session.remove([PENDING_CAPTURE_KEY]);
+      await chrome.storage.session.remove([this.storageKey]);
       handler(selection);
     });
   }

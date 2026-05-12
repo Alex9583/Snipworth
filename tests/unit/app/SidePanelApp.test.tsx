@@ -2,18 +2,21 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 
-import { App } from '@/adapters/primary/app/App';
+import { SidePanelApp } from '@/adapters/primary/app/SidePanelApp';
 import type {
   AckOutcome,
   InboxAcknowledger,
   InboxRead,
   InboxReader,
 } from '@/application/ports/ErrorInbox';
+import type { CaptureCourier, DeliverCaptureOutcome } from '@/application/ports/CaptureCourier';
 import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
+import { OpenFullTabEditor } from '@/application/use-cases/OpenFullTabEditor';
 import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
+import type { CapturedSelection } from '@/domain/capture/CapturedSelection';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
 import { UserPreferences } from '@/domain/preferences/UserPreferences';
 
@@ -54,6 +57,17 @@ class StubInboxReader implements InboxReader {
 class NoopInboxAcknowledger implements InboxAcknowledger {
   acknowledge(): Promise<AckOutcome> {
     return Promise.resolve({ kind: 'acknowledged' });
+  }
+}
+
+class StubCaptureCourier implements CaptureCourier {
+  readonly deliveries: CapturedSelection[] = [];
+
+  constructor(private readonly outcome: DeliverCaptureOutcome = { kind: 'delivered' }) {}
+
+  deliver(selection: CapturedSelection): Promise<DeliverCaptureOutcome> {
+    this.deliveries.push(selection);
+    return Promise.resolve(this.outcome);
   }
 }
 
@@ -98,7 +112,7 @@ function captureFailures(): FailureCapture {
   };
 }
 
-type AppProps = Parameters<typeof App>[0];
+type AppProps = Parameters<typeof SidePanelApp>[0];
 
 function aCopyingUseCase(): CopySnippetAsImage {
   return new CopySnippetAsImage(
@@ -127,7 +141,6 @@ function aLoadingUseCase(): LoadCapturedCode {
 
 function defaultAppProps(): AppProps {
   return {
-    mode: 'panel',
     errorReader: new EmptyInboxReader(),
     errorAcknowledger: new NoopInboxAcknowledger(),
     reportSidePanelFailure: captureFailures().useCase,
@@ -141,11 +154,15 @@ function defaultAppProps(): AppProps {
       }),
     ),
     captureInbox: new FakeCaptureInbox(),
+    fullTabBootstrapInbox: new FakeCaptureInbox(),
     syntaxHighlighter: new FakeSyntaxHighlighter(),
     userPreferencesStore: new FakeUserPreferencesStore(
       UserPreferences.default().with({ onboardingCompleted: true }),
     ),
-    fullTabOpener: new SpyFullTabOpener({ kind: 'opened' }),
+    openFullTabEditor: new OpenFullTabEditor(
+      new StubCaptureCourier(),
+      new SpyFullTabOpener({ kind: 'opened' }),
+    ),
     clock: new FakeClock(),
   };
 }
@@ -155,19 +172,19 @@ async function renderApp(overrides: Partial<AppProps> = {}) {
   const props = { ...defaults, ...overrides };
   let result!: ReturnType<typeof render>;
   await act(async () => {
-    result = render(<App {...props} />);
+    result = render(<SidePanelApp {...props} />);
     await Promise.resolve();
   });
   return { ...result, defaults };
 }
 
-describe('App', () => {
+describe('SidePanelApp', () => {
   it('should_render_nothing_while_user_preferences_are_loading', () => {
     const props = {
       ...defaultAppProps(),
       userPreferencesStore: new StallingUserPreferencesStore(),
     };
-    const { container } = render(<App {...props} />);
+    const { container } = render(<SidePanelApp {...props} />);
 
     expect(container).toBeEmptyDOMElement();
   });
@@ -195,13 +212,6 @@ describe('App', () => {
     expect(
       screen.queryByRole('heading', { name: /welcome to snipworth/i }),
     ).not.toBeInTheDocument();
-  });
-
-  it('should_render_the_onboarding_in_tab_mode_when_onboarding_is_not_completed', async () => {
-    const store = new FakeUserPreferencesStore(UserPreferences.default());
-    await renderApp({ userPreferencesStore: store, mode: 'tab' });
-
-    expect(screen.getByRole('heading', { name: /welcome to snipworth/i })).toBeInTheDocument();
   });
 
   it('should_render_the_app_header_with_the_brand_logo', async () => {
@@ -282,10 +292,13 @@ describe('App', () => {
     const user = userEvent.setup();
     await renderApp({
       reportSidePanelFailure: failures.useCase,
-      fullTabOpener: new SpyFullTabOpener({
-        kind: 'open_failed',
-        cause: new Error('chrome refused to open tab'),
-      }),
+      openFullTabEditor: new OpenFullTabEditor(
+        new StubCaptureCourier(),
+        new SpyFullTabOpener({
+          kind: 'open_failed',
+          cause: new Error('chrome refused to open tab'),
+        }),
+      ),
     });
 
     await act(async () => {

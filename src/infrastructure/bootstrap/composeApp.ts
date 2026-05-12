@@ -1,5 +1,7 @@
 import type { AppDependencies } from '@/adapters/primary/app/AppDependencies';
+import { ChromeStorageCaptureCourier } from '@/adapters/secondary/capture/ChromeStorageCaptureCourier';
 import { ChromeStorageCaptureInbox } from '@/adapters/secondary/capture/ChromeStorageCaptureInbox';
+import { FULL_TAB_BOOTSTRAP_KEY } from '@/adapters/secondary/capture/pendingCaptureKey';
 import { BrowserClipboardCopier } from '@/adapters/secondary/clipboard/BrowserClipboardCopier';
 import { SystemClock } from '@/adapters/secondary/clock/SystemClock';
 import { BrowserBlobDownloader } from '@/adapters/secondary/download/BrowserBlobDownloader';
@@ -17,6 +19,7 @@ import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
+import { OpenFullTabEditor } from '@/application/use-cases/OpenFullTabEditor';
 import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
 
 export type { AppDependencies };
@@ -45,9 +48,13 @@ export function composeApp(): AppDependencies {
     loadCapturedCode: new LoadCapturedCode(languageDetector),
     autoDetectLanguage: new AutoDetectLanguage(languageDetector),
     captureInbox: new ChromeStorageCaptureInbox(),
+    fullTabBootstrapInbox: new ChromeStorageCaptureInbox(FULL_TAB_BOOTSTRAP_KEY),
     syntaxHighlighter: new ShikiSyntaxHighlighter(),
     userPreferencesStore: new ChromeStorageSyncPreferences(),
-    fullTabOpener: new ChromeTabOpener(),
+    openFullTabEditor: new OpenFullTabEditor(
+      new ChromeStorageCaptureCourier(FULL_TAB_BOOTSTRAP_KEY),
+      new ChromeTabOpener(),
+    ),
     clock,
   };
 }

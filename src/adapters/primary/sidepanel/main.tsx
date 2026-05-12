@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from '@/adapters/primary/app/App';
+import { SidePanelApp } from '@/adapters/primary/app/SidePanelApp';
 import { composeApp } from '@/infrastructure/bootstrap/composeApp';
 import '@/styles/globals.css';
 
@@ -11,6 +11,6 @@ const dependencies = composeApp();
 
 createRoot(root).render(
   <StrictMode>
-    <App mode="panel" {...dependencies} />
+    <SidePanelApp {...dependencies} />
   </StrictMode>,
 );

@@ -21,13 +21,18 @@ describe('AppHeader', () => {
     expect(screen.getByRole('banner')).toBeInTheDocument();
   });
 
-  it('should_render_the_open_in_full_tab_button_when_mode_is_panel_and_a_handler_is_provided', () => {
-    render(<AppHeader mode="panel" onOpenFullTab={() => undefined} />);
+  it('should_render_the_provided_version_as_a_badge_next_to_the_wordmark', () => {
+    render(<AppHeader version="9.9.9" />);
+    expect(screen.getByText('v9.9.9')).toBeInTheDocument();
+  });
+
+  it('should_render_the_open_in_full_tab_button_when_a_handler_is_provided', () => {
+    render(<AppHeader onOpenFullTab={() => undefined} />);
     expect(screen.getByRole('button', { name: 'Open in full tab' })).toBeInTheDocument();
   });
 
-  it('should_not_render_the_open_in_full_tab_button_when_mode_is_tab', () => {
-    render(<AppHeader mode="tab" onOpenFullTab={() => undefined} />);
+  it('should_not_render_the_open_in_full_tab_button_when_no_handler_is_provided', () => {
+    render(<AppHeader />);
     expect(screen.queryByRole('button', { name: 'Open in full tab' })).toBeNull();
   });
 
@@ -36,7 +41,6 @@ describe('AppHeader', () => {
     const clicks: number[] = [];
     render(
       <AppHeader
-        mode="panel"
         onOpenFullTab={() => {
           clicks.push(1);
         }}

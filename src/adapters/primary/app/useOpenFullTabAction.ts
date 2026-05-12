@@ -1,16 +1,20 @@
 import { useCallback } from 'react';
 
-import type { FullTabOpener, OpenFullTabOutcome } from '@/application/ports/FullTabOpener';
+import type {
+  OpenFullTabEditor,
+  OpenFullTabEditorOutcome,
+} from '@/application/use-cases/OpenFullTabEditor';
 
-export type OpenFullTabOutcomeListener = (outcome: OpenFullTabOutcome) => void;
+export type OpenFullTabOutcomeListener = (outcome: OpenFullTabEditorOutcome) => void;
 
 export function useOpenFullTabAction(
-  opener: FullTabOpener,
+  useCase: OpenFullTabEditor,
+  code: string,
   onOutcome?: OpenFullTabOutcomeListener,
 ): () => void {
   return useCallback(() => {
-    void opener.openFullTab().then((outcome) => {
+    void useCase.execute(code).then((outcome) => {
       onOutcome?.(outcome);
     });
-  }, [opener, onOutcome]);
+  }, [useCase, code, onOutcome]);
 }

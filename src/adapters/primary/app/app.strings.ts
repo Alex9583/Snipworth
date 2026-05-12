@@ -1,10 +1,8 @@
 export const APP = {
   previewLoading: 'Preparing preview…',
+  codePlaceholder: 'Paste or type code…',
   preferencesLoadFailedMessage: 'Snipworth could not load saved preferences.',
   preferencesSaveFailedMessage: 'Snipworth could not save your preferences.',
-  tabCodeLabel: 'Code',
-  tabPreviewLabel: 'Preview',
-  tabConfigLabel: 'Config',
   brandPrefix: 'Snip',
   brandSuffix: 'worth',
   logoLabel: 'Snipworth logo',
@@ -14,3 +12,7 @@ export const APP = {
   openFullTabTooltip: 'Open in full tab',
   openFullTabFailedMessage: 'Snipworth could not open the full-tab editor.',
 } as const;
+
+export function versionBadgeLabel(version: string): string {
+  return `v${version}`;
+}

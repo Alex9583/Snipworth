@@ -1,23 +1,23 @@
-import type { AppMode } from '../AppMode';
-import { APP } from '../app.strings';
+import { APP, versionBadgeLabel } from '../app.strings';
+import { Badge } from './Badge';
 import { IconBtn } from './IconBtn';
 import { LogoChip } from './LogoChip';
 import { Maximize2Icon } from './icons';
 
 export interface AppHeaderProps {
-  readonly mode?: AppMode;
   readonly onOpenFullTab?: () => void;
+  readonly version?: string;
 }
 
-export function AppHeader({ mode = 'panel', onOpenFullTab }: AppHeaderProps = {}) {
-  const showFullTabButton = mode === 'panel' && onOpenFullTab !== undefined;
+export function AppHeader({ onOpenFullTab, version = __SNIPWORTH_VERSION__ }: AppHeaderProps = {}) {
   return (
     <header className="border-line bg-canvas flex h-12 shrink-0 items-center justify-between gap-2.5 border-b px-3">
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2">
         <LogoChip size={24} label={APP.logoLabel} />
         <Wordmark />
+        <Badge>{versionBadgeLabel(version)}</Badge>
       </div>
-      {showFullTabButton && (
+      {onOpenFullTab !== undefined && (
         <IconBtn label={APP.openFullTabTooltip} onClick={onOpenFullTab}>
           <Maximize2Icon size={14} />
         </IconBtn>

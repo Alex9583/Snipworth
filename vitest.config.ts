@@ -14,6 +14,7 @@ export default defineConfig({
   define: {
     __SNIPWORTH_REPO_URL__: JSON.stringify(repoHttpsUrl),
     __SNIPWORTH_BMAC_URL__: JSON.stringify(bmacUrl),
+    __SNIPWORTH_VERSION__: JSON.stringify(pkg.version),
   },
   test: {
     environment: 'happy-dom',
