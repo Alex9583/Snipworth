@@ -15,6 +15,13 @@ import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetA
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
 import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
+import { UserPreferences } from '@/domain/preferences/UserPreferences';
+
+import type {
+  LoadPrefsOutcome,
+  SavePrefsOutcome,
+  UserPreferencesStore,
+} from '@/application/ports/UserPreferencesStore';
 
 import { FakeCaptureInbox } from '../../setup/fakes/FakeCaptureInbox';
 import { FakeClock } from '../../setup/fakes/FakeClock';
@@ -47,6 +54,18 @@ class StubInboxReader implements InboxReader {
 class NoopInboxAcknowledger implements InboxAcknowledger {
   acknowledge(): Promise<AckOutcome> {
     return Promise.resolve({ kind: 'acknowledged' });
+  }
+}
+
+class StallingUserPreferencesStore implements UserPreferencesStore {
+  load(): Promise<LoadPrefsOutcome> {
+    return new Promise(() => {
+      /* never resolves */
+    });
+  }
+
+  save(): Promise<SavePrefsOutcome> {
+    return Promise.resolve({ kind: 'saved' });
   }
 }
 
@@ -123,7 +142,9 @@ function defaultAppProps(): AppProps {
     ),
     captureInbox: new FakeCaptureInbox(),
     syntaxHighlighter: new FakeSyntaxHighlighter(),
-    userPreferencesStore: new FakeUserPreferencesStore(),
+    userPreferencesStore: new FakeUserPreferencesStore(
+      UserPreferences.default().with({ onboardingCompleted: true }),
+    ),
     fullTabOpener: new SpyFullTabOpener({ kind: 'opened' }),
     clock: new FakeClock(),
   };
@@ -141,6 +162,48 @@ async function renderApp(overrides: Partial<AppProps> = {}) {
 }
 
 describe('App', () => {
+  it('should_render_nothing_while_user_preferences_are_loading', () => {
+    const props = {
+      ...defaultAppProps(),
+      userPreferencesStore: new StallingUserPreferencesStore(),
+    };
+    const { container } = render(<App {...props} />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('should_render_the_onboarding_when_user_preferences_indicate_onboarding_is_not_completed', async () => {
+    const store = new FakeUserPreferencesStore(UserPreferences.default());
+    await renderApp({ userPreferencesStore: store });
+
+    expect(screen.getByRole('heading', { name: /welcome to snipworth/i })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /code/i })).not.toBeInTheDocument();
+  });
+
+  it('should_reveal_the_editor_tabs_after_user_finishes_onboarding', async () => {
+    const user = userEvent.setup();
+    const store = new FakeUserPreferencesStore(UserPreferences.default());
+    await renderApp({ userPreferencesStore: store });
+
+    await user.click(screen.getByRole('button', { name: /get started/i }));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /start using snipworth/i }));
+    });
+
+    expect(screen.getByRole('tab', { name: /code/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /welcome to snipworth/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should_render_the_onboarding_in_tab_mode_when_onboarding_is_not_completed', async () => {
+    const store = new FakeUserPreferencesStore(UserPreferences.default());
+    await renderApp({ userPreferencesStore: store, mode: 'tab' });
+
+    expect(screen.getByRole('heading', { name: /welcome to snipworth/i })).toBeInTheDocument();
+  });
+
   it('should_render_the_app_header_with_the_brand_logo', async () => {
     await renderApp();
 

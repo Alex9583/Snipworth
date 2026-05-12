@@ -14,6 +14,7 @@ export interface UserPreferencesHandle {
   readonly hasLoaded: boolean;
   readonly renderConfig: RenderConfigSnapshot;
   readonly patchConfig: (patch: Partial<RenderConfigSnapshot>) => void;
+  readonly completeOnboarding: () => Promise<void>;
 }
 
 export function useUserPreferences(
@@ -66,5 +67,19 @@ export function useUserPreferences(
     );
   }, []);
 
-  return { prefs, hasLoaded, renderConfig, patchConfig };
+  const completeOnboarding = useCallback(async (): Promise<void> => {
+    const next = prefs.with({ onboardingCompleted: true });
+    const outcome = await store.save(next);
+    if (outcome.kind === 'saved') {
+      setPrefs(next);
+      return;
+    }
+    void reportFailure.execute({
+      kind: 'preferences_save_failed',
+      message: APP.preferencesSaveFailedMessage,
+      cause: outcome.cause,
+    });
+  }, [prefs, store, reportFailure]);
+
+  return { prefs, hasLoaded, renderConfig, patchConfig, completeOnboarding };
 }

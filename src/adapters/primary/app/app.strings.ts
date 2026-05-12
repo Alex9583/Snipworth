@@ -1,6 +1,7 @@
 export const APP = {
   previewLoading: 'Preparing preview…',
   preferencesLoadFailedMessage: 'Snipworth could not load saved preferences.',
+  preferencesSaveFailedMessage: 'Snipworth could not save your preferences.',
   tabCodeLabel: 'Code',
   tabPreviewLabel: 'Preview',
   tabConfigLabel: 'Config',

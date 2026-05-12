@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { AppFooter, type LinkOpener } from '@/adapters/primary/app/ui/AppFooter';
+import type { LinkOpener } from '@/adapters/primary/app/LinkOpener';
+import { AppFooter } from '@/adapters/primary/app/ui/AppFooter';
 
 class SpyLinkOpener implements LinkOpener {
   public readonly opened: string[] = [];

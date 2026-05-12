@@ -1,21 +1,12 @@
 import { APP } from '../app.strings';
+import { WINDOW_OPENER, type LinkOpener } from '../LinkOpener';
 import { Button } from './Button';
 import { CoffeeIcon, GithubIcon } from './icons';
 import { IconBtn } from './IconBtn';
 
-export interface LinkOpener {
-  open: (url: string) => void;
-}
-
 interface AppFooterProps {
   readonly linkOpener?: LinkOpener;
 }
-
-const WINDOW_OPENER: LinkOpener = {
-  open: (url) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  },
-};
 
 export function AppFooter({ linkOpener = WINDOW_OPENER }: AppFooterProps = {}) {
   return (

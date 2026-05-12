@@ -9,6 +9,7 @@ import type { AppMode } from './AppMode';
 import { ErrorBanner } from './ErrorBanner';
 import { HighlightedPreview } from './HighlightedPreview';
 import { LiveCodeEditor } from './LiveCodeEditor';
+import { Onboarding } from './onboarding/Onboarding';
 import { createHighlightCache } from './highlightCache';
 import { APP } from './app.strings';
 import { EXPORT_CONTROLS, copyStatusLabel, downloadStatusLabel } from './ui/ExportControls.strings';
@@ -57,7 +58,7 @@ export function App({
     autoDetectLanguage,
   );
 
-  const { renderConfig, patchConfig } = useUserPreferences(
+  const { prefs, hasLoaded, renderConfig, patchConfig, completeOnboarding } = useUserPreferences(
     userPreferencesStore,
     reportSidePanelFailure,
   );
@@ -106,6 +107,23 @@ export function App({
       cause: outcome.cause,
     });
   });
+
+  if (!hasLoaded) {
+    return null;
+  }
+
+  if (!prefs.onboardingCompleted) {
+    return (
+      <div className="bg-canvas text-ink flex h-screen flex-col">
+        <AppHeader mode={mode} onOpenFullTab={onOpenFullTab} />
+        <Onboarding
+          onComplete={() => {
+            void completeOnboarding();
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-canvas text-ink flex h-screen flex-col">

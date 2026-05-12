@@ -8,6 +8,7 @@ export const errorKinds = [
   'capture_storage_failed',
   'capture_panel_open_failed',
   'preferences_load_failed',
+  'preferences_save_failed',
   'snippet_export_failed',
   'open_full_tab_failed',
 ] as const;

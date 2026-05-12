@@ -8,7 +8,7 @@ import type {
   UserPreferencesStore,
 } from '@/application/ports/UserPreferencesStore';
 import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
-import type { UserPreferences } from '@/domain/preferences/UserPreferences';
+import { UserPreferences } from '@/domain/preferences/UserPreferences';
 
 import { deferred } from '../../setup/deferred';
 import { FakeClock } from '../../setup/fakes/FakeClock';
@@ -28,6 +28,18 @@ class StubLoadingUserPreferencesStore implements UserPreferencesStore {
   save(preferences: UserPreferences): Promise<SavePrefsOutcome> {
     this.saves.push(preferences);
     return Promise.resolve({ kind: 'saved' });
+  }
+}
+
+class FailingSaveUserPreferencesStore implements UserPreferencesStore {
+  constructor(private readonly cause: unknown) {}
+
+  load(): Promise<LoadPrefsOutcome> {
+    return Promise.resolve({ kind: 'loaded', preferences: UserPreferences.default() });
+  }
+
+  save(): Promise<SavePrefsOutcome> {
+    return Promise.resolve({ kind: 'storage_unavailable', cause: this.cause });
   }
 }
 
@@ -158,6 +170,54 @@ describe('useUserPreferences', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('should_save_preferences_with_onboardingCompleted_true_when_completeOnboarding_is_called', async () => {
+    const failures = captureFailures();
+    const store = new FakeUserPreferencesStore();
+
+    const rendered = renderUserPreferences(store, failures);
+    await awaitLoaded(rendered);
+
+    await act(async () => {
+      await rendered.result.current.completeOnboarding();
+    });
+
+    expect(store.saves).toHaveLength(1);
+    expect(store.saves[0]?.onboardingCompleted).toBe(true);
+  });
+
+  it('should_report_a_failure_when_completeOnboarding_save_returns_storage_unavailable', async () => {
+    const failures = captureFailures();
+    const cause = new Error('quota exceeded');
+    const store = new FailingSaveUserPreferencesStore(cause);
+
+    const rendered = renderUserPreferences(store, failures);
+    await awaitLoaded(rendered);
+
+    await act(async () => {
+      await rendered.result.current.completeOnboarding();
+    });
+
+    expect(failures.reporter.reports).toHaveLength(1);
+    expect(failures.reporter.reports[0]?.kind).toBe('preferences_save_failed');
+    expect(failures.reporter.reports[0]?.details).toBe('quota exceeded');
+  });
+
+  it('should_expose_onboardingCompleted_true_after_completeOnboarding_resolves', async () => {
+    const failures = captureFailures();
+    const store = new FakeUserPreferencesStore();
+
+    const rendered = renderUserPreferences(store, failures);
+    await awaitLoaded(rendered);
+
+    expect(rendered.result.current.prefs.onboardingCompleted).toBe(false);
+
+    await act(async () => {
+      await rendered.result.current.completeOnboarding();
+    });
+
+    expect(rendered.result.current.prefs.onboardingCompleted).toBe(true);
   });
 
   it('should_keep_renderConfig_referentially_stable_when_prefs_unchanged', async () => {

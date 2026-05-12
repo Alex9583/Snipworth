@@ -95,6 +95,24 @@ export function DownloadIcon(props: IconProps) {
   );
 }
 
+export function ArrowRightIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </Svg>
+  );
+}
+
+export function MousePointerIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 3l7.07 17.5 2.51-7.42 7.42-2.51z" />
+      <line x1="13" y1="13" x2="19" y2="19" />
+    </Svg>
+  );
+}
+
 export function Maximize2Icon(props: IconProps) {
   return (
     <Svg {...props}>
