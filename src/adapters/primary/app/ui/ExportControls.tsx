@@ -38,8 +38,8 @@ export function ExportControls({
   onDownload,
 }: ExportControlsProps) {
   return (
-    <div className="border-line bg-surface flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2">
-      <div className="flex items-center gap-1.5">
+    <div className="@container border-line bg-surface flex items-center justify-between gap-1.5 rounded-lg border px-1.5 py-2 @[380px]:gap-2 @[380px]:px-2.5">
+      <div className="flex items-center gap-1 @[380px]:gap-1.5">
         <Segmented
           label={EXPORT_CONTROLS.formatLabel}
           value={format}

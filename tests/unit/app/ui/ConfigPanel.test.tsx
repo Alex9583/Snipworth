@@ -78,4 +78,11 @@ describe('ConfigPanel', () => {
     expect(screen.getByLabelText('Theme')).toHaveValue('nord');
     expect(screen.getByRole('option', { name: 'nord' })).toBeInTheDocument();
   });
+
+  it('should_display_a_pixel_hint_next_to_the_font_size_slider', () => {
+    const value: RenderConfigSnapshot = { ...defaults, fontSize: 18 };
+    render(<ConfigPanel value={value} onChange={noop} />);
+
+    expect(screen.getByText('18 px')).toBeInTheDocument();
+  });
 });

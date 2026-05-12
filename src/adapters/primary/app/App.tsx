@@ -15,6 +15,7 @@ import { EXPORT_CONTROLS, copyStatusLabel, downloadStatusLabel } from './ui/Expo
 import { AppFooter } from './ui/AppFooter';
 import { AppHeader } from './ui/AppHeader';
 import { ConfigPanel } from './ui/ConfigPanel';
+import { EditorStats } from './ui/EditorStats';
 import { ExportControls } from './ui/ExportControls';
 import { LanguagePicker } from './ui/LanguagePicker';
 import { CodeIcon, EyeIcon, SettingsIcon } from './ui/icons';
@@ -121,19 +122,22 @@ export function App({
 
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           {activeTab === 'code' && (
-            <LiveCodeEditor
-              value={code}
-              onChange={setCode}
-              language={language}
-              theme={renderConfig.theme}
-              getHighlight={getHighlight}
-              label={APP.tabCodeLabel}
-              placeholder={CODE_PLACEHOLDER}
-              className="flex-1"
-              topRightSlot={
-                <LanguagePicker value={language} detection={detection} onChange={pickLanguage} />
-              }
-            />
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <LiveCodeEditor
+                value={code}
+                onChange={setCode}
+                language={language}
+                theme={renderConfig.theme}
+                getHighlight={getHighlight}
+                label={APP.tabCodeLabel}
+                placeholder={CODE_PLACEHOLDER}
+                className="flex-1"
+                topRightSlot={
+                  <LanguagePicker value={language} detection={detection} onChange={pickLanguage} />
+                }
+              />
+              <EditorStats code={code} />
+            </div>
           )}
 
           {activeTab === 'preview' && (

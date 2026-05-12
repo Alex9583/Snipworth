@@ -1,50 +1,54 @@
+import type { ReactNode } from 'react';
+
 import {
   fontFamilies,
   type Background,
   type FontFamily,
   type RenderConfigSnapshot,
 } from '@/domain/rendering/RenderConfig';
-import { Card } from './Card';
 import { Slider } from './Slider';
+import { CONFIG_PANEL, pxHintLabel } from './ConfigPanel.strings';
 
 const CURATED_THEMES = ['github-dark', 'github-light'] as const;
-
-interface ConfigPanelProps {
-  value: RenderConfigSnapshot;
-  onChange: (patch: Partial<RenderConfigSnapshot>) => void;
-}
 
 const FONT_SIZE_MIN = 10;
 const FONT_SIZE_MAX = 24;
 
 const FALLBACK_BACKGROUND_COLOR = '#1C1C21';
 
-const FIELD_CLASSES = 'flex flex-col gap-1 text-sm';
-const LABEL_TEXT_CLASSES = 'text-ink-muted';
-const SELECT_CLASSES = 'bg-elevated text-ink h-8 rounded-sm px-2 text-sm';
+const ROW_CLASSES = 'border-line flex flex-col gap-1.5 border-b py-2.5 last:border-b-0';
+const ROW_HEADER_CLASSES = 'flex items-center justify-between';
+const ROW_LABEL_CLASSES = 'text-ink-muted text-sm';
+const ROW_HINT_CLASSES = 'text-ink-muted font-mono text-xs tabular-nums';
+const CONTROL_CLASSES = 'bg-elevated text-ink h-8 w-full rounded-sm px-2 text-sm';
+
+interface ConfigPanelProps {
+  value: RenderConfigSnapshot;
+  onChange: (patch: Partial<RenderConfigSnapshot>) => void;
+}
 
 export function ConfigPanel({ value, onChange }: ConfigPanelProps) {
   const themeOptions = optionListWith(CURATED_THEMES, value.theme);
   return (
-    <Card className="flex flex-col gap-4">
-      <SelectField
-        label="Theme"
+    <div className="flex flex-col">
+      <SelectRow
+        label={CONFIG_PANEL.themeLabel}
         value={value.theme}
         options={themeOptions}
         onChange={(theme) => {
           onChange({ theme });
         }}
       />
-      <SelectField
-        label="Font family"
+      <SelectRow
+        label={CONFIG_PANEL.fontFamilyLabel}
         value={value.fontFamily}
         options={fontFamilies}
         onChange={(fontFamily) => {
           onChange({ fontFamily: fontFamily as FontFamily });
         }}
       />
-      <SliderField
-        label="Font size"
+      <SliderRow
+        label={CONFIG_PANEL.fontSizeLabel}
         value={value.fontSize}
         min={FONT_SIZE_MIN}
         max={FONT_SIZE_MAX}
@@ -52,14 +56,14 @@ export function ConfigPanel({ value, onChange }: ConfigPanelProps) {
           onChange({ fontSize });
         }}
       />
-      <ColorField
-        label="Background color"
+      <ColorRow
+        label={CONFIG_PANEL.backgroundColorLabel}
         value={readSolidColor(value.background)}
         onChange={(color) => {
           onChange({ background: { type: 'solid', color } });
         }}
       />
-    </Card>
+    </div>
   );
 }
 
@@ -72,23 +76,41 @@ function optionListWith(curated: readonly string[], current: string): readonly s
   return [current, ...curated];
 }
 
-interface SelectFieldProps {
+interface ConfigRowProps {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}
+
+function ConfigRow({ label, hint, children }: ConfigRowProps) {
+  return (
+    <div className={ROW_CLASSES}>
+      <div className={ROW_HEADER_CLASSES}>
+        <span className={ROW_LABEL_CLASSES}>{label}</span>
+        {hint !== undefined && <span className={ROW_HINT_CLASSES}>{hint}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+interface SelectRowProps {
   label: string;
   value: string;
   options: readonly string[];
   onChange: (next: string) => void;
 }
 
-function SelectField({ label, value, options, onChange }: SelectFieldProps) {
+function SelectRow({ label, value, options, onChange }: SelectRowProps) {
   return (
-    <label className={FIELD_CLASSES}>
-      <span className={LABEL_TEXT_CLASSES}>{label}</span>
+    <ConfigRow label={label}>
       <select
+        aria-label={label}
         value={value}
         onChange={(event) => {
           onChange(event.target.value);
         }}
-        className={SELECT_CLASSES}
+        className={CONTROL_CLASSES}
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -96,11 +118,11 @@ function SelectField({ label, value, options, onChange }: SelectFieldProps) {
           </option>
         ))}
       </select>
-    </label>
+    </ConfigRow>
   );
 }
 
-interface SliderFieldProps {
+interface SliderRowProps {
   label: string;
   value: number;
   min: number;
@@ -108,35 +130,32 @@ interface SliderFieldProps {
   onChange: (next: number) => void;
 }
 
-function SliderField({ label, value, min, max, onChange }: SliderFieldProps) {
+function SliderRow({ label, value, min, max, onChange }: SliderRowProps) {
   return (
-    <div className={FIELD_CLASSES}>
-      <span className={LABEL_TEXT_CLASSES}>
-        {label}: {value}px
-      </span>
+    <ConfigRow label={label} hint={pxHintLabel(value)}>
       <Slider value={value} min={min} max={max} onChange={onChange} label={label} />
-    </div>
+    </ConfigRow>
   );
 }
 
-interface ColorFieldProps {
+interface ColorRowProps {
   label: string;
   value: string;
   onChange: (next: string) => void;
 }
 
-function ColorField({ label, value, onChange }: ColorFieldProps) {
+function ColorRow({ label, value, onChange }: ColorRowProps) {
   return (
-    <label className={FIELD_CLASSES}>
-      <span className={LABEL_TEXT_CLASSES}>{label}</span>
+    <ConfigRow label={label}>
       <input
         type="color"
+        aria-label={label}
         value={value}
         onChange={(event) => {
           onChange(event.target.value);
         }}
         className="bg-elevated h-8 w-full rounded-sm"
       />
-    </label>
+    </ConfigRow>
   );
 }

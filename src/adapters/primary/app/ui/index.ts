@@ -4,6 +4,7 @@ export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
 export { ConfigPanel } from './ConfigPanel';
+export { EditorStats } from './EditorStats';
 export { ExportControls } from './ExportControls';
 export { IconBtn } from './IconBtn';
 export { LanguagePicker } from './LanguagePicker';
