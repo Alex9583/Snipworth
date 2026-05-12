@@ -12,6 +12,7 @@ import { HtmlToImageExporter } from '@/adapters/secondary/image-export/HtmlToIma
 import { HighlightJsLanguageDetector } from '@/adapters/secondary/language-detection/HighlightJsLanguageDetector';
 import { ChromeStorageSyncPreferences } from '@/adapters/secondary/preferences/ChromeStorageSyncPreferences';
 import { ShikiSyntaxHighlighter } from '@/adapters/secondary/syntax-highlighting/ShikiSyntaxHighlighter';
+import { ChromeTabOpener } from '@/adapters/secondary/tab/ChromeTabOpener';
 import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
@@ -46,6 +47,7 @@ export function composeApp(): AppDependencies {
     captureInbox: new ChromeStorageCaptureInbox(),
     syntaxHighlighter: new ShikiSyntaxHighlighter(),
     userPreferencesStore: new ChromeStorageSyncPreferences(),
+    fullTabOpener: new ChromeTabOpener(),
     clock,
   };
 }

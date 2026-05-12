@@ -10,4 +10,6 @@ export const APP = {
   supportButton: 'Support',
   supportTooltip: 'Buy me a coffee',
   githubTooltip: 'Open GitHub repository',
+  openFullTabTooltip: 'Open in full tab',
+  openFullTabFailedMessage: 'Snipworth could not open the full-tab editor.',
 } as const;

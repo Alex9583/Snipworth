@@ -18,6 +18,6 @@ export default defineManifest({
     service_worker: 'src/adapters/primary/background/service-worker.ts',
     type: 'module',
   },
-  permissions: ['sidePanel', 'contextMenus', 'storage', 'activeTab', 'scripting'],
+  permissions: ['sidePanel', 'contextMenus', 'storage', 'activeTab', 'scripting', 'tabs'],
   minimum_chrome_version: '114',
 });

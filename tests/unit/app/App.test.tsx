@@ -26,6 +26,7 @@ import { SpyBlobDownloader } from '../../setup/fakes/SpyBlobDownloader';
 import { SpyClipboardCopier } from '../../setup/fakes/SpyClipboardCopier';
 import { SpyErrorReporter } from '../../setup/fakes/SpyErrorReporter';
 import { SpyFontPreloader } from '../../setup/fakes/SpyFontPreloader';
+import { SpyFullTabOpener } from '../../setup/fakes/SpyFullTabOpener';
 import { SpyImageExporter } from '../../setup/fakes/SpyImageExporter';
 import { StubLanguageDetector } from '../../setup/fakes/StubLanguageDetector';
 
@@ -123,6 +124,7 @@ function defaultAppProps(): AppProps {
     captureInbox: new FakeCaptureInbox(),
     syntaxHighlighter: new FakeSyntaxHighlighter(),
     userPreferencesStore: new FakeUserPreferencesStore(),
+    fullTabOpener: new SpyFullTabOpener({ kind: 'opened' }),
     clock: new FakeClock(),
   };
 }
@@ -210,6 +212,28 @@ describe('App', () => {
     );
     expect(exportFailures).toHaveLength(1);
     expect(exportFailures[0]?.details).toBe('rasterization went wrong');
+  });
+
+  it('should_report_an_open_full_tab_failure_when_opener_returns_open_failed', async () => {
+    const failures = captureFailures();
+    const user = userEvent.setup();
+    await renderApp({
+      reportSidePanelFailure: failures.useCase,
+      fullTabOpener: new SpyFullTabOpener({
+        kind: 'open_failed',
+        cause: new Error('chrome refused to open tab'),
+      }),
+    });
+
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: 'Open in full tab' }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const openFailures = failures.reporter.reports.filter((r) => r.kind === 'open_full_tab_failed');
+    expect(openFailures).toHaveLength(1);
+    expect(openFailures[0]?.details).toBe('chrome refused to open tab');
   });
 
   it('should_report_a_snippet_export_failure_when_download_use_case_returns_export_failed', async () => {

@@ -23,6 +23,7 @@ import { Tabs } from './ui/Tabs';
 import { useEditorLanguageState } from './useEditorLanguageState';
 import { useCopyAction } from './useCopyAction';
 import { useDownloadAction } from './useDownloadAction';
+import { useOpenFullTabAction } from './useOpenFullTabAction';
 import { useUserPreferences } from './useUserPreferences';
 
 type AppProps = AppDependencies & { readonly mode: AppMode };
@@ -43,7 +44,9 @@ export function App({
   captureInbox,
   syntaxHighlighter,
   userPreferencesStore,
+  fullTabOpener,
   clock,
+  mode,
 }: AppProps) {
   const [activeTab, setActiveTab] = useState<TabValue>('code');
   const previewRef = useRef<HTMLDivElement>(null);
@@ -95,10 +98,18 @@ export function App({
     clock,
     onDownloadOutcome,
   );
+  const onOpenFullTab = useOpenFullTabAction(fullTabOpener, (outcome) => {
+    if (outcome.kind === 'opened') return;
+    void reportSidePanelFailure.execute({
+      kind: 'open_full_tab_failed',
+      message: APP.openFullTabFailedMessage,
+      cause: outcome.cause,
+    });
+  });
 
   return (
     <div className="bg-canvas text-ink flex h-screen flex-col">
-      <AppHeader />
+      <AppHeader mode={mode} onOpenFullTab={onOpenFullTab} />
       <main className="flex min-h-0 flex-1 flex-col gap-2 p-3">
         <ErrorBanner reader={errorReader} acknowledger={errorAcknowledger} />
         <Tabs

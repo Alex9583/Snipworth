@@ -4,7 +4,7 @@ import { buildRuntimeMock, resetRuntime } from './runtime';
 import { buildScriptingMock, resetScripting } from './scripting';
 import { buildSidePanelMock, resetSidePanel } from './side-panel';
 import { buildStorageMock, resetStorage } from './storage';
-import { buildTabsMock } from './tabs';
+import { buildTabsMock, resetTabs } from './tabs';
 import type { ChromeMock } from './types';
 
 export type { StorageValue } from './types';
@@ -23,6 +23,7 @@ export { readBehavior, readSidePanelOpens, queueSidePanelFault } from './side-pa
 export { queueStorageFault, readSession } from './storage';
 export { dispatchContextMenuClick, readCreatedMenus } from './context-menus';
 export { queueExecuteScriptFault, queueExecuteScriptResult } from './scripting';
+export { queueTabsCreateFault, readCreatedTabs } from './tabs';
 
 function buildChromeMock(): ChromeMock {
   return {
@@ -43,6 +44,7 @@ export function resetChromeMock(): void {
   resetSidePanel();
   resetContextMenus();
   resetScripting();
+  resetTabs();
   globalThis.chrome = buildChromeMock() as typeof chrome;
 }
 

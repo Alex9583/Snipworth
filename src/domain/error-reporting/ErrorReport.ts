@@ -9,6 +9,7 @@ export const errorKinds = [
   'capture_panel_open_failed',
   'preferences_load_failed',
   'snippet_export_failed',
+  'open_full_tab_failed',
 ] as const;
 
 export type ErrorKind = (typeof errorKinds)[number];

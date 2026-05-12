@@ -1,6 +1,7 @@
 import type { CaptureInbox } from '@/application/ports/CaptureInbox';
 import type { Clock } from '@/application/ports/Clock';
 import type { InboxAcknowledger, InboxReader } from '@/application/ports/ErrorInbox';
+import type { FullTabOpener } from '@/application/ports/FullTabOpener';
 import type { SyntaxHighlighter } from '@/application/ports/SyntaxHighlighter';
 import type { UserPreferencesStore } from '@/application/ports/UserPreferencesStore';
 import type { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
@@ -20,5 +21,6 @@ export interface AppDependencies {
   readonly captureInbox: CaptureInbox;
   readonly syntaxHighlighter: SyntaxHighlighter;
   readonly userPreferencesStore: UserPreferencesStore;
+  readonly fullTabOpener: FullTabOpener;
   readonly clock: Clock;
 }
