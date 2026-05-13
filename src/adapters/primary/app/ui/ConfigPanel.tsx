@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import {
   fontFamilies,
+  FONT_SIZE_RANGE,
   type Background,
   type FontFamily,
   type RenderConfigSnapshot,
@@ -13,8 +14,7 @@ import { CONFIG_PANEL, pxHintLabel } from './ConfigPanel.strings';
 const DARK_THEMES = themesByVariant('dark');
 const LIGHT_THEMES = themesByVariant('light');
 
-const FONT_SIZE_MIN = 10;
-const FONT_SIZE_MAX = 24;
+const [FONT_SIZE_MIN, FONT_SIZE_MAX] = FONT_SIZE_RANGE;
 
 const FALLBACK_BACKGROUND_COLOR = '#1C1C21';
 
