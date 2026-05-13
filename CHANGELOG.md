@@ -12,6 +12,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 
 
 
+
+## [0.1.0] - 2026-05-13
+
+### Added
+
+- Add Integration of side panel and full tab with capture, export and onboarding
+
 ## [0.0.5] - 2026-05-09
 
 ### Added
