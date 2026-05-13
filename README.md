@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="public/icons/icon-128.png" alt="Snipworth logo" width="96" height="96" />
+
 # Snipworth
 
 **Beautiful code snippets, ready to post.**
@@ -22,10 +24,18 @@ A Chrome extension for developers who share code on social media. Turn any snipp
 
 - Side panel that stays open while you browse, plus a full-tab mode
 - Paste or capture code via right-click → _"Snipworth this code"_
+- Auto-detected language with manual override (any language supported by Shiki)
 - Syntax highlighting with [Shiki](https://shiki.style/) (VS Code-level quality)
-- Export PNG or SVG at 1x / 2x / 4x resolution
+- Customize theme (dark / light), monospace font, size, background, and more
+- Copy straight to the clipboard or download as PNG / SVG at 1× / 2× / 4×
 - 100% local — your data never leaves your machine
 - Open source (MIT), no tracking, no analytics
+
+## Roadmap
+
+### V1 — Drafts Studio _(in design)_
+
+Save snippets you want to keep for later — either to come back and refine, or to schedule and post on social media. Fully local, searchable, with thumbnails. The current MVP focuses on the one-shot capture-and-export flow; persistent drafts land in V1.
 
 ## Install
 
