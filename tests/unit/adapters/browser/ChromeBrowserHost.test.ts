@@ -1,15 +1,28 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
+  dispatchContextMenuClick,
   dispatchMessage,
+  queueExecuteScriptFault,
+  queueExecuteScriptResult,
   queueSidePanelFault,
+  readCreatedMenus,
   resetChromeMock,
   SELF_EXTENSION_ID,
+  withRuntimeLastError,
 } from '../../../setup/chrome-mock';
-import { ChromeBrowserHost } from '@/adapters/secondary/browser/ChromeBrowserHost';
+import {
+  CAPTURE_MENU_ID,
+  CAPTURE_MENU_TITLE,
+  ChromeBrowserHost,
+} from '@/adapters/secondary/browser/ChromeBrowserHost';
 
 beforeEach(() => {
   resetChromeMock();
 });
+
+async function flushAsync(): Promise<void> {
+  for (let i = 0; i < 4; i++) await Promise.resolve();
+}
 
 describe('ChromeBrowserHost — onMessage', () => {
   it('should_send_the_handler_response_when_handler_resolves', async () => {
@@ -71,5 +84,239 @@ describe('ChromeBrowserHost — onMessage', () => {
     const outcome = await host.enableSidePanelOnActionClick();
 
     expect(outcome).toEqual({ kind: 'failed', cause });
+  });
+});
+
+describe('ChromeBrowserHost — installCaptureContextMenu', () => {
+  it('should_register_a_menu_item_with_the_capture_id_and_a_selection_context', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+
+    const outcome = await host.installCaptureContextMenu();
+
+    expect(outcome).toEqual({ kind: 'installed' });
+    const menus = readCreatedMenus();
+    expect(menus).toHaveLength(1);
+    expect(menus[0]?.id).toBe(CAPTURE_MENU_ID);
+    expect(menus[0]?.properties.title).toBe(CAPTURE_MENU_TITLE);
+    expect(menus[0]?.properties.contexts).toEqual(['selection']);
+  });
+
+  it('should_return_failed_with_cause_when_chrome_runtime_lastError_is_set', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const original = chrome.contextMenus.create;
+    chrome.contextMenus.create = (_props, callback?: () => void) => {
+      withRuntimeLastError('duplicate id', () => callback?.());
+      return CAPTURE_MENU_ID;
+    };
+
+    try {
+      const outcome = await host.installCaptureContextMenu();
+
+      expect(outcome.kind).toBe('failed');
+      if (outcome.kind === 'failed') {
+        expect(outcome.cause).toBeInstanceOf(Error);
+        expect((outcome.cause as Error).message).toBe('duplicate id');
+      }
+    } finally {
+      chrome.contextMenus.create = original;
+    }
+  });
+});
+
+describe('ChromeBrowserHost — onCaptureRequested', () => {
+  it('should_invoke_the_handler_with_selection_text_pageUrl_and_tab_id_when_capture_menu_is_clicked', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText: 'const x = 1;',
+        pageUrl: 'https://example.com/page',
+      },
+      { id: 7 } as chrome.tabs.Tab,
+    );
+    await flushAsync();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'const x = 1;',
+        sourceUrl: 'https://example.com/page',
+        tabId: 7,
+      }),
+    );
+  });
+
+  it('should_pass_an_undefined_source_url_when_pageUrl_is_missing', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText: 'a',
+      },
+      { id: 1 } as chrome.tabs.Tab,
+    );
+    await flushAsync();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'a',
+        sourceUrl: undefined,
+        tabId: 1,
+      }),
+    );
+  });
+
+  it('should_ignore_clicks_on_other_menu_items', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    dispatchContextMenuClick(
+      {
+        menuItemId: 'some-other-menu',
+        editable: false,
+        selectionText: 'a',
+      },
+      { id: 1 } as chrome.tabs.Tab,
+    );
+    await flushAsync();
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('should_ignore_clicks_when_selection_text_is_missing', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    dispatchContextMenuClick({ menuItemId: CAPTURE_MENU_ID, editable: false }, {
+      id: 1,
+    } as chrome.tabs.Tab);
+    await flushAsync();
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('should_ignore_clicks_when_tab_id_is_missing', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    dispatchContextMenuClick(
+      { menuItemId: CAPTURE_MENU_ID, editable: false, selectionText: 'a' },
+      undefined,
+    );
+    await flushAsync();
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('should_invoke_the_crash_reporter_with_the_cause_when_handler_rejects', async () => {
+    const onCrash = vi.fn();
+    const host = new ChromeBrowserHost(onCrash);
+    const cause = new Error('handler exploded');
+    host.onCaptureRequested(() => Promise.reject(cause));
+
+    dispatchContextMenuClick({ menuItemId: CAPTURE_MENU_ID, editable: false, selectionText: 'a' }, {
+      id: 1,
+    } as chrome.tabs.Tab);
+    await flushAsync();
+
+    expect(onCrash).toHaveBeenCalledWith(cause);
+  });
+
+  it('should_pass_the_page_selection_with_newlines_preserved_when_script_injection_succeeds', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    const multilineCode =
+      'const compose = (...fns) => res =>\n  fns.reduce((accum, next) =>\n    next(accum), res)';
+    queueExecuteScriptResult(multilineCode);
+
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText:
+          'const compose = (...fns) => res =>   fns.reduce((accum, next) =>     next(accum), res)',
+        pageUrl: 'https://example.com/snippet',
+      },
+      { id: 9 } as chrome.tabs.Tab,
+    );
+    await flushAsync();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: multilineCode,
+        sourceUrl: 'https://example.com/snippet',
+        tabId: 9,
+      }),
+    );
+  });
+
+  it('should_fall_back_to_selection_text_when_script_injection_fails', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    queueExecuteScriptFault(new Error('chrome:// page restricted'));
+
+    dispatchContextMenuClick(
+      {
+        menuItemId: CAPTURE_MENU_ID,
+        editable: false,
+        selectionText: 'const x = 1;',
+        pageUrl: 'https://example.com/page',
+      },
+      { id: 3 } as chrome.tabs.Tab,
+    );
+    await flushAsync();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'const x = 1;',
+        sourceUrl: 'https://example.com/page',
+        tabId: 3,
+      }),
+    );
+  });
+
+  it('should_resolve_panelOpening_with_panel_opened_when_chrome_side_panel_open_succeeds', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    dispatchContextMenuClick({ menuItemId: CAPTURE_MENU_ID, editable: false, selectionText: 'a' }, {
+      id: 4,
+    } as chrome.tabs.Tab);
+    await flushAsync();
+
+    const request = handler.mock.calls[0]?.[0] as { panelOpening: Promise<unknown> };
+    await expect(request.panelOpening).resolves.toEqual({ kind: 'panel_opened' });
+  });
+
+  it('should_resolve_panelOpening_with_panel_open_failed_when_chrome_side_panel_open_rejects', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+    const handler = vi.fn();
+    host.onCaptureRequested(handler);
+
+    const cause = new Error('no user gesture');
+    queueSidePanelFault({ op: 'open', cause });
+
+    dispatchContextMenuClick({ menuItemId: CAPTURE_MENU_ID, editable: false, selectionText: 'a' }, {
+      id: 5,
+    } as chrome.tabs.Tab);
+    await flushAsync();
+
+    const request = handler.mock.calls[0]?.[0] as { panelOpening: Promise<unknown> };
+    await expect(request.panelOpening).resolves.toEqual({ kind: 'panel_open_failed', cause });
   });
 });

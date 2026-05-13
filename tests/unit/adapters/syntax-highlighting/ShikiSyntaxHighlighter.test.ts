@@ -57,4 +57,18 @@ describe('ShikiSyntaxHighlighter', () => {
 
     expect(result.hast.type).toBe('root');
   });
+
+  it('should_highlight_a_language_aliased_from_the_detector_vocabulary', async () => {
+    const highlighter = new ShikiSyntaxHighlighter();
+
+    const result = await highlighter.highlight(
+      '@implementation Foo : NSObject @end',
+      'objectivec',
+      'github-dark',
+    );
+
+    expect(result.resolvedLanguage).toBe('objectivec');
+    expect(result.hast.type).toBe('root');
+    expect(JSON.stringify(result.hast)).toContain('@implementation');
+  });
 });

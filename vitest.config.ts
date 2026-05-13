@@ -4,6 +4,7 @@ import path from 'node:path';
 import pkg from './package.json' with { type: 'json' };
 
 const repoHttpsUrl = pkg.repository.url.replace(/^git\+/, '').replace(/\.git$/, '');
+const bmacUrl = pkg.funding;
 
 export default defineConfig({
   plugins: [react()],
@@ -12,6 +13,8 @@ export default defineConfig({
   },
   define: {
     __SNIPWORTH_REPO_URL__: JSON.stringify(repoHttpsUrl),
+    __SNIPWORTH_BMAC_URL__: JSON.stringify(bmacUrl),
+    __SNIPWORTH_VERSION__: JSON.stringify(pkg.version),
   },
   test: {
     environment: 'happy-dom',

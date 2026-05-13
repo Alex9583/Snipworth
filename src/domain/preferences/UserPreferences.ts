@@ -1,10 +1,5 @@
 import { isPlatform, platforms, type Platform } from '@/domain/drafts/Platform';
-import {
-  exportScales,
-  RenderConfig,
-  type ExportScale,
-  type RenderConfigSnapshot,
-} from '@/domain/rendering/RenderConfig';
+import { RenderConfig, type RenderConfigSnapshot } from '@/domain/rendering/RenderConfig';
 
 export const themeModes = ['light', 'dark', 'system'] as const;
 export type ThemeMode = (typeof themeModes)[number];
@@ -16,7 +11,6 @@ export interface UserPreferencesInput {
   readonly theme: ThemeMode;
   readonly onboardingCompleted: boolean;
   readonly persistStorageRequested: boolean;
-  readonly lastExportScale: ExportScale;
 }
 
 export interface UserPreferencesSnapshot {
@@ -26,7 +20,6 @@ export interface UserPreferencesSnapshot {
   readonly theme: ThemeMode;
   readonly onboardingCompleted: boolean;
   readonly persistStorageRequested: boolean;
-  readonly lastExportScale: ExportScale;
 }
 
 export class InvalidUserPreferences extends Error {
@@ -43,7 +36,6 @@ export class UserPreferences {
   readonly theme: ThemeMode;
   readonly onboardingCompleted: boolean;
   readonly persistStorageRequested: boolean;
-  readonly lastExportScale: ExportScale;
 
   private constructor(props: UserPreferencesInput) {
     this.defaultConfig = props.defaultConfig;
@@ -52,16 +44,12 @@ export class UserPreferences {
     this.theme = props.theme;
     this.onboardingCompleted = props.onboardingCompleted;
     this.persistStorageRequested = props.persistStorageRequested;
-    this.lastExportScale = props.lastExportScale;
   }
 
   static from(input: UserPreferencesInput): UserPreferences {
     requireMember(input.theme, themeModes, 'theme');
     if (!isPlatform(input.defaultPlatform)) {
       throw new InvalidUserPreferences(`defaultPlatform must be one of ${platforms.join(', ')}`);
-    }
-    if (!exportScales.includes(input.lastExportScale)) {
-      throw new InvalidUserPreferences(`lastExportScale must be one of ${exportScales.join(', ')}`);
     }
     return new UserPreferences(input);
   }
@@ -74,7 +62,6 @@ export class UserPreferences {
       theme: 'system',
       onboardingCompleted: false,
       persistStorageRequested: false,
-      lastExportScale: 2,
     });
   }
 
@@ -93,7 +80,6 @@ export class UserPreferences {
       theme: patch.theme ?? this.theme,
       onboardingCompleted: patch.onboardingCompleted ?? this.onboardingCompleted,
       persistStorageRequested: patch.persistStorageRequested ?? this.persistStorageRequested,
-      lastExportScale: patch.lastExportScale ?? this.lastExportScale,
     });
   }
 
@@ -105,7 +91,6 @@ export class UserPreferences {
       theme: this.theme,
       onboardingCompleted: this.onboardingCompleted,
       persistStorageRequested: this.persistStorageRequested,
-      lastExportScale: this.lastExportScale,
     };
   }
 }

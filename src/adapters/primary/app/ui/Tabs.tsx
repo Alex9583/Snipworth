@@ -25,13 +25,15 @@ export function Tabs({ value, onChange, children, className }: TabsProps) {
 
 interface TabsListProps {
   children: ReactNode;
+  label: string;
   className?: string;
 }
 
-export function TabsList({ children, className }: TabsListProps) {
+export function TabsList({ children, label, className }: TabsListProps) {
   return (
     <div
       role="tablist"
+      aria-label={label}
       className={clsx(
         'border-line bg-elevated inline-flex gap-0.5 rounded-lg border p-1',
         className,

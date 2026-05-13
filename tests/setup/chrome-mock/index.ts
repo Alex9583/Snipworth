@@ -1,22 +1,29 @@
 import { buildActionMock, resetAction } from './action';
-import { buildContextMenusMock } from './context-menus';
+import { buildContextMenusMock, resetContextMenus } from './context-menus';
 import { buildRuntimeMock, resetRuntime } from './runtime';
+import { buildScriptingMock, resetScripting } from './scripting';
 import { buildSidePanelMock, resetSidePanel } from './side-panel';
 import { buildStorageMock, resetStorage } from './storage';
-import { buildTabsMock } from './tabs';
+import { buildTabsMock, resetTabs } from './tabs';
 import type { ChromeMock } from './types';
 
 export type { StorageValue } from './types';
 export {
+  clearRuntimeLastError,
   dispatchInstalled,
   dispatchMessage,
   dispatchStartup,
   queueRuntimeFault,
   SELF_EXTENSION_ID,
+  setRuntimeLastError,
+  withRuntimeLastError,
 } from './runtime';
 export { readBadge, queueActionFault } from './action';
-export { readBehavior, queueSidePanelFault } from './side-panel';
-export { queueStorageFault } from './storage';
+export { readBehavior, readSidePanelOpens, queueSidePanelFault } from './side-panel';
+export { queueStorageFault, readSession } from './storage';
+export { dispatchContextMenuClick, readCreatedMenus } from './context-menus';
+export { queueExecuteScriptFault, queueExecuteScriptResult } from './scripting';
+export { queueTabsCreateFault, readCreatedTabs } from './tabs';
 
 function buildChromeMock(): ChromeMock {
   return {
@@ -26,6 +33,7 @@ function buildChromeMock(): ChromeMock {
     contextMenus: buildContextMenusMock(),
     tabs: buildTabsMock(),
     action: buildActionMock(),
+    scripting: buildScriptingMock(),
   };
 }
 
@@ -34,6 +42,9 @@ export function resetChromeMock(): void {
   resetStorage();
   resetAction();
   resetSidePanel();
+  resetContextMenus();
+  resetScripting();
+  resetTabs();
   globalThis.chrome = buildChromeMock() as typeof chrome;
 }
 

@@ -12,5 +12,3 @@ export const ackErrorsResponseSchema = z.discriminatedUnion('ok', [
   z.strictObject({ ok: z.literal(true) }),
   errorResponseSchema,
 ]);
-
-export type AckErrorsResponse = z.infer<typeof ackErrorsResponseSchema>;

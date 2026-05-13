@@ -1,10 +1,15 @@
 import type {
   BrowserHost,
+  CaptureRequestedHandler,
   ConfigureSidePanelOutcome,
   HostCrashReporter,
+  InstallContextMenuOutcome,
   LifecycleHandler,
   RuntimeMessageHandler,
 } from '@/application/ports/BrowserHost';
+
+export const CAPTURE_MENU_ID = 'snipworth-capture';
+export const CAPTURE_MENU_TITLE = 'Snipworth this code';
 
 export class ChromeBrowserHost implements BrowserHost {
   constructor(private readonly onCrash: HostCrashReporter) {}
@@ -51,6 +56,62 @@ export class ChromeBrowserHost implements BrowserHost {
       return { kind: 'configured' };
     } catch (cause) {
       return { kind: 'failed', cause };
+    }
+  }
+
+  installCaptureContextMenu(): Promise<InstallContextMenuOutcome> {
+    return new Promise((resolve) => {
+      try {
+        chrome.contextMenus.create(
+          {
+            id: CAPTURE_MENU_ID,
+            title: CAPTURE_MENU_TITLE,
+            contexts: ['selection'],
+          },
+          () => {
+            const lastError = chrome.runtime.lastError;
+            if (lastError !== undefined) {
+              resolve({ kind: 'failed', cause: new Error(lastError.message ?? 'unknown') });
+              return;
+            }
+            resolve({ kind: 'installed' });
+          },
+        );
+      } catch (cause) {
+        resolve({ kind: 'failed', cause });
+      }
+    });
+  }
+
+  onCaptureRequested(handler: CaptureRequestedHandler): void {
+    chrome.contextMenus.onClicked.addListener((info, tab) => {
+      if (info.menuItemId !== CAPTURE_MENU_ID) return;
+      const fallback = info.selectionText;
+      const tabId = tab?.id;
+      if (fallback === undefined || fallback.length === 0 || tabId === undefined) return;
+      const panelOpening = chrome.sidePanel.open({ tabId }).then(
+        () => ({ kind: 'panel_opened' }) as const,
+        (cause: unknown) => ({ kind: 'panel_open_failed', cause }) as const,
+      );
+      this.readPageSelection(tabId, fallback)
+        .then((code) => handler({ code, sourceUrl: info.pageUrl, tabId, panelOpening }))
+        .catch((cause: unknown) => {
+          this.onCrash(cause);
+        });
+    });
+  }
+
+  private async readPageSelection(tabId: number, fallback: string): Promise<string> {
+    try {
+      const injection = chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => window.getSelection()?.toString() ?? '',
+      }) as Promise<{ readonly result?: unknown }[]>;
+      const results = await injection;
+      const first = results[0]?.result;
+      return typeof first === 'string' && first.length > 0 ? first : fallback;
+    } catch {
+      return fallback;
     }
   }
 }

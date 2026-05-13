@@ -6,8 +6,6 @@ import { ExportControls } from '@/adapters/primary/app/ui/ExportControls';
 interface RenderOpts {
   scale?: 1 | 2 | 4;
   format?: 'png' | 'svg';
-  baseWidth?: number;
-  baseHeight?: number;
   onScaleChange?: (s: 1 | 2 | 4) => void;
   onFormatChange?: (f: 'png' | 'svg') => void;
   onCopy?: () => void;
@@ -17,8 +15,6 @@ interface RenderOpts {
 function renderControls(opts: RenderOpts = {}) {
   return render(
     <ExportControls
-      baseWidth={opts.baseWidth ?? 800}
-      baseHeight={opts.baseHeight ?? 500}
       scale={opts.scale ?? 2}
       format={opts.format ?? 'png'}
       onScaleChange={opts.onScaleChange ?? vi.fn()}
@@ -50,18 +46,6 @@ describe('ExportControls', () => {
     expect(screen.getByRole('radio', { name: '1×' })).toHaveAttribute('aria-checked', 'false');
     expect(screen.getByRole('radio', { name: '2×' })).toHaveAttribute('aria-checked', 'false');
     expect(screen.getByRole('radio', { name: '4×' })).toHaveAttribute('aria-checked', 'true');
-  });
-
-  it('should_show_estimated_export_dimensions_for_the_current_scale', () => {
-    renderControls({ baseWidth: 800, baseHeight: 500, scale: 4 });
-
-    expect(screen.getByText(/3200\s*×\s*2000\s*px/)).toBeInTheDocument();
-  });
-
-  it('should_round_estimated_dimensions_to_integers', () => {
-    renderControls({ baseWidth: 333.6, baseHeight: 200.4, scale: 2 });
-
-    expect(screen.getByText(/667\s*×\s*401\s*px/)).toBeInTheDocument();
   });
 
   it('should_emit_onScaleChange_when_user_picks_a_different_scale', async () => {
@@ -99,7 +83,7 @@ describe('ExportControls', () => {
     const onDownload = vi.fn();
     renderControls({ onDownload });
 
-    await user.click(screen.getByRole('button', { name: 'Download' }));
+    await user.click(screen.getByRole('button', { name: /download/i }));
 
     expect(onDownload).toHaveBeenCalledOnce();
   });

@@ -11,5 +11,3 @@ export const pingResponseSchema = z.discriminatedUnion('ok', [
   z.strictObject({ ok: z.literal(true), data: z.literal('pong') }),
   errorResponseSchema,
 ]);
-
-export type PingResponse = z.infer<typeof pingResponseSchema>;

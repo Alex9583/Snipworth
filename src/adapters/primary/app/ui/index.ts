@@ -1,9 +1,14 @@
+export { AppFooter } from './AppFooter';
+export { AppHeader } from './AppHeader';
 export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
-export { CodeInput } from './CodeInput';
-export { ConfigPanel, type ConfigPanelTheme, type ConfigPanelValue } from './ConfigPanel';
+export { ConfigPanel } from './ConfigPanel';
+export { EditorStats } from './EditorStats';
 export { ExportControls } from './ExportControls';
+export { IconBtn } from './IconBtn';
+export { LanguagePicker } from './LanguagePicker';
+export { LogoChip } from './LogoChip';
 export { Preview } from './Preview';
 export { Segmented, type SegmentedOption } from './Segmented';
 export { Slider } from './Slider';

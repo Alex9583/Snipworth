@@ -5,12 +5,12 @@ import {
   type ExportScale,
 } from '@/domain/rendering/RenderConfig';
 import { Button } from './Button';
-import { Card } from './Card';
+import { CopyIcon, DownloadIcon } from './icons';
+import { IconBtn } from './IconBtn';
+import { EXPORT_CONTROLS } from './ExportControls.strings';
 import { Segmented, type SegmentedOption } from './Segmented';
 
 interface ExportControlsProps {
-  readonly baseWidth: number;
-  readonly baseHeight: number;
   readonly scale: ExportScale;
   readonly format: ExportFormat;
   readonly onScaleChange: (scale: ExportScale) => void;
@@ -30,8 +30,6 @@ const SCALE_OPTIONS: readonly SegmentedOption<ExportScale>[] = exportScales.map(
 }));
 
 export function ExportControls({
-  baseWidth,
-  baseHeight,
   scale,
   format,
   onScaleChange,
@@ -39,36 +37,30 @@ export function ExportControls({
   onCopy,
   onDownload,
 }: ExportControlsProps) {
-  const exportWidth = Math.round(baseWidth * scale);
-  const exportHeight = Math.round(baseHeight * scale);
   return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <FieldLabel>Format</FieldLabel>
+    <div className="@container border-line bg-surface flex items-center justify-between gap-1.5 rounded-lg border px-1.5 py-2 @[380px]:gap-2 @[380px]:px-2.5">
+      <div className="flex items-center gap-1 @[380px]:gap-1.5">
         <Segmented
-          label="Format"
+          label={EXPORT_CONTROLS.formatLabel}
           value={format}
           options={FORMAT_OPTIONS}
           onChange={onFormatChange}
         />
-        <FieldLabel>Quality</FieldLabel>
-        <Segmented label="Quality" value={scale} options={SCALE_OPTIONS} onChange={onScaleChange} />
+        <Segmented
+          label={EXPORT_CONTROLS.qualityLabel}
+          value={scale}
+          options={SCALE_OPTIONS}
+          onChange={onScaleChange}
+        />
       </div>
-      <p className="text-ink-muted font-mono text-xs">
-        Estimated: {exportWidth} × {exportHeight} px
-      </p>
-      <div className="flex gap-2">
-        <Button onClick={onCopy} size="sm">
-          Copy image
-        </Button>
-        <Button onClick={onDownload} size="sm" variant="outline">
-          Download
+      <div className="flex items-center gap-1">
+        <IconBtn label={EXPORT_CONTROLS.copyButton} onClick={onCopy}>
+          <CopyIcon size={14} />
+        </IconBtn>
+        <Button onClick={onDownload} size="sm" iconLeft={<DownloadIcon size={13} />}>
+          {EXPORT_CONTROLS.downloadButton}
         </Button>
       </div>
-    </Card>
+    </div>
   );
-}
-
-function FieldLabel({ children }: { readonly children: string }) {
-  return <span className="text-ink-muted text-xs">{children}</span>;
 }

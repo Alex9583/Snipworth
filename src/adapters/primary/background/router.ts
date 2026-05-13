@@ -5,6 +5,7 @@ import {
 } from '@/adapters/messaging';
 import type { Clock } from '@/application/ports/Clock';
 import type { InboxAcknowledger } from '@/application/ports/ErrorInbox';
+import type { ErrorReporter } from '@/application/ports/ErrorReporter';
 import type { IdGenerator } from '@/application/ports/IdGenerator';
 import { ErrorReport } from '@/domain/error-reporting/ErrorReport';
 import { ERROR_DETAILS_MAX } from '@/domain/limits';
@@ -18,6 +19,7 @@ export interface RouteDependencies {
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly inboxAcknowledger: InboxAcknowledger;
+  readonly errorReporter: ErrorReporter;
 }
 
 export async function route(rawMessage: unknown, deps: RouteDependencies): Promise<RouteResult> {
@@ -61,6 +63,20 @@ async function dispatch(
           error: {
             code: 'inbox_unavailable',
             message: 'Snipworth could not access its pending error inbox.',
+          },
+        },
+      };
+    }
+    case 'REPORT_ERROR': {
+      const report = ErrorReport.fromSnapshot(message.report);
+      const outcome = await deps.errorReporter.report(report);
+      if (outcome.kind === 'reported') return { response: { ok: true } };
+      return {
+        response: {
+          ok: false,
+          error: {
+            code: 'inbox_unavailable',
+            message: 'Snipworth could not persist the reported error.',
           },
         },
       };

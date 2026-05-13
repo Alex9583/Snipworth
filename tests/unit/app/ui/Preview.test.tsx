@@ -49,7 +49,7 @@ describe('Preview', () => {
   it('should_preserve_token_classes_from_hast_so_syntax_colors_reach_the_dom', () => {
     const { container } = render(<Preview hast={shikiLikeHast('const', 'token-keyword')} />);
 
-    const span = container.querySelector('span');
+    const span = container.querySelector('pre code span');
     expect(span?.className).toContain('token-keyword');
   });
 

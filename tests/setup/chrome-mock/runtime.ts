@@ -33,6 +33,8 @@ const installedListeners = new Set<InstalledListener>();
 const startupListeners = new Set<StartupListener>();
 const faultQueue: QueuedFault[] = [];
 
+let pendingLastError: { message?: string } | undefined;
+
 async function fanOutToListeners(
   message: unknown,
   sender: MessageSender,
@@ -61,6 +63,9 @@ async function fanOutToListeners(
 export function buildRuntimeMock(): RuntimeMock {
   return {
     id: SELF_EXTENSION_ID,
+    get lastError() {
+      return pendingLastError;
+    },
     getURL: (p: string) => `chrome-extension://test/${p}`,
     sendMessage: async (message: unknown) => {
       const fault = faultQueue.shift();
@@ -88,11 +93,29 @@ export function buildRuntimeMock(): RuntimeMock {
   };
 }
 
+export function setRuntimeLastError(message: string): void {
+  pendingLastError = { message };
+}
+
+export function clearRuntimeLastError(): void {
+  pendingLastError = undefined;
+}
+
+export function withRuntimeLastError<T>(message: string, fn: () => T): T {
+  setRuntimeLastError(message);
+  try {
+    return fn();
+  } finally {
+    clearRuntimeLastError();
+  }
+}
+
 export function resetRuntime(): void {
   messageListeners.clear();
   installedListeners.clear();
   startupListeners.clear();
   faultQueue.length = 0;
+  pendingLastError = undefined;
 }
 
 export function queueRuntimeFault(fault: QueuedFault): void {

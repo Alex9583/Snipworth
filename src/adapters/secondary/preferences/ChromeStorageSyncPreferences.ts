@@ -51,6 +51,5 @@ function mergeWithDefaults(stored: UserPreferencesWire): UserPreferences {
     theme: stored.theme,
     onboardingCompleted: stored.onboardingCompleted,
     persistStorageRequested: stored.persistStorageRequested,
-    lastExportScale: stored.lastExportScale,
   });
 }

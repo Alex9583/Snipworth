@@ -8,7 +8,7 @@ function StatefulHarness() {
   const [value, setValue] = useState('one');
   return (
     <Tabs value={value} onChange={setValue}>
-      <Tabs.List>
+      <Tabs.List label="Test sections">
         <Tabs.Trigger value="one">One</Tabs.Trigger>
         <Tabs.Trigger value="two">Two</Tabs.Trigger>
       </Tabs.List>
@@ -41,7 +41,7 @@ describe('Tabs', () => {
     const onChange = vi.fn();
     const { rerender } = render(
       <Tabs value="one" onChange={onChange}>
-        <Tabs.List>
+        <Tabs.List label="Test sections">
           <Tabs.Trigger value="one">One</Tabs.Trigger>
           <Tabs.Trigger value="two">Two</Tabs.Trigger>
         </Tabs.List>
@@ -51,7 +51,7 @@ describe('Tabs', () => {
 
     rerender(
       <Tabs value="two" onChange={onChange}>
-        <Tabs.List>
+        <Tabs.List label="Test sections">
           <Tabs.Trigger value="one">One</Tabs.Trigger>
           <Tabs.Trigger value="two">Two</Tabs.Trigger>
         </Tabs.List>
