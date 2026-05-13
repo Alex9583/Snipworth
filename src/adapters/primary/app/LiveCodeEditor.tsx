@@ -4,6 +4,7 @@ import {
   use,
   useDeferredValue,
   useRef,
+  type CSSProperties,
   type ReactElement,
   type ReactNode,
   type Ref,
@@ -21,12 +22,12 @@ interface LiveCodeEditorProps {
   readonly getHighlight: HighlightLookup;
   readonly label: string;
   readonly placeholder?: string;
+  readonly fontSize?: number;
   readonly topRightSlot?: ReactNode;
   readonly className?: string;
 }
 
-const TYPOGRAPHY =
-  'font-mono text-sm leading-relaxed p-3 whitespace-pre-wrap break-words [tab-size:2]';
+const TYPOGRAPHY = 'font-mono leading-relaxed p-3 whitespace-pre-wrap break-words [tab-size:2]';
 
 const OVERLAY_LAYOUT =
   'absolute inset-0 m-0 overflow-hidden pointer-events-none select-none text-ink [scrollbar-gutter:stable]';
@@ -42,6 +43,7 @@ export function LiveCodeEditor({
   getHighlight,
   label,
   placeholder,
+  fontSize = 14,
   topRightSlot,
   className,
 }: LiveCodeEditorProps) {
@@ -54,6 +56,8 @@ export function LiveCodeEditor({
     overlay.scrollTop = event.currentTarget.scrollTop;
     overlay.scrollLeft = event.currentTarget.scrollLeft;
   };
+
+  const typographyStyle = { fontSize: `${String(fontSize)}px` } as const;
 
   return (
     <div
@@ -69,12 +73,15 @@ export function LiveCodeEditor({
       ) : null}
 
       <div className="relative min-h-0 flex-1">
-        <Suspense fallback={<PlainOverlay code={deferredValue} ref={overlayRef} />}>
+        <Suspense
+          fallback={<PlainOverlay code={deferredValue} style={typographyStyle} ref={overlayRef} />}
+        >
           <HighlightOverlay
             code={deferredValue}
             language={language}
             theme={theme}
             getHighlight={getHighlight}
+            style={typographyStyle}
             ref={overlayRef}
           />
         </Suspense>
@@ -89,6 +96,7 @@ export function LiveCodeEditor({
           placeholder={placeholder}
           spellCheck={false}
           wrap="soft"
+          style={typographyStyle}
           className={clsx(
             'absolute inset-0 h-full w-full resize-none overflow-auto border-0 [scrollbar-gutter:stable]',
             'bg-transparent text-transparent caret-ink',
@@ -104,15 +112,17 @@ export function LiveCodeEditor({
 
 interface PlainOverlayProps {
   readonly code: string;
-  readonly ref?: React.Ref<HTMLDivElement>;
+  readonly style?: CSSProperties;
+  readonly ref?: Ref<HTMLDivElement>;
 }
 
-function PlainOverlay({ code, ref }: PlainOverlayProps) {
+function PlainOverlay({ code, style, ref }: PlainOverlayProps) {
   return (
     <div
       ref={ref}
       data-overlay="plain"
       aria-hidden="true"
+      style={style}
       className={clsx(OVERLAY_LAYOUT, TYPOGRAPHY)}
     >
       {code}
@@ -125,10 +135,18 @@ interface HighlightOverlayProps {
   readonly language: string;
   readonly theme: string;
   readonly getHighlight: HighlightLookup;
+  readonly style?: CSSProperties;
   readonly ref?: Ref<HTMLDivElement>;
 }
 
-function HighlightOverlay({ code, language, theme, getHighlight, ref }: HighlightOverlayProps) {
+function HighlightOverlay({
+  code,
+  language,
+  theme,
+  getHighlight,
+  style,
+  ref,
+}: HighlightOverlayProps) {
   const highlighted = use(getHighlight(code, language, theme));
   const tree = toJsxRuntime(highlighted.hast, { Fragment, jsx, jsxs }) as ReactElement;
   return (
@@ -136,6 +154,7 @@ function HighlightOverlay({ code, language, theme, getHighlight, ref }: Highligh
       ref={ref}
       data-overlay="highlight"
       aria-hidden="true"
+      style={style}
       className={clsx(OVERLAY_LAYOUT, TYPOGRAPHY, HAST_NORMALIZE)}
     >
       {tree}

@@ -29,7 +29,7 @@ export type Background =
     }
   | { readonly type: 'transparent' };
 
-export const FONT_SIZE_RANGE = [8, 96] as const;
+export const FONT_SIZE_RANGE = [8, 24] as const;
 export const LINE_HEIGHT_RANGE = [0.8, 3] as const;
 export const RADIUS_RANGE = [0, 64] as const;
 export const SHADOW_BLUR_RANGE = [0, 100] as const;

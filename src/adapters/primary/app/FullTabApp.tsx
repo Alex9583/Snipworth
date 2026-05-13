@@ -1,4 +1,12 @@
-import { Activity, Suspense, useDeferredValue, useMemo, useRef, useState } from 'react';
+import {
+  Activity,
+  type ReactNode,
+  Suspense,
+  useDeferredValue,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { AboutView } from './AboutView';
 import type { AppDependencies } from './AppDependencies';
@@ -96,6 +104,7 @@ export function FullTabApp({
                   onChange={setCode}
                   language={language}
                   theme={renderConfig.theme}
+                  fontSize={renderConfig.fontSize}
                   getHighlight={getHighlight}
                   label={FULL_TAB_APP.codeColumnLabel}
                   placeholder={APP.codePlaceholder}
@@ -132,6 +141,7 @@ export function FullTabApp({
                       language={language}
                       theme={renderConfig.theme}
                       fontFamily={renderConfig.fontFamily}
+                      fontSize={renderConfig.fontSize}
                       background={solidBackgroundCss(renderConfig.background)}
                       className="w-full max-w-2xl"
                     />
@@ -184,9 +194,9 @@ export function FullTabApp({
 
 interface ColumnHeaderProps {
   readonly id: string;
-  readonly icon: React.ReactNode;
+  readonly icon: ReactNode;
   readonly label: string;
-  readonly slot?: React.ReactNode;
+  readonly slot?: ReactNode;
 }
 
 function ColumnHeader({ id, icon, label, slot }: ColumnHeaderProps) {

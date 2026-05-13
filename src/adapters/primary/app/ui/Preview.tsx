@@ -10,6 +10,7 @@ import type { FontFamily } from '@/domain/rendering/RenderConfig';
 interface PreviewProps {
   hast: Root;
   fontFamily?: FontFamily;
+  fontSize?: number;
   background?: string;
   className?: string;
   ref?: Ref<HTMLDivElement>;
@@ -27,6 +28,7 @@ const HAST_NORMALIZE =
 export function Preview({
   hast,
   fontFamily = 'JetBrains Mono',
+  fontSize = 14,
   background = '#1C1C21',
   className,
   ref,
@@ -44,6 +46,7 @@ export function Preview({
       style={{
         background,
         fontFamily: cssFamily,
+        fontSize: `${String(fontSize)}px`,
       }}
     >
       <div className="w-full overflow-hidden rounded-md shadow-2xl" style={{ background }}>
@@ -59,7 +62,7 @@ export function Preview({
             />
           ))}
         </div>
-        <div className={clsx('px-4 py-4 text-sm leading-relaxed', HAST_NORMALIZE)}>{tree}</div>
+        <div className={clsx('px-4 py-4 leading-relaxed', HAST_NORMALIZE)}>{tree}</div>
       </div>
     </div>
   );

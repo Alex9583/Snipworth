@@ -124,6 +124,7 @@ export function SidePanelApp({
                 onChange={setCode}
                 language={language}
                 theme={renderConfig.theme}
+                fontSize={renderConfig.fontSize}
                 getHighlight={getHighlight}
                 label={SIDE_PANEL_APP.tabCodeLabel}
                 placeholder={APP.codePlaceholder}
@@ -148,6 +149,7 @@ export function SidePanelApp({
                       language={language}
                       theme={renderConfig.theme}
                       fontFamily={renderConfig.fontFamily}
+                      fontSize={renderConfig.fontSize}
                       background={solidBackgroundCss(renderConfig.background)}
                       className="w-full"
                     />

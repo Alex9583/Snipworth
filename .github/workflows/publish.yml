@@ -1,0 +1,101 @@
+name: Publish to Chrome Web Store
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check:
+    # Skip when the Release run failed or when it fired on the auto-generated
+    # bump commit (which release.yml itself guards against and skips).
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      !startsWith(github.event.workflow_run.head_commit.message, 'chore: release v')
+    runs-on: ubuntu-latest
+    outputs:
+      should-publish: ${{ steps.pr.outputs.should-publish }}
+    steps:
+      - name: Look up merged PR and inspect labels
+        id: pr
+        uses: actions/github-script@v9
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          script: |
+            const headSha = process.env.HEAD_SHA;
+            // Same eventual-consistency retry as release.yml: GitHub indexes
+            // the squash-commit ↔ PR association asynchronously.
+            const delaysSec = [0, 5, 10, 20, 40];
+            let pr;
+            for (const delay of delaysSec) {
+              if (delay > 0) {
+                core.info(`No associated PR yet, retrying in ${delay}s…`);
+                await new Promise((r) => setTimeout(r, delay * 1000));
+              }
+              const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: headSha,
+              });
+              pr = data.find((p) => p.merged_at);
+              if (pr) break;
+            }
+            if (!pr) {
+              core.info('No merged PR found for this commit, skipping publish.');
+              core.setOutput('should-publish', 'false');
+              return;
+            }
+            const labels = pr.labels.map((l) => l.name);
+            const shouldPublish =
+              labels.includes('publish') && !labels.includes('skip-release');
+            core.info(
+              `PR #${pr.number} labels: ${labels.join(', ') || 'none'} → publish=${shouldPublish}`
+            );
+            core.setOutput('should-publish', shouldPublish ? 'true' : 'false');
+
+  publish:
+    needs: check
+    if: needs.check.outputs.should-publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm audit signatures
+      - run: npm run build
+
+      - name: Pack zip
+        id: pack
+        run: |
+          version=$(node -p "require('./package.json').version")
+          name="snipworth-${version}.zip"
+          (cd dist && zip -r "../${name}" .)
+          echo "zip=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload and publish to Chrome Web Store
+        env:
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          ZIP: ${{ steps.pack.outputs.zip }}
+        run: npx chrome-webstore-upload --source "$ZIP"
