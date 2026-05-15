@@ -185,6 +185,10 @@ export class Draft {
     return this.withUpdate({ status: 'archived' }, now);
   }
 
+  restore(now: Date): Draft {
+    return this.withUpdate({ status: 'draft' }, now);
+  }
+
   private withUpdate(patch: Partial<DraftProps>, now: Date): Draft {
     requireFiniteDate(now, 'now', fail);
     if (now.getTime() < this.createdAt.getTime()) {

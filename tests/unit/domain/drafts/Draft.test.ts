@@ -271,3 +271,29 @@ describe('Draft.archive', () => {
     expect(() => original.archive(EARLIER)).toThrow(/updatedAt must not precede createdAt/);
   });
 });
+
+describe('Draft.restore', () => {
+  it('should_return_a_new_draft_with_status_draft_and_updatedAt_set_to_now_when_restore_is_called_on_an_archived_draft', () => {
+    const firstArchive = new Date('2026-03-15T10:15:00.000Z');
+    const archived = Draft.create(buildInput()).archive(firstArchive);
+    const restored = archived.restore(LATER);
+    expect(restored.status).toBe('draft');
+    expect(restored.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(archived.status).toBe('archived');
+    expect(archived.updatedAt.getTime()).toBe(firstArchive.getTime());
+  });
+
+  it('should_return_a_new_draft_with_status_draft_and_updatedAt_set_to_now_when_restore_is_called_on_an_already_active_draft', () => {
+    const active = Draft.create(buildInput());
+    const restored = active.restore(LATER);
+    expect(restored.status).toBe('draft');
+    expect(restored.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+
+  it('should_throw_InvalidDraft_when_restore_is_called_with_now_earlier_than_createdAt', () => {
+    const firstArchive = new Date('2026-03-15T10:15:00.000Z');
+    const archived = Draft.create(buildInput()).archive(firstArchive);
+    expect(() => archived.restore(EARLIER)).toThrow(InvalidDraft);
+    expect(() => archived.restore(EARLIER)).toThrow(/updatedAt must not precede createdAt/);
+  });
+});
