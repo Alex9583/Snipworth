@@ -247,3 +247,13 @@ describe('RenderConfig.from — background invariants', () => {
     ).toThrow(/background\.angle/);
   });
 });
+
+describe('RenderConfig.withAspectRatio', () => {
+  it('should_return_a_new_RenderConfig_with_the_given_aspectRatio_when_withAspectRatio_is_called', () => {
+    const original = RenderConfig.from(validInput);
+    const updated = original.withAspectRatio('1:1');
+    expect(updated.aspectRatio).toBe('1:1');
+    expect(updated.toSnapshot()).toEqual({ ...original.toSnapshot(), aspectRatio: '1:1' });
+    expect(original.aspectRatio).toBe('auto');
+  });
+});

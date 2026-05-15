@@ -5,6 +5,7 @@ import {
   requireTagList,
 } from '@/domain/invariants';
 import { isPlatform, type Platform } from '@/domain/drafts/Platform';
+import { aspectRatioForPlatform } from '@/domain/drafts/aspectRatioForPlatform';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import { CAPTION_MAX, CODE_MAX, TAG_LIST_MAX, TITLE_MAX } from '@/domain/limits';
 import { RenderConfig, type RenderConfigSnapshot } from '@/domain/rendering/RenderConfig';
@@ -179,6 +180,12 @@ export class Draft {
 
   replaceConfig(config: RenderConfig, now: Date): Draft {
     return this.withUpdate({ config }, now);
+  }
+
+  switchPlatform(platform: Platform, now: Date): Draft {
+    requirePlatform(platform);
+    const config = this.config.withAspectRatio(aspectRatioForPlatform(platform));
+    return this.withUpdate({ platform, config }, now);
   }
 
   archive(now: Date): Draft {

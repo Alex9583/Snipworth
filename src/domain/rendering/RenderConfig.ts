@@ -167,6 +167,10 @@ export class RenderConfig {
     });
   }
 
+  withAspectRatio(aspectRatio: AspectRatio): RenderConfig {
+    return RenderConfig.fromSnapshot({ ...this.toSnapshot(), aspectRatio });
+  }
+
   toSnapshot(): RenderConfigSnapshot {
     return {
       theme: this.theme,
