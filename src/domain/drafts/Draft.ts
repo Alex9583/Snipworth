@@ -9,7 +9,7 @@ import type { DraftId } from '@/domain/drafts/DraftId';
 import { CAPTION_MAX, CODE_MAX, TAG_LIST_MAX, TITLE_MAX } from '@/domain/limits';
 import { RenderConfig, type RenderConfigSnapshot } from '@/domain/rendering/RenderConfig';
 
-export const draftStatuses = ['draft', 'published', 'archived'] as const;
+export const draftStatuses = ['draft', 'archived'] as const;
 export type DraftStatus = (typeof draftStatuses)[number];
 
 export class InvalidDraft extends Error {
@@ -179,6 +179,10 @@ export class Draft {
 
   replaceConfig(config: RenderConfig, now: Date): Draft {
     return this.withUpdate({ config }, now);
+  }
+
+  archive(now: Date): Draft {
+    return this.withUpdate({ status: 'archived' }, now);
   }
 
   private withUpdate(patch: Partial<DraftProps>, now: Date): Draft {

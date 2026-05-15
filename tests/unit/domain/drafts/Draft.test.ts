@@ -191,7 +191,7 @@ describe('Draft.fromSnapshot / toSnapshot', () => {
   });
 
   it('should_expose_every_status_value_from_the_closed_enum', () => {
-    expect(draftStatuses).toEqual(['draft', 'published', 'archived']);
+    expect(draftStatuses).toEqual(['draft', 'archived']);
   });
 });
 
@@ -244,5 +244,30 @@ describe('Draft.replaceConfig', () => {
     const updated = original.replaceConfig(newConfig, LATER);
     expect(updated.config.fontSize).toBe(18);
     expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+});
+
+describe('Draft.archive', () => {
+  it('should_return_a_new_draft_with_status_archived_and_updatedAt_set_to_now_when_archive_is_called_on_an_active_draft', () => {
+    const original = Draft.create(buildInput());
+    const archived = original.archive(LATER);
+    expect(archived.status).toBe('archived');
+    expect(archived.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(original.status).toBe('draft');
+    expect(original.updatedAt.getTime()).toBe(CREATED_AT.getTime());
+  });
+
+  it('should_return_a_new_draft_with_status_archived_and_updatedAt_set_to_now_when_archive_is_called_on_an_already_archived_draft', () => {
+    const firstArchive = new Date('2026-03-15T10:15:00.000Z');
+    const alreadyArchived = Draft.create(buildInput()).archive(firstArchive);
+    const reArchived = alreadyArchived.archive(LATER);
+    expect(reArchived.status).toBe('archived');
+    expect(reArchived.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+
+  it('should_throw_InvalidDraft_when_archive_is_called_with_now_earlier_than_createdAt', () => {
+    const original = Draft.create(buildInput());
+    expect(() => original.archive(EARLIER)).toThrow(InvalidDraft);
+    expect(() => original.archive(EARLIER)).toThrow(/updatedAt must not precede createdAt/);
   });
 });
