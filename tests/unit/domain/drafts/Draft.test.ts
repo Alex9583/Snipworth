@@ -241,6 +241,19 @@ describe('Draft.updateCode', () => {
     const original = Draft.create(buildInput());
     expect(() => original.updateCode('code', '', LATER)).toThrow(/language/);
   });
+
+  it('should_throw_InvalidDraft_referencing_the_code_field_when_updateCode_is_called_with_an_empty_string', () => {
+    const original = Draft.create(buildInput());
+    expect(() => original.updateCode('', 'typescript', LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateCode('', 'typescript', LATER)).toThrow(/^InvalidDraft: code /);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_code_field_when_updateCode_is_called_with_whitespace_only_code', () => {
+    const original = Draft.create(buildInput());
+    const blank = '   \n\t  \n   ';
+    expect(() => original.updateCode(blank, 'typescript', LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateCode(blank, 'typescript', LATER)).toThrow(/^InvalidDraft: code /);
+  });
 });
 
 describe('Draft.replaceConfig', () => {

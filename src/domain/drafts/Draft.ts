@@ -183,6 +183,7 @@ export class Draft {
   }
 
   updateCode(code: string, language: string, now: Date): Draft {
+    requireNonEmpty(code, 'code', fail);
     requireNonEmpty(language, 'language', fail);
     requireMaxLength(code, CODE_MAX, 'code', fail);
     return this.withUpdate({ code, language }, now);
