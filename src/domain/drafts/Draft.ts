@@ -7,7 +7,14 @@ import {
 import { isPlatform, type Platform } from '@/domain/drafts/Platform';
 import { aspectRatioForPlatform } from '@/domain/drafts/aspectRatioForPlatform';
 import type { DraftId } from '@/domain/drafts/DraftId';
-import { CAPTION_MAX, CODE_MAX, TAG_LIST_MAX, TITLE_MAX } from '@/domain/limits';
+import {
+  CAPTION_MAX,
+  CODE_MAX,
+  HASHTAG_LIST_MAX,
+  HASHTAG_MAX_LENGTH,
+  TAG_LIST_MAX,
+  TITLE_MAX,
+} from '@/domain/limits';
 import { RenderConfig, type RenderConfigSnapshot } from '@/domain/rendering/RenderConfig';
 
 export const draftStatuses = ['draft', 'archived'] as const;
@@ -110,6 +117,9 @@ export class Draft {
     requireMaxLength(input.caption, CAPTION_MAX, 'caption', fail);
     requireMaxLength(input.code, CODE_MAX, 'code', fail);
     requireTagList(input.tags, 'tags', TAG_LIST_MAX, fail);
+    // TODO(rule-7): route hashtags through normalizeHashtags so create and updateHashtags
+    // share the same invariant (prefix + regex + case-insensitive dedup + count ≤ HASHTAG_LIST_MAX).
+    // See docs/specs/drafts-studio-v1-2-draft-aggregate.md Rule 7.
     requireTagList(input.hashtags, 'hashtags', TAG_LIST_MAX, fail);
 
     const createdAt = new Date(input.createdAt);
@@ -183,6 +193,10 @@ export class Draft {
     return this.withUpdate({ caption }, now);
   }
 
+  updateHashtags(hashtags: readonly string[], now: Date): Draft {
+    return this.withUpdate({ hashtags: normalizeHashtags(hashtags) }, now);
+  }
+
   replaceConfig(config: RenderConfig, now: Date): Draft {
     return this.withUpdate({ config }, now);
   }
@@ -229,4 +243,29 @@ function requirePlatform(value: Platform): void {
   if (!isPlatform(value)) {
     throw new InvalidDraft(`platform "${String(value)}" is not supported`);
   }
+}
+
+// HASHTAG_MAX_LENGTH counts the leading '#'; the regex body therefore reserves 1 slot for it.
+const HASHTAG_BODY_MAX = HASHTAG_MAX_LENGTH - 1;
+const HASHTAG_PATTERN = new RegExp(`^#[\\p{L}\\p{N}_]{1,${String(HASHTAG_BODY_MAX)}}$`, 'u');
+
+function normalizeHashtags(raw: readonly string[]): readonly string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const token of raw) {
+    const trimmed = token.trim();
+    if (trimmed.length === 0) continue;
+    const prefixed = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+    if (!HASHTAG_PATTERN.test(prefixed)) {
+      fail(`hashtags must not contain malformed entry "${prefixed}"`);
+    }
+    const key = prefixed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(prefixed);
+  }
+  if (result.length > HASHTAG_LIST_MAX) {
+    fail(`hashtags must not contain more than ${String(HASHTAG_LIST_MAX)} entries`);
+  }
+  return result;
 }

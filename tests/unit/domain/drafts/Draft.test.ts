@@ -8,7 +8,7 @@ import {
 } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import type { Platform } from '@/domain/drafts/Platform';
-import { CAPTION_MAX } from '@/domain/limits';
+import { CAPTION_MAX, HASHTAG_LIST_MAX, HASHTAG_MAX_LENGTH } from '@/domain/limits';
 import { RenderConfig, type RenderConfigInput } from '@/domain/rendering/RenderConfig';
 
 const CREATED_AT = new Date('2026-03-15T10:00:00.000Z');
@@ -50,6 +50,10 @@ function buildInput(overrides: Partial<DraftCreateInput> = {}): DraftCreateInput
     createdAt: CREATED_AT,
     ...overrides,
   };
+}
+
+function aDraftWithNoHashtags(): Draft {
+  return Draft.create(buildInput({ hashtags: [] }));
 }
 
 describe('Draft.create — happy path', () => {
@@ -402,5 +406,88 @@ describe('Draft.restore', () => {
     const archived = Draft.create(buildInput()).archive(firstArchive);
     expect(() => archived.restore(EARLIER)).toThrow(InvalidDraft);
     expect(() => archived.restore(EARLIER)).toThrow(/updatedAt must not precede createdAt/);
+  });
+});
+
+describe('Draft.updateHashtags', () => {
+  it('should_auto_prefix_each_hashtag_with_a_hash_sign_when_updateHashtags_is_called_with_unprefixed_tokens', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['typescript', 'react'], LATER);
+    expect(updated.hashtags).toEqual(['#typescript', '#react']);
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(original.hashtags).toEqual([]);
+    expect(original.updatedAt.getTime()).toBe(CREATED_AT.getTime());
+  });
+
+  it('should_leave_already_prefixed_hashtags_unchanged_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['#typescript', '#react'], LATER);
+    expect(updated.hashtags).toEqual(['#typescript', '#react']);
+  });
+
+  it('should_clear_all_hashtags_when_updateHashtags_is_called_with_an_empty_array', () => {
+    const original = Draft.create(buildInput({ hashtags: ['typescript', 'react'] }));
+    const updated = original.updateHashtags([], LATER);
+    expect(updated.hashtags).toEqual([]);
+  });
+
+  it('should_drop_empty_and_whitespace_only_tokens_when_updateHashtags_normalizes_the_list', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['#a', '', '   ', '\t', '#b'], LATER);
+    expect(updated.hashtags).toEqual(['#a', '#b']);
+  });
+
+  it('should_dedup_hashtags_case_insensitively_and_preserve_first_occurrence_casing_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['#TypeScript', '#typescript', '#TYPESCRIPT'], LATER);
+    expect(updated.hashtags).toEqual(['#TypeScript']);
+  });
+
+  it('should_accept_hashtags_containing_unicode_characters_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['#café', '#江戸'], LATER);
+    expect(updated.hashtags).toEqual(['#café', '#江戸']);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_hashtag_when_updateHashtags_contains_a_token_with_inner_whitespace', () => {
+    const original = aDraftWithNoHashtags();
+    expect(() => original.updateHashtags(['#hello world'], LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateHashtags(['#hello world'], LATER)).toThrow(/hello world/);
+  });
+
+  it('should_throw_InvalidDraft_when_updateHashtags_contains_a_bare_hash_with_no_body', () => {
+    const original = aDraftWithNoHashtags();
+    expect(() => original.updateHashtags(['#'], LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateHashtags(['#'], LATER)).toThrow(/hashtags/);
+  });
+
+  it('should_throw_InvalidDraft_when_updateHashtags_contains_a_hashtag_longer_than_HASHTAG_MAX_LENGTH', () => {
+    const original = aDraftWithNoHashtags();
+    const overflow = '#' + 'a'.repeat(HASHTAG_MAX_LENGTH);
+    expect(() => original.updateHashtags([overflow], LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateHashtags([overflow], LATER)).toThrow(/hashtags/);
+  });
+
+  it('should_accept_a_hashtag_of_exactly_HASHTAG_MAX_LENGTH_characters_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const boundary = '#' + 'a'.repeat(HASHTAG_MAX_LENGTH - 1);
+    const updated = original.updateHashtags([boundary], LATER);
+    expect(updated.hashtags).toEqual([boundary]);
+    expect(updated.hashtags[0]?.length).toBe(HASHTAG_MAX_LENGTH);
+  });
+
+  it('should_accept_exactly_HASHTAG_LIST_MAX_unique_hashtags_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const tokens = Array.from({ length: HASHTAG_LIST_MAX }, (_, i) => `#tag${String(i)}`);
+    const updated = original.updateHashtags(tokens, LATER);
+    expect(updated.hashtags).toHaveLength(HASHTAG_LIST_MAX);
+    expect(updated.hashtags).toEqual(tokens);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_hashtags_field_when_updateHashtags_exceeds_HASHTAG_LIST_MAX_unique_entries', () => {
+    const original = aDraftWithNoHashtags();
+    const tokens = Array.from({ length: HASHTAG_LIST_MAX + 1 }, (_, i) => `#tag${String(i)}`);
+    expect(() => original.updateHashtags(tokens, LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateHashtags(tokens, LATER)).toThrow(/hashtags/);
   });
 });
