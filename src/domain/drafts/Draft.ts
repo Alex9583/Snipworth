@@ -178,6 +178,11 @@ export class Draft {
     return this.withUpdate({ code, language }, now);
   }
 
+  updateCaption(caption: string, now: Date): Draft {
+    requireMaxLength(caption, CAPTION_MAX, 'caption', fail);
+    return this.withUpdate({ caption }, now);
+  }
+
   replaceConfig(config: RenderConfig, now: Date): Draft {
     return this.withUpdate({ config }, now);
   }

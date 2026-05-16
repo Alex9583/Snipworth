@@ -8,6 +8,7 @@ import {
 } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import type { Platform } from '@/domain/drafts/Platform';
+import { CAPTION_MAX } from '@/domain/limits';
 import { RenderConfig, type RenderConfigInput } from '@/domain/rendering/RenderConfig';
 
 const CREATED_AT = new Date('2026-03-15T10:00:00.000Z');
@@ -306,7 +307,9 @@ describe('Draft.switchPlatform', () => {
   it('should_throw_InvalidDraft_when_switchPlatform_is_called_with_an_unknown_platform_string', () => {
     const original = Draft.create(buildInput());
     expect(() => original.switchPlatform('tiktok' as Platform, LATER)).toThrow(InvalidDraft);
-    expect(() => original.switchPlatform('tiktok' as Platform, LATER)).toThrow(/platform/);
+    expect(() => original.switchPlatform('tiktok' as Platform, LATER)).toThrow(
+      /^InvalidDraft: platform /,
+    );
   });
 });
 
@@ -332,6 +335,47 @@ describe('Draft.archive', () => {
     const original = Draft.create(buildInput());
     expect(() => original.archive(EARLIER)).toThrow(InvalidDraft);
     expect(() => original.archive(EARLIER)).toThrow(/updatedAt must not precede createdAt/);
+  });
+});
+
+describe('Draft.updateCaption', () => {
+  it('should_return_a_new_draft_with_the_updated_caption_and_updatedAt_when_updateCaption_is_called_with_a_non_empty_string', () => {
+    const original = Draft.create(buildInput({ caption: 'Old caption' }));
+    const updated = original.updateCaption('New caption text', LATER);
+    expect(updated.caption).toBe('New caption text');
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(original.caption).toBe('Old caption');
+    expect(original.updatedAt.getTime()).toBe(CREATED_AT.getTime());
+  });
+
+  it('should_accept_an_empty_caption_when_updateCaption_is_called_with_empty_string', () => {
+    const original = Draft.create(buildInput({ caption: 'Some caption' }));
+    const updated = original.updateCaption('', LATER);
+    expect(updated.caption).toBe('');
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+
+  it('should_accept_a_caption_of_exactly_CAPTION_MAX_characters_when_updateCaption_is_called', () => {
+    const original = Draft.create(buildInput());
+    const boundary = 'a'.repeat(CAPTION_MAX);
+    const updated = original.updateCaption(boundary, LATER);
+    expect(updated.caption).toBe(boundary);
+    expect(updated.caption.length).toBe(CAPTION_MAX);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_caption_field_when_updateCaption_exceeds_CAPTION_MAX_characters', () => {
+    const original = Draft.create(buildInput());
+    const overflow = 'a'.repeat(CAPTION_MAX + 1);
+    expect(() => original.updateCaption(overflow, LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateCaption(overflow, LATER)).toThrow(/^InvalidDraft: caption /);
+  });
+
+  it('should_bump_updatedAt_when_updateCaption_is_called_with_a_caption_equal_to_the_current_one', () => {
+    const original = Draft.create(buildInput({ caption: 'Hello world' }));
+    const updated = original.updateCaption('Hello world', LATER);
+    expect(updated.caption).toBe('Hello world');
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(original.updatedAt.getTime()).toBe(CREATED_AT.getTime());
   });
 });
 
