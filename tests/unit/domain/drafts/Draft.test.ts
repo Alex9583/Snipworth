@@ -8,7 +8,7 @@ import {
 } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import type { Platform } from '@/domain/drafts/Platform';
-import { CAPTION_MAX, HASHTAG_LIST_MAX, HASHTAG_MAX_LENGTH } from '@/domain/limits';
+import { CAPTION_MAX, HASHTAG_LIST_MAX, HASHTAG_MAX_LENGTH, TAG_LIST_MAX } from '@/domain/limits';
 import { RenderConfig, type RenderConfigInput } from '@/domain/rendering/RenderConfig';
 
 const CREATED_AT = new Date('2026-03-15T10:00:00.000Z');
@@ -64,7 +64,7 @@ describe('Draft.create — happy path', () => {
     expect(draft.code).toBe('const x = 1;');
     expect(draft.language).toBe('typescript');
     expect(draft.caption).toBe('Look at this');
-    expect(draft.hashtags).toEqual(['typescript']);
+    expect(draft.hashtags).toEqual(['#typescript']);
     expect(draft.platform).toBe('x');
     expect(draft.thumbnail).toBeNull();
     expect(draft.tags).toEqual(['demo']);
@@ -95,13 +95,12 @@ describe('Draft.create — happy path', () => {
     tags.push('mutation');
     hashtags.push('mutation');
     expect(draft.tags).toEqual(['demo']);
-    expect(draft.hashtags).toEqual(['typescript']);
+    expect(draft.hashtags).toEqual(['#typescript']);
   });
 
-  it('should_accept_an_empty_title_an_empty_code_and_no_thumbnail', () => {
-    const draft = Draft.create(buildInput({ title: '', code: '', thumbnail: null }));
+  it('should_accept_an_empty_title_and_no_thumbnail', () => {
+    const draft = Draft.create(buildInput({ title: '', thumbnail: null }));
     expect(draft.title).toBe('');
-    expect(draft.code).toBe('');
     expect(draft.thumbnail).toBeNull();
   });
 
@@ -109,6 +108,23 @@ describe('Draft.create — happy path', () => {
     const blob = new Blob(['png-bytes'], { type: 'image/png' });
     const draft = Draft.create(buildInput({ thumbnail: blob }));
     expect(draft.thumbnail).toBe(blob);
+  });
+
+  it('should_return_a_draft_with_status_draft_and_updatedAt_equal_to_createdAt_when_create_is_called_with_valid_non_blank_code_and_valid_hashtags', () => {
+    const draft = Draft.create(
+      buildInput({
+        code: 'const x = 1;',
+        language: 'typescript',
+        title: 'const x = 1;',
+        caption: '',
+        hashtags: [],
+        platform: 'x',
+      }),
+    );
+    expect(draft.status).toBe('draft');
+    expect(draft.updatedAt.getTime()).toBe(draft.createdAt.getTime());
+    expect(draft.code).toBe('const x = 1;');
+    expect(draft.hashtags).toEqual([]);
   });
 });
 
@@ -145,22 +161,39 @@ describe('Draft.create — invariants', () => {
     expect(() => Draft.create(buildInput({ code: 'x'.repeat(200_001) }))).toThrow(/code/);
   });
 
-  it('should_reject_more_than_50_tags_or_50_hashtags', () => {
-    const many = Array.from({ length: 51 }, (_, i) => `tag${String(i)}`);
+  it('should_throw_InvalidDraft_referencing_the_code_field_when_create_is_called_with_an_empty_code', () => {
+    expect(() => Draft.create(buildInput({ code: '' }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ code: '' }))).toThrow(/^InvalidDraft: code /);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_code_field_when_create_is_called_with_whitespace_only_code', () => {
+    const blank = '   \n\t  \n   ';
+    expect(() => Draft.create(buildInput({ code: blank }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ code: blank }))).toThrow(/^InvalidDraft: code /);
+  });
+
+  it('should_reject_more_than_TAG_LIST_MAX_tags', () => {
+    const many = Array.from({ length: TAG_LIST_MAX + 1 }, (_, i) => `tag${String(i)}`);
     expect(() => Draft.create(buildInput({ tags: many }))).toThrow(/tags/);
-    expect(() => Draft.create(buildInput({ hashtags: many }))).toThrow(/hashtags/);
   });
 
-  it('should_reject_empty_or_whitespace_tags_and_hashtags', () => {
+  it('should_reject_more_than_HASHTAG_LIST_MAX_unique_hashtags', () => {
+    const tokens = Array.from({ length: HASHTAG_LIST_MAX + 1 }, (_, i) => `#tag${String(i)}`);
+    expect(() => Draft.create(buildInput({ hashtags: tokens }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ hashtags: tokens }))).toThrow(/hashtags/);
+  });
+
+  it('should_reject_empty_or_whitespace_tags', () => {
     expect(() => Draft.create(buildInput({ tags: ['ok', ''] }))).toThrow(/tags/);
-    expect(() => Draft.create(buildInput({ hashtags: ['ok', '   '] }))).toThrow(/hashtags/);
   });
 
-  it('should_reject_duplicate_tags_or_hashtags', () => {
+  it('should_reject_duplicate_tags', () => {
     expect(() => Draft.create(buildInput({ tags: ['demo', 'demo'] }))).toThrow(/tags/);
-    expect(() => Draft.create(buildInput({ hashtags: ['typescript', 'typescript'] }))).toThrow(
-      /hashtags/,
-    );
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_hashtags_field_when_create_is_called_with_a_malformed_hashtag', () => {
+    expect(() => Draft.create(buildInput({ hashtags: ['#bad tag'] }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ hashtags: ['#bad tag'] }))).toThrow(/hashtags/);
   });
 });
 
@@ -198,6 +231,21 @@ describe('Draft.fromSnapshot / toSnapshot', () => {
 
   it('should_expose_every_status_value_from_the_closed_enum', () => {
     expect(draftStatuses).toEqual(['draft', 'archived']);
+  });
+
+  // Snapshots are trusted: the persistence layer (Dexie + migrations) is the
+  // gate that prevents invalid rows from reaching fromSnapshot. Tightening this constructor
+  // without first wiring the migration would break Dexie load paths for legacy rows.
+  it('should_accept_a_snapshot_carrying_values_that_Draft_create_would_reject', () => {
+    const baseSnapshot = Draft.create(buildInput()).toSnapshot();
+    const corrupt: DraftSnapshot = {
+      ...baseSnapshot,
+      code: '',
+      hashtags: ['#bad tag'],
+    };
+    const draft = Draft.fromSnapshot(corrupt);
+    expect(draft.code).toBe('');
+    expect(draft.hashtags).toEqual(['#bad tag']);
   });
 });
 

@@ -111,16 +111,14 @@ export class Draft {
   static create(input: DraftCreateInput): Draft {
     requireNonEmpty(input.id, 'id', fail);
     requireNonEmpty(input.language, 'language', fail);
+    requireNonEmpty(input.code, 'code', fail);
     requirePlatform(input.platform);
     requireFiniteDate(input.createdAt, 'createdAt', fail);
     requireMaxLength(input.title, TITLE_MAX, 'title', fail);
     requireMaxLength(input.caption, CAPTION_MAX, 'caption', fail);
     requireMaxLength(input.code, CODE_MAX, 'code', fail);
     requireTagList(input.tags, 'tags', TAG_LIST_MAX, fail);
-    // TODO(rule-7): route hashtags through normalizeHashtags so create and updateHashtags
-    // share the same invariant (prefix + regex + case-insensitive dedup + count ≤ HASHTAG_LIST_MAX).
-    // See docs/specs/drafts-studio-v1-2-draft-aggregate.md Rule 7.
-    requireTagList(input.hashtags, 'hashtags', TAG_LIST_MAX, fail);
+    const hashtags = normalizeHashtags(input.hashtags);
 
     const createdAt = new Date(input.createdAt);
 
@@ -131,7 +129,7 @@ export class Draft {
       language: input.language,
       config: input.config,
       caption: input.caption,
-      hashtags: [...input.hashtags],
+      hashtags,
       platform: input.platform,
       thumbnail: input.thumbnail,
       tags: [...input.tags],
