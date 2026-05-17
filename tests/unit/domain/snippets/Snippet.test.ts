@@ -6,6 +6,7 @@ import {
   type SnippetSnapshot,
 } from '@/domain/snippets/Snippet';
 import type { SnippetId } from '@/domain/snippets/SnippetId';
+import { ID_MAX } from '@/domain/limits';
 
 const CREATED_AT = new Date('2026-03-15T10:00:00.000Z');
 const LATER = new Date('2026-03-15T10:30:00.000Z');
@@ -56,6 +57,12 @@ describe('Snippet.create — happy path', () => {
 describe('Snippet.create — invariants', () => {
   it('should_reject_an_empty_id', () => {
     expect(() => Snippet.create(buildInput({ id: '' as SnippetId }))).toThrow(InvalidSnippet);
+  });
+
+  it('should_reject_an_id_exceeding_ID_MAX_characters', () => {
+    const tooLong = 'x'.repeat(ID_MAX + 1) as SnippetId;
+    expect(() => Snippet.create(buildInput({ id: tooLong }))).toThrow(InvalidSnippet);
+    expect(() => Snippet.create(buildInput({ id: tooLong }))).toThrow(/id/);
   });
 
   it('should_reject_an_empty_language', () => {

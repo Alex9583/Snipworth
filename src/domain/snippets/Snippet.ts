@@ -4,8 +4,8 @@ import {
   requireNonEmpty,
   requireTagList,
 } from '@/domain/invariants';
-import { CODE_MAX, TAG_LIST_MAX, TITLE_MAX } from '@/domain/limits';
-import type { SnippetId } from '@/domain/snippets/SnippetId';
+import { CODE_MAX, ID_MAX, TAG_LIST_MAX, TITLE_MAX } from '@/domain/limits';
+import { SnippetId } from '@/domain/snippets/SnippetId';
 
 export class InvalidSnippet extends Error {
   constructor(reason: string) {
@@ -68,6 +68,7 @@ export class Snippet {
 
   static create(input: SnippetCreateInput): Snippet {
     requireNonEmpty(input.id, 'id', fail);
+    requireMaxLength(input.id, ID_MAX, 'id', fail);
     requireNonEmpty(input.language, 'language', fail);
     requireFiniteDate(input.createdAt, 'createdAt', fail);
     requireMaxLength(input.title, TITLE_MAX, 'title', fail);
@@ -89,7 +90,7 @@ export class Snippet {
 
   static fromSnapshot(snapshot: SnippetSnapshot): Snippet {
     return new Snippet({
-      id: snapshot.id as SnippetId,
+      id: SnippetId.from(snapshot.id, fail),
       title: snapshot.title,
       code: snapshot.code,
       language: snapshot.language,

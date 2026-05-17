@@ -6,12 +6,13 @@ import {
 } from '@/domain/invariants';
 import { isPlatform, type Platform } from '@/domain/drafts/Platform';
 import { aspectRatioForPlatform } from '@/domain/drafts/aspectRatioForPlatform';
-import type { DraftId } from '@/domain/drafts/DraftId';
+import { DraftId } from '@/domain/drafts/DraftId';
 import {
   CAPTION_MAX,
   CODE_MAX,
   HASHTAG_LIST_MAX,
   HASHTAG_MAX_LENGTH,
+  ID_MAX,
   TAG_LIST_MAX,
   TITLE_MAX,
 } from '@/domain/limits';
@@ -110,6 +111,7 @@ export class Draft {
 
   static create(input: DraftCreateInput): Draft {
     requireNonEmpty(input.id, 'id', fail);
+    requireMaxLength(input.id, ID_MAX, 'id', fail);
     requireNonEmpty(input.language, 'language', fail);
     requireNonEmpty(input.code, 'code', fail);
     requirePlatform(input.platform);
@@ -141,7 +143,7 @@ export class Draft {
 
   static fromSnapshot(snapshot: DraftSnapshot): Draft {
     return new Draft({
-      id: snapshot.id as DraftId,
+      id: DraftId.from(snapshot.id, fail),
       title: snapshot.title,
       code: snapshot.code,
       language: snapshot.language,

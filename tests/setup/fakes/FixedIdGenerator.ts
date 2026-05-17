@@ -9,4 +9,8 @@ export class FixedIdGenerator implements IdGenerator {
     this.cursor += 1;
     return `${this.prefix}-${String(this.cursor)}`;
   }
+
+  get consumedCount(): number {
+    return this.cursor;
+  }
 }

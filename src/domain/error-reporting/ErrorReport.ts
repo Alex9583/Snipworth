@@ -23,8 +23,7 @@ export const errorSeverities = ['warning', 'error'] as const;
 
 export type ErrorSeverity = (typeof errorSeverities)[number];
 
-declare const reportIdBrand: unique symbol;
-export type ReportId = string & { readonly [reportIdBrand]: true };
+import { ReportId } from '@/domain/error-reporting/ReportId';
 
 export class InvalidErrorReport extends Error {
   constructor(reason: string) {
@@ -32,6 +31,10 @@ export class InvalidErrorReport extends Error {
     this.name = 'InvalidErrorReport';
   }
 }
+
+const fail = (reason: string): never => {
+  throw new InvalidErrorReport(reason);
+};
 
 export interface ErrorReportInput {
   readonly id: string;
@@ -83,14 +86,12 @@ export class ErrorReport {
   }
 
   static from(input: ErrorReportInput): ErrorReport {
-    if (input.id.trim().length === 0) {
-      throw new InvalidErrorReport('id must not be empty');
-    }
+    const id = ReportId.from(input.id, fail);
     if (input.message.trim().length === 0) {
       throw new InvalidErrorReport('message must not be empty');
     }
     return new ErrorReport({
-      id: input.id as ReportId,
+      id,
       kind: input.kind,
       message: input.message,
       occurredAt: new Date(input.occurredAt.getTime()),
@@ -102,7 +103,7 @@ export class ErrorReport {
 
   static fromSnapshot(snapshot: ErrorReportSnapshot): ErrorReport {
     return new ErrorReport({
-      id: snapshot.id as ReportId,
+      id: ReportId.from(snapshot.id, fail),
       kind: snapshot.kind,
       message: snapshot.message,
       occurredAt: new Date(snapshot.occurredAt),

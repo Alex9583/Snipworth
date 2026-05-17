@@ -125,6 +125,32 @@ export default tseslint.config(
   },
 
   {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'TSAsExpression > TSTypeReference[typeName.name=/^(DraftId|SnippetId|ReportId)$/]',
+          message:
+            'Do not cast to a branded ID — use <Brand>.from(raw, fail) to enforce non-empty + ≤ ID_MAX at the lift point.',
+        },
+      ],
+    },
+  },
+
+  {
+    // The branded-id helper is the single audited site where a generic-typed
+    // cast is legitimate — it IS the lift point. The `no-unnecessary-type-parameters`
+    // rule misfires here: the type parameter `B` carries the brand contract for
+    // every caller, even though it appears only once in the signature.
+    files: ['src/domain/ids/branded-id.ts'],
+    rules: {
+      '@typescript-eslint/no-unnecessary-type-parameters': 'off',
+    },
+  },
+
+  {
     files: ['tests/e2e/**/*.{ts,tsx}'],
     rules: {
       'react-hooks/rules-of-hooks': 'off',

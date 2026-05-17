@@ -8,7 +8,13 @@ import {
 } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import type { Platform } from '@/domain/drafts/Platform';
-import { CAPTION_MAX, HASHTAG_LIST_MAX, HASHTAG_MAX_LENGTH, TAG_LIST_MAX } from '@/domain/limits';
+import {
+  CAPTION_MAX,
+  HASHTAG_LIST_MAX,
+  HASHTAG_MAX_LENGTH,
+  ID_MAX,
+  TAG_LIST_MAX,
+} from '@/domain/limits';
 import { RenderConfig, type RenderConfigInput } from '@/domain/rendering/RenderConfig';
 
 const CREATED_AT = new Date('2026-03-15T10:00:00.000Z');
@@ -132,6 +138,12 @@ describe('Draft.create — invariants', () => {
   it('should_reject_an_empty_id', () => {
     expect(() => Draft.create(buildInput({ id: '' as DraftId }))).toThrow(InvalidDraft);
     expect(() => Draft.create(buildInput({ id: '   ' as DraftId }))).toThrow(/id/);
+  });
+
+  it('should_reject_an_id_exceeding_ID_MAX_characters', () => {
+    const tooLong = 'x'.repeat(ID_MAX + 1) as DraftId;
+    expect(() => Draft.create(buildInput({ id: tooLong }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ id: tooLong }))).toThrow(/^InvalidDraft: id /);
   });
 
   it('should_reject_an_empty_language', () => {
