@@ -14,6 +14,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 
 
 
+
+## [0.1.2] - 2026-05-18
+
+### Removed
+
+- Remove unnecessary `tabs` permission from manifest configuration
+
 ## [0.1.1] - 2026-05-13
 
 ### Added
