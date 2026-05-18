@@ -40,7 +40,6 @@ function buildDraft(overrides: Partial<DraftCreateInput> = {}): Draft {
     hashtags: [],
     platform: 'x',
     thumbnail: null,
-    tags: ['demo'],
     createdAt: CREATED_AT,
     ...overrides,
   });

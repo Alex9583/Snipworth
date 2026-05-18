@@ -8,13 +8,7 @@ import {
 } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import type { Platform } from '@/domain/drafts/Platform';
-import {
-  CAPTION_MAX,
-  HASHTAG_LIST_MAX,
-  HASHTAG_MAX_LENGTH,
-  ID_MAX,
-  TAG_LIST_MAX,
-} from '@/domain/limits';
+import { CAPTION_MAX, HASHTAG_LIST_MAX, HASHTAG_MAX_LENGTH, ID_MAX } from '@/domain/limits';
 import { RenderConfig, type RenderConfigInput } from '@/domain/rendering/RenderConfig';
 
 const CREATED_AT = new Date('2026-03-15T10:00:00.000Z');
@@ -52,7 +46,6 @@ function buildInput(overrides: Partial<DraftCreateInput> = {}): DraftCreateInput
     hashtags: ['typescript'],
     platform: 'x',
     thumbnail: null,
-    tags: ['demo'],
     createdAt: CREATED_AT,
     ...overrides,
   };
@@ -73,7 +66,6 @@ describe('Draft.create — happy path', () => {
     expect(draft.hashtags).toEqual(['#typescript']);
     expect(draft.platform).toBe('x');
     expect(draft.thumbnail).toBeNull();
-    expect(draft.tags).toEqual(['demo']);
   });
 
   it('should_set_status_to_draft_on_creation', () => {
@@ -94,13 +86,10 @@ describe('Draft.create — happy path', () => {
     expect(draft.createdAt.getFullYear()).toBe(2026);
   });
 
-  it('should_isolate_hashtags_and_tags_from_caller_mutation_after_construction', () => {
-    const tags = ['demo'];
+  it('should_isolate_hashtags_from_caller_mutation_after_construction', () => {
     const hashtags = ['typescript'];
-    const draft = Draft.create(buildInput({ tags, hashtags }));
-    tags.push('mutation');
+    const draft = Draft.create(buildInput({ hashtags }));
     hashtags.push('mutation');
-    expect(draft.tags).toEqual(['demo']);
     expect(draft.hashtags).toEqual(['#typescript']);
   });
 
@@ -184,23 +173,10 @@ describe('Draft.create — invariants', () => {
     expect(() => Draft.create(buildInput({ code: blank }))).toThrow(/^InvalidDraft: code /);
   });
 
-  it('should_reject_more_than_TAG_LIST_MAX_tags', () => {
-    const many = Array.from({ length: TAG_LIST_MAX + 1 }, (_, i) => `tag${String(i)}`);
-    expect(() => Draft.create(buildInput({ tags: many }))).toThrow(/tags/);
-  });
-
   it('should_reject_more_than_HASHTAG_LIST_MAX_unique_hashtags', () => {
     const tokens = Array.from({ length: HASHTAG_LIST_MAX + 1 }, (_, i) => `#tag${String(i)}`);
     expect(() => Draft.create(buildInput({ hashtags: tokens }))).toThrow(InvalidDraft);
     expect(() => Draft.create(buildInput({ hashtags: tokens }))).toThrow(/hashtags/);
-  });
-
-  it('should_reject_empty_or_whitespace_tags', () => {
-    expect(() => Draft.create(buildInput({ tags: ['ok', ''] }))).toThrow(/tags/);
-  });
-
-  it('should_reject_duplicate_tags', () => {
-    expect(() => Draft.create(buildInput({ tags: ['demo', 'demo'] }))).toThrow(/tags/);
   });
 
   it('should_throw_InvalidDraft_referencing_the_hashtags_field_when_create_is_called_with_a_malformed_hashtag', () => {

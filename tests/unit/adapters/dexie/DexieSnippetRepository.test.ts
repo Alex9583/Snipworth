@@ -14,7 +14,7 @@ function buildSnippet(overrides: Partial<SnippetCreateInput> = {}): Snippet {
     title: 'Hello',
     code: 'print("hi")',
     language: 'python',
-    tags: ['demo'],
+    hashtags: ['demo'],
     createdAt: CREATED_AT,
     ...overrides,
   });

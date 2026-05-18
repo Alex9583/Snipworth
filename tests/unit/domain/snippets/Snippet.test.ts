@@ -6,7 +6,7 @@ import {
   type SnippetSnapshot,
 } from '@/domain/snippets/Snippet';
 import type { SnippetId } from '@/domain/snippets/SnippetId';
-import { ID_MAX } from '@/domain/limits';
+import { HASHTAG_LIST_MAX, ID_MAX } from '@/domain/limits';
 
 const CREATED_AT = new Date('2026-03-15T10:00:00.000Z');
 const LATER = new Date('2026-03-15T10:30:00.000Z');
@@ -17,7 +17,7 @@ function buildInput(overrides: Partial<SnippetCreateInput> = {}): SnippetCreateI
     title: 'Hello',
     code: 'print("hi")',
     language: 'python',
-    tags: ['demo'],
+    hashtags: ['python'],
     createdAt: CREATED_AT,
     ...overrides,
   };
@@ -30,7 +30,7 @@ describe('Snippet.create — happy path', () => {
     expect(snippet.title).toBe('Hello');
     expect(snippet.code).toBe('print("hi")');
     expect(snippet.language).toBe('python');
-    expect(snippet.tags).toEqual(['demo']);
+    expect(snippet.hashtags).toEqual(['#python']);
   });
 
   it('should_align_updatedAt_with_createdAt_on_creation', () => {
@@ -38,13 +38,13 @@ describe('Snippet.create — happy path', () => {
     expect(snippet.updatedAt.getTime()).toBe(snippet.createdAt.getTime());
   });
 
-  it('should_isolate_createdAt_and_tags_from_caller_mutation_after_construction', () => {
-    const tags = ['demo'];
+  it('should_isolate_createdAt_and_hashtags_from_caller_mutation_after_construction', () => {
+    const hashtags = ['python'];
     const mutable = new Date(CREATED_AT);
-    const snippet = Snippet.create(buildInput({ tags, createdAt: mutable }));
-    tags.push('mutation');
+    const snippet = Snippet.create(buildInput({ hashtags, createdAt: mutable }));
+    hashtags.push('mutation');
     mutable.setFullYear(1999);
-    expect(snippet.tags).toEqual(['demo']);
+    expect(snippet.hashtags).toEqual(['#python']);
     expect(snippet.createdAt.getFullYear()).toBe(2026);
   });
 
@@ -83,14 +83,15 @@ describe('Snippet.create — invariants', () => {
     expect(() => Snippet.create(buildInput({ code: 'x'.repeat(200_001) }))).toThrow(/code/);
   });
 
-  it('should_reject_more_than_50_tags', () => {
-    const many = Array.from({ length: 51 }, (_, i) => `tag${String(i)}`);
-    expect(() => Snippet.create(buildInput({ tags: many }))).toThrow(/tags/);
+  it('should_reject_more_than_HASHTAG_LIST_MAX_unique_hashtags', () => {
+    const tokens = Array.from({ length: HASHTAG_LIST_MAX + 1 }, (_, i) => `#tag${String(i)}`);
+    expect(() => Snippet.create(buildInput({ hashtags: tokens }))).toThrow(InvalidSnippet);
+    expect(() => Snippet.create(buildInput({ hashtags: tokens }))).toThrow(/hashtags/);
   });
 
-  it('should_reject_empty_or_duplicate_tags', () => {
-    expect(() => Snippet.create(buildInput({ tags: ['ok', ''] }))).toThrow(/tags/);
-    expect(() => Snippet.create(buildInput({ tags: ['demo', 'demo'] }))).toThrow(/tags/);
+  it('should_reject_a_malformed_hashtag_containing_whitespace', () => {
+    expect(() => Snippet.create(buildInput({ hashtags: ['#bad tag'] }))).toThrow(InvalidSnippet);
+    expect(() => Snippet.create(buildInput({ hashtags: ['#bad tag'] }))).toThrow(/hashtags/);
   });
 });
 
@@ -113,7 +114,7 @@ describe('Snippet.fromSnapshot / toSnapshot', () => {
       title: 'Hello',
       code: 'print("hi")',
       language: 'python',
-      tags: ['demo'],
+      hashtags: ['#python'],
       createdAt: CREATED_AT.getTime(),
       updatedAt: LATER.getTime(),
     };

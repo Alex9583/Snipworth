@@ -5,10 +5,10 @@ import { platforms } from '@/domain/drafts/Platform';
 import {
   CAPTION_MAX,
   CODE_MAX,
+  HASHTAG_LIST_MAX,
+  HASHTAG_MAX_LENGTH,
   ID_MAX,
   LANGUAGE_MAX,
-  TAG_LIST_MAX,
-  TAG_MAX,
   TITLE_MAX,
 } from '@/domain/limits';
 import type { SnippetSnapshot } from '@/domain/snippets/Snippet';
@@ -26,6 +26,8 @@ function isBlobLike(value: unknown): value is Blob {
   );
 }
 
+const hashtagsSchema = z.array(z.string().max(HASHTAG_MAX_LENGTH)).max(HASHTAG_LIST_MAX);
+
 export const draftRowSchema: z.ZodType<DraftSnapshot> = z.strictObject({
   id: z.string().min(1).max(ID_MAX),
   title: z.string().max(TITLE_MAX),
@@ -33,10 +35,9 @@ export const draftRowSchema: z.ZodType<DraftSnapshot> = z.strictObject({
   language: z.string().min(1).max(LANGUAGE_MAX),
   config: renderConfigWireSchema,
   caption: z.string().max(CAPTION_MAX),
-  hashtags: z.array(z.string().max(TAG_MAX)).max(TAG_LIST_MAX),
+  hashtags: hashtagsSchema,
   platform: z.enum(platforms),
   thumbnail: z.union([z.custom<Blob>(isBlobLike, { message: 'expected Blob' }), z.null()]),
-  tags: z.array(z.string().max(TAG_MAX)).max(TAG_LIST_MAX),
   status: z.enum(draftStatuses),
   createdAt: z.number(),
   updatedAt: z.number(),
@@ -47,7 +48,7 @@ export const snippetRowSchema: z.ZodType<SnippetSnapshot> = z.strictObject({
   title: z.string().max(TITLE_MAX),
   code: z.string().max(CODE_MAX),
   language: z.string().min(1).max(LANGUAGE_MAX),
-  tags: z.array(z.string().max(TAG_MAX)).max(TAG_LIST_MAX),
+  hashtags: hashtagsSchema,
   createdAt: z.number(),
   updatedAt: z.number(),
 });

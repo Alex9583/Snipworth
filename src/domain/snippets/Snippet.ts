@@ -1,10 +1,6 @@
-import {
-  requireFiniteDate,
-  requireMaxLength,
-  requireNonEmpty,
-  requireTagList,
-} from '@/domain/invariants';
-import { CODE_MAX, ID_MAX, TAG_LIST_MAX, TITLE_MAX } from '@/domain/limits';
+import { normalizeHashtags } from '@/domain/hashtags/normalizeHashtags';
+import { requireFiniteDate, requireMaxLength, requireNonEmpty } from '@/domain/invariants';
+import { CODE_MAX, ID_MAX, TITLE_MAX } from '@/domain/limits';
 import { SnippetId } from '@/domain/snippets/SnippetId';
 
 export class InvalidSnippet extends Error {
@@ -23,7 +19,7 @@ export interface SnippetCreateInput {
   readonly title: string;
   readonly code: string;
   readonly language: string;
-  readonly tags: readonly string[];
+  readonly hashtags: readonly string[];
   readonly createdAt: Date;
 }
 
@@ -32,7 +28,7 @@ export interface SnippetSnapshot {
   readonly title: string;
   readonly code: string;
   readonly language: string;
-  readonly tags: readonly string[];
+  readonly hashtags: readonly string[];
   readonly createdAt: number;
   readonly updatedAt: number;
 }
@@ -42,7 +38,7 @@ interface SnippetProps {
   readonly title: string;
   readonly code: string;
   readonly language: string;
-  readonly tags: readonly string[];
+  readonly hashtags: readonly string[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -52,7 +48,7 @@ export class Snippet {
   readonly title: string;
   readonly code: string;
   readonly language: string;
-  readonly tags: readonly string[];
+  readonly hashtags: readonly string[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
@@ -61,7 +57,7 @@ export class Snippet {
     this.title = props.title;
     this.code = props.code;
     this.language = props.language;
-    this.tags = props.tags;
+    this.hashtags = props.hashtags;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
@@ -73,7 +69,7 @@ export class Snippet {
     requireFiniteDate(input.createdAt, 'createdAt', fail);
     requireMaxLength(input.title, TITLE_MAX, 'title', fail);
     requireMaxLength(input.code, CODE_MAX, 'code', fail);
-    requireTagList(input.tags, 'tags', TAG_LIST_MAX, fail);
+    const hashtags = normalizeHashtags(input.hashtags, fail);
 
     const createdAt = new Date(input.createdAt);
 
@@ -82,7 +78,7 @@ export class Snippet {
       title: input.title,
       code: input.code,
       language: input.language,
-      tags: [...input.tags],
+      hashtags,
       createdAt,
       updatedAt: new Date(createdAt),
     });
@@ -94,7 +90,7 @@ export class Snippet {
       title: snapshot.title,
       code: snapshot.code,
       language: snapshot.language,
-      tags: [...snapshot.tags],
+      hashtags: [...snapshot.hashtags],
       createdAt: new Date(snapshot.createdAt),
       updatedAt: new Date(snapshot.updatedAt),
     });
@@ -106,7 +102,7 @@ export class Snippet {
       title: this.title,
       code: this.code,
       language: this.language,
-      tags: [...this.tags],
+      hashtags: [...this.hashtags],
       createdAt: this.createdAt.getTime(),
       updatedAt: this.updatedAt.getTime(),
     };
