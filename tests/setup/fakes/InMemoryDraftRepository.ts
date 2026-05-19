@@ -8,44 +8,66 @@ import type {
 import { Draft, type DraftSnapshot } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 
-type NextOutcome<T> =
-  | { readonly kind: 'throw'; readonly error: Error }
-  | { readonly kind: 'return'; readonly value: T };
-
 export class InMemoryDraftRepository implements DraftRepository {
   private readonly store = new Map<string, DraftSnapshot>();
-  private pendingSave: NextOutcome<SaveDraftOutcome> | undefined;
+  private readonly corruptRows = new Map<string, unknown>();
+  private pendingSaveThrow: Error | undefined;
+  private pendingSaveOutcome: SaveDraftOutcome | undefined;
+  private pendingFindByIdThrow: Error | undefined;
+  private pendingFindByIdOutcome: FindDraftOutcome | undefined;
 
-  /**
-   * Queue the next `save` call's outcome. Pass an `Error` to make it throw
-   * (mirroring a Dexie connection crash); pass a `SaveDraftOutcome` to make
-   * it return that typed variant (mirroring an adapter that catches and
-   * surfaces `storage_unavailable`). Consumed once, then the fake reverts
-   * to its normal store-and-confirm behavior.
-   */
-  enqueueNextSave(input: Error | SaveDraftOutcome): void {
-    this.pendingSave =
-      input instanceof Error ? { kind: 'throw', error: input } : { kind: 'return', value: input };
+  seedCorruptRow(id: DraftId, cause: unknown): void {
+    this.corruptRows.set(id, cause);
+  }
+
+  failNextFindByIdWith(error: Error): void {
+    this.pendingFindByIdThrow = error;
+  }
+
+  enqueueNextFindByIdOutcome(outcome: FindDraftOutcome): void {
+    this.pendingFindByIdOutcome = outcome;
+  }
+
+  failNextSaveWith(error: Error): void {
+    this.pendingSaveThrow = error;
+  }
+
+  enqueueNextSaveOutcome(outcome: SaveDraftOutcome): void {
+    this.pendingSaveOutcome = outcome;
   }
 
   save(draft: Draft): Promise<SaveDraftOutcome> {
-    if (this.pendingSave !== undefined) {
-      const pending = this.pendingSave;
-      this.pendingSave = undefined;
-      return pending.kind === 'throw'
-        ? Promise.reject(pending.error)
-        : Promise.resolve(pending.value);
+    if (this.pendingSaveThrow !== undefined) {
+      const error = this.pendingSaveThrow;
+      this.pendingSaveThrow = undefined;
+      return Promise.reject(error);
+    }
+    if (this.pendingSaveOutcome !== undefined) {
+      const outcome = this.pendingSaveOutcome;
+      this.pendingSaveOutcome = undefined;
+      return Promise.resolve(outcome);
     }
     this.store.set(draft.id, draft.toSnapshot());
     return Promise.resolve({ kind: 'saved' });
   }
 
-  findById(_id: DraftId): Promise<FindDraftOutcome> {
-    return Promise.reject(
-      new Error(
-        'InMemoryDraftRepository.findById not yet implemented — wire under the use case that needs it',
-      ),
-    );
+  findById(id: DraftId): Promise<FindDraftOutcome> {
+    if (this.pendingFindByIdThrow !== undefined) {
+      const error = this.pendingFindByIdThrow;
+      this.pendingFindByIdThrow = undefined;
+      return Promise.reject(error);
+    }
+    if (this.pendingFindByIdOutcome !== undefined) {
+      const outcome = this.pendingFindByIdOutcome;
+      this.pendingFindByIdOutcome = undefined;
+      return Promise.resolve(outcome);
+    }
+    if (this.corruptRows.has(id)) {
+      return Promise.resolve({ kind: 'corrupt', cause: this.corruptRows.get(id) });
+    }
+    const snapshot = this.store.get(id);
+    if (snapshot === undefined) return Promise.resolve({ kind: 'not_found' });
+    return Promise.resolve({ kind: 'found', draft: Draft.fromSnapshot(snapshot) });
   }
 
   findAll(): Promise<FindAllDraftsOutcome> {

@@ -117,7 +117,7 @@ describe('SaveCurrentEditorAsDraft', () => {
   it('should_return_storage_unavailable_carrying_the_repo_thrown_cause_when_save_throws', async () => {
     const { repo, useCase } = buildHarness();
     const thrown = new Error('dexie connection lost');
-    repo.enqueueNextSave(thrown);
+    repo.failNextSaveWith(thrown);
 
     const outcome = await useCase.execute(validInputWith());
 
@@ -129,7 +129,7 @@ describe('SaveCurrentEditorAsDraft', () => {
   it('should_return_storage_unavailable_carrying_the_repo_typed_cause_when_save_returns_storage_unavailable', async () => {
     const { repo, useCase } = buildHarness();
     const cause = { code: 'QuotaExceededError', name: 'QuotaExceededError' };
-    repo.enqueueNextSave({ kind: 'storage_unavailable', cause });
+    repo.enqueueNextSaveOutcome({ kind: 'storage_unavailable', cause });
 
     const outcome = await useCase.execute(validInputWith());
 
