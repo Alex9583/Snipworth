@@ -11,10 +11,15 @@ import type { DraftId } from '@/domain/drafts/DraftId';
 export class InMemoryDraftRepository implements DraftRepository {
   private readonly store = new Map<string, DraftSnapshot>();
   private readonly corruptRows = new Map<string, unknown>();
+  private readonly savedHistory: DraftSnapshot[] = [];
   private pendingSaveThrow: Error | undefined;
   private pendingSaveOutcome: SaveDraftOutcome | undefined;
   private pendingFindByIdThrow: Error | undefined;
   private pendingFindByIdOutcome: FindDraftOutcome | undefined;
+
+  get savedSnapshots(): readonly DraftSnapshot[] {
+    return this.savedHistory;
+  }
 
   seedCorruptRow(id: DraftId, cause: unknown): void {
     this.corruptRows.set(id, cause);
@@ -47,7 +52,9 @@ export class InMemoryDraftRepository implements DraftRepository {
       this.pendingSaveOutcome = undefined;
       return Promise.resolve(outcome);
     }
-    this.store.set(draft.id, draft.toSnapshot());
+    const snapshot = draft.toSnapshot();
+    this.store.set(draft.id, snapshot);
+    this.savedHistory.push(snapshot);
     return Promise.resolve({ kind: 'saved' });
   }
 
