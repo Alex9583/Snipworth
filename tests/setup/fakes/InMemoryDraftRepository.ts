@@ -16,6 +16,8 @@ export class InMemoryDraftRepository implements DraftRepository {
   private pendingSaveOutcome: SaveDraftOutcome | undefined;
   private pendingFindByIdThrow: Error | undefined;
   private pendingFindByIdOutcome: FindDraftOutcome | undefined;
+  private pendingDeleteThrow: Error | undefined;
+  private pendingDeleteOutcome: DeleteDraftOutcome | undefined;
 
   get savedSnapshots(): readonly DraftSnapshot[] {
     return this.savedHistory;
@@ -35,6 +37,14 @@ export class InMemoryDraftRepository implements DraftRepository {
 
   failNextSaveWith(error: Error): void {
     this.pendingSaveThrow = error;
+  }
+
+  failNextDeleteWith(error: Error): void {
+    this.pendingDeleteThrow = error;
+  }
+
+  enqueueNextDeleteOutcome(outcome: DeleteDraftOutcome): void {
+    this.pendingDeleteOutcome = outcome;
   }
 
   enqueueNextSaveOutcome(outcome: SaveDraftOutcome): void {
@@ -82,11 +92,18 @@ export class InMemoryDraftRepository implements DraftRepository {
     return Promise.resolve({ kind: 'loaded', drafts, corrupt: [] });
   }
 
-  delete(_id: DraftId): Promise<DeleteDraftOutcome> {
-    return Promise.reject(
-      new Error(
-        'InMemoryDraftRepository.delete not yet implemented — wire under the use case that needs it',
-      ),
-    );
+  delete(id: DraftId): Promise<DeleteDraftOutcome> {
+    if (this.pendingDeleteThrow !== undefined) {
+      const error = this.pendingDeleteThrow;
+      this.pendingDeleteThrow = undefined;
+      return Promise.reject(error);
+    }
+    if (this.pendingDeleteOutcome !== undefined) {
+      const outcome = this.pendingDeleteOutcome;
+      this.pendingDeleteOutcome = undefined;
+      return Promise.resolve(outcome);
+    }
+    this.store.delete(id);
+    return Promise.resolve({ kind: 'deleted' });
   }
 }
