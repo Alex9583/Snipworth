@@ -3,22 +3,22 @@ import type { DraftRepository } from '@/application/ports/DraftRepository';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import { type DraftTransitionFailure, loadDraft, persistDraft } from './draftTransition';
 
-export interface ArchiveDraftInput {
+export interface RestoreDraftInput {
   readonly id: DraftId;
 }
 
-export type ArchiveDraftOutcome = { readonly kind: 'archived' } | DraftTransitionFailure;
+export type RestoreDraftOutcome = { readonly kind: 'restored' } | DraftTransitionFailure;
 
-export class ArchiveDraft {
+export class RestoreDraft {
   constructor(
     private readonly repo: DraftRepository,
     private readonly clock: Clock,
   ) {}
 
-  async execute(input: ArchiveDraftInput): Promise<ArchiveDraftOutcome> {
+  async execute(input: RestoreDraftInput): Promise<RestoreDraftOutcome> {
     const loaded = await loadDraft(this.repo, input.id);
     if (!loaded.ok) return loaded.outcome;
-    const archived = loaded.draft.archive(this.clock.now());
-    return persistDraft(this.repo, archived, 'archived');
+    const restored = loaded.draft.restore(this.clock.now());
+    return persistDraft(this.repo, restored, 'restored');
   }
 }

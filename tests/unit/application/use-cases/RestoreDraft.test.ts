@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ArchiveDraft } from '@/application/use-cases/ArchiveDraft';
+import { RestoreDraft } from '@/application/use-cases/RestoreDraft';
 import type { Draft } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import { FakeClock } from '../../../setup/fakes/FakeClock';
@@ -12,47 +12,47 @@ async function buildHarness(seed: Draft) {
   const repo = new InMemoryDraftRepository();
   await repo.save(seed);
   const clock = new FakeClock(UPDATED_AT);
-  const useCase = new ArchiveDraft(repo, clock);
+  const useCase = new RestoreDraft(repo, clock);
   return { repo, clock, useCase };
 }
 
-describe('ArchiveDraft', () => {
-  it('should_return_archived_and_persist_status_archived_with_updatedAt_bumped_to_Clock_now_when_input_is_an_active_draft', async () => {
-    const seed = anActiveDraft();
-    const { repo, useCase } = await buildHarness(seed);
-
-    const outcome = await useCase.execute({ id: seed.id });
-
-    expect(outcome).toEqual({ kind: 'archived' });
-    const found = await repo.findById(seed.id);
-    if (found.kind !== 'found') throw new Error('expected found');
-    expect(found.draft.toSnapshot()).toEqual({
-      ...seed.toSnapshot(),
-      status: 'archived',
-      updatedAt: UPDATED_AT.getTime(),
-    });
-  });
-
-  it('should_return_archived_and_bump_updatedAt_to_Clock_now_when_input_is_an_already_archived_draft', async () => {
+describe('RestoreDraft', () => {
+  it('should_return_restored_and_persist_status_draft_with_updatedAt_bumped_to_Clock_now_when_input_is_an_archived_draft', async () => {
     const earlierArchive = new Date('2026-05-15T09:00:00Z');
     const seed = anArchivedDraft(earlierArchive);
     const { repo, useCase } = await buildHarness(seed);
 
     const outcome = await useCase.execute({ id: seed.id });
 
-    expect(outcome).toEqual({ kind: 'archived' });
+    expect(outcome).toEqual({ kind: 'restored' });
     const found = await repo.findById(seed.id);
     if (found.kind !== 'found') throw new Error('expected found');
     expect(found.draft.toSnapshot()).toEqual({
       ...seed.toSnapshot(),
-      status: 'archived',
+      status: 'draft',
+      updatedAt: UPDATED_AT.getTime(),
+    });
+  });
+
+  it('should_return_restored_and_bump_updatedAt_to_Clock_now_when_input_is_an_already_active_draft', async () => {
+    const seed = anActiveDraft();
+    const { repo, useCase } = await buildHarness(seed);
+
+    const outcome = await useCase.execute({ id: seed.id });
+
+    expect(outcome).toEqual({ kind: 'restored' });
+    const found = await repo.findById(seed.id);
+    if (found.kind !== 'found') throw new Error('expected found');
+    expect(found.draft.toSnapshot()).toEqual({
+      ...seed.toSnapshot(),
+      status: 'draft',
       updatedAt: UPDATED_AT.getTime(),
     });
   });
 
   it('should_return_not_found_and_skip_save_when_id_does_not_exist', async () => {
     const repo = new InMemoryDraftRepository();
-    const useCase = new ArchiveDraft(repo, new FakeClock(UPDATED_AT));
+    const useCase = new RestoreDraft(repo, new FakeClock(UPDATED_AT));
 
     const outcome = await useCase.execute({ id: 'draft-999' as DraftId });
 
@@ -64,7 +64,7 @@ describe('ArchiveDraft', () => {
     const repo = new InMemoryDraftRepository();
     const cause = { issues: [{ path: ['code'], message: 'expected string' }] };
     repo.seedCorruptRow('draft-1' as DraftId, cause);
-    const useCase = new ArchiveDraft(repo, new FakeClock(UPDATED_AT));
+    const useCase = new RestoreDraft(repo, new FakeClock(UPDATED_AT));
 
     const outcome = await useCase.execute({ id: 'draft-1' as DraftId });
 
@@ -75,7 +75,7 @@ describe('ArchiveDraft', () => {
   });
 
   it('should_return_storage_unavailable_carrying_the_thrown_cause_when_repo_save_throws', async () => {
-    const seed = anActiveDraft();
+    const seed = anArchivedDraft(new Date('2026-05-15T09:00:00Z'));
     const { repo, useCase } = await buildHarness(seed);
     const thrown = new Error('dexie connection lost');
     repo.failNextSaveWith(thrown);
@@ -88,7 +88,7 @@ describe('ArchiveDraft', () => {
   });
 
   it('should_return_storage_unavailable_carrying_the_repo_typed_cause_when_save_returns_storage_unavailable', async () => {
-    const seed = anActiveDraft();
+    const seed = anArchivedDraft(new Date('2026-05-15T09:00:00Z'));
     const { repo, useCase } = await buildHarness(seed);
     const cause = { code: 'QuotaExceededError', name: 'QuotaExceededError' };
     repo.enqueueNextSaveOutcome({ kind: 'storage_unavailable', cause });
@@ -104,7 +104,7 @@ describe('ArchiveDraft', () => {
     const repo = new InMemoryDraftRepository();
     const thrown = new Error('dexie connection lost');
     repo.failNextFindByIdWith(thrown);
-    const useCase = new ArchiveDraft(repo, new FakeClock(UPDATED_AT));
+    const useCase = new RestoreDraft(repo, new FakeClock(UPDATED_AT));
 
     const outcome = await useCase.execute({ id: 'draft-1' as DraftId });
 
@@ -118,7 +118,7 @@ describe('ArchiveDraft', () => {
     const repo = new InMemoryDraftRepository();
     const cause = { code: 'QuotaExceededError', name: 'QuotaExceededError' };
     repo.enqueueNextFindByIdOutcome({ kind: 'storage_unavailable', cause });
-    const useCase = new ArchiveDraft(repo, new FakeClock(UPDATED_AT));
+    const useCase = new RestoreDraft(repo, new FakeClock(UPDATED_AT));
 
     const outcome = await useCase.execute({ id: 'draft-1' as DraftId });
 

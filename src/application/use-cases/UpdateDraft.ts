@@ -1,9 +1,10 @@
 import type { Clock } from '@/application/ports/Clock';
-import type { DraftRepository, FindDraftOutcome } from '@/application/ports/DraftRepository';
+import type { DraftRepository } from '@/application/ports/DraftRepository';
 import { Draft, InvalidDraft } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import type { Platform } from '@/domain/drafts/Platform';
 import type { RenderConfig } from '@/domain/rendering/RenderConfig';
+import { type DraftTransitionFailure, loadDraft, persistDraft } from './draftTransition';
 
 export interface UpdateDraftPatch {
   readonly title?: string;
@@ -24,11 +25,9 @@ export type UpdateDraftOutcome =
   | { readonly kind: 'updated' }
   | { readonly kind: 'empty_code' }
   | { readonly kind: 'invalid_field'; readonly field: string; readonly cause: unknown }
-  | { readonly kind: 'not_found' }
-  | { readonly kind: 'corrupt'; readonly cause: unknown }
-  | { readonly kind: 'storage_unavailable'; readonly cause: unknown };
+  | DraftTransitionFailure;
 
-type PhaseResult =
+type ApplyPatchResult =
   | { readonly ok: true; readonly draft: Draft }
   | { readonly ok: false; readonly outcome: UpdateDraftOutcome };
 
@@ -39,7 +38,7 @@ export class UpdateDraft {
   ) {}
 
   async execute(input: UpdateDraftInput): Promise<UpdateDraftOutcome> {
-    const loaded = await this.loadDraft(input.id);
+    const loaded = await loadDraft(this.repo, input.id);
     if (!loaded.ok) return loaded.outcome;
 
     if (isEmptyPatch(input.patch)) return { kind: 'updated' };
@@ -48,39 +47,7 @@ export class UpdateDraft {
     const applied = applyPatch(loaded.draft, input.patch, this.clock.now());
     if (!applied.ok) return applied.outcome;
 
-    return this.persistDraft(applied.draft);
-  }
-
-  private async loadDraft(id: DraftId): Promise<PhaseResult> {
-    let outcome: FindDraftOutcome;
-    try {
-      outcome = await this.repo.findById(id);
-    } catch (cause) {
-      return { ok: false, outcome: { kind: 'storage_unavailable', cause } };
-    }
-    switch (outcome.kind) {
-      case 'found':
-        return { ok: true, draft: outcome.draft };
-      case 'not_found':
-        return { ok: false, outcome: { kind: 'not_found' } };
-      case 'corrupt':
-        return { ok: false, outcome: { kind: 'corrupt', cause: outcome.cause } };
-      case 'storage_unavailable':
-        return { ok: false, outcome: { kind: 'storage_unavailable', cause: outcome.cause } };
-    }
-  }
-
-  private async persistDraft(draft: Draft): Promise<UpdateDraftOutcome> {
-    let saved;
-    try {
-      saved = await this.repo.save(draft);
-    } catch (cause) {
-      return { kind: 'storage_unavailable', cause };
-    }
-    if (saved.kind === 'storage_unavailable') {
-      return { kind: 'storage_unavailable', cause: saved.cause };
-    }
-    return { kind: 'updated' };
+    return persistDraft(this.repo, applied.draft, 'updated');
   }
 }
 
@@ -92,7 +59,7 @@ function hasBlankCode(patch: UpdateDraftPatch): boolean {
   return patch.code?.trim().length === 0;
 }
 
-function applyPatch(initial: Draft, patch: UpdateDraftPatch, now: Date): PhaseResult {
+function applyPatch(initial: Draft, patch: UpdateDraftPatch, now: Date): ApplyPatchResult {
   let draft = initial;
   if (patch.title !== undefined) {
     const title = patch.title;
@@ -131,7 +98,7 @@ function applyPatch(initial: Draft, patch: UpdateDraftPatch, now: Date): PhaseRe
   return { ok: true, draft };
 }
 
-function tryApply(field: string, apply: () => Draft): PhaseResult {
+function tryApply(field: string, apply: () => Draft): ApplyPatchResult {
   try {
     return { ok: true, draft: apply() };
   } catch (cause) {
