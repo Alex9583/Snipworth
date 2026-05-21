@@ -16,6 +16,8 @@ export class InMemoryDraftRepository implements DraftRepository {
   private pendingSaveOutcome: SaveDraftOutcome | undefined;
   private pendingFindByIdThrow: Error | undefined;
   private pendingFindByIdOutcome: FindDraftOutcome | undefined;
+  private pendingFindAllThrow: Error | undefined;
+  private pendingFindAllOutcome: FindAllDraftsOutcome | undefined;
   private pendingDeleteThrow: Error | undefined;
   private pendingDeleteOutcome: DeleteDraftOutcome | undefined;
 
@@ -33,6 +35,14 @@ export class InMemoryDraftRepository implements DraftRepository {
 
   enqueueNextFindByIdOutcome(outcome: FindDraftOutcome): void {
     this.pendingFindByIdOutcome = outcome;
+  }
+
+  failNextFindAllWith(error: Error): void {
+    this.pendingFindAllThrow = error;
+  }
+
+  enqueueNextFindAllOutcome(outcome: FindAllDraftsOutcome): void {
+    this.pendingFindAllOutcome = outcome;
   }
 
   failNextSaveWith(error: Error): void {
@@ -88,8 +98,19 @@ export class InMemoryDraftRepository implements DraftRepository {
   }
 
   findAll(): Promise<FindAllDraftsOutcome> {
+    if (this.pendingFindAllThrow !== undefined) {
+      const error = this.pendingFindAllThrow;
+      this.pendingFindAllThrow = undefined;
+      return Promise.reject(error);
+    }
+    if (this.pendingFindAllOutcome !== undefined) {
+      const outcome = this.pendingFindAllOutcome;
+      this.pendingFindAllOutcome = undefined;
+      return Promise.resolve(outcome);
+    }
     const drafts = Array.from(this.store.values(), (snapshot) => Draft.fromSnapshot(snapshot));
-    return Promise.resolve({ kind: 'loaded', drafts, corrupt: [] });
+    const corrupt = Array.from(this.corruptRows.entries(), ([id, cause]) => ({ id, cause }));
+    return Promise.resolve({ kind: 'loaded', drafts, corrupt });
   }
 
   delete(id: DraftId): Promise<DeleteDraftOutcome> {
