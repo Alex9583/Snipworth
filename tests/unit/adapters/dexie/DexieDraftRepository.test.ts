@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { z } from 'zod';
 
 import { DexieDraftRepository } from '@/adapters/secondary/dexie/DexieDraftRepository';
 import { createSnipworthDB, type SnipworthDB } from '@/adapters/secondary/dexie/SnipworthDB';
@@ -59,17 +60,26 @@ beforeEach(async () => {
 });
 
 describe('DexieDraftRepository.save / findById', () => {
-  it('should_round_trip_a_saved_draft_through_findById', async () => {
+  it('should_round_trip_a_v2_draft_through_save_and_findById_with_snapshot_equality', async () => {
     const repo = new DexieDraftRepository(db);
-    const draft = buildDraft();
+    const created = buildDraft({
+      id: 'roundtrip-draft' as DraftId,
+      title: 'Roundtrip Title',
+      code: 'function greet(name: string) {\n  return `Hello, ${name}!`;\n}',
+      language: 'tsx',
+      caption: 'roundtrip-caption',
+      hashtags: ['#typescript', '#testing'],
+      platform: 'linkedin',
+    });
+    const archived = created.archive(new Date(CREATED_AT.getTime() + 60_000));
 
-    const saved = await repo.save(draft);
+    const saved = await repo.save(archived);
     expect(saved).toEqual({ kind: 'saved' });
 
-    const found = await repo.findById(draft.id);
+    const found = await repo.findById(archived.id);
     expect(found.kind).toBe('found');
     if (found.kind === 'found') {
-      expect(found.draft.toSnapshot()).toEqual(draft.toSnapshot());
+      expect(found.draft.toSnapshot()).toEqual(archived.toSnapshot());
     }
   });
 
@@ -196,5 +206,44 @@ describe('DexieDraftRepository — corrupt findById', () => {
 
     const outcome = await repo.findById('broken' as DraftId);
     expect(outcome.kind).toBe('corrupt');
+  });
+
+  it('should_report_corrupt_with_a_ZodError_cause_when_a_legacy_row_with_thumbnail_is_read_via_findById', async () => {
+    const repo = new DexieDraftRepository(db);
+    await db.drafts.put({
+      ...buildDraft({ id: 'draft-legacy-1' as DraftId }).toSnapshot(),
+      thumbnail: null,
+    } as unknown as Parameters<typeof db.drafts.put>[0]);
+
+    const outcome = await repo.findById('draft-legacy-1' as DraftId);
+
+    expect(outcome.kind).toBe('corrupt');
+    if (outcome.kind === 'corrupt') {
+      expect(outcome.cause).toBeInstanceOf(z.ZodError);
+      const cause = outcome.cause as z.ZodError;
+      const unknownKeyIssue = cause.issues.find((i) => i.code === 'unrecognized_keys');
+      expect(unknownKeyIssue).toBeDefined();
+      expect(unknownKeyIssue?.keys).toContain('thumbnail');
+    }
+  });
+
+  it('should_report_corrupt_with_a_ZodError_cause_when_a_row_with_status_published_is_read_via_findById', async () => {
+    const repo = new DexieDraftRepository(db);
+    await db.drafts.put({
+      ...buildDraft({ id: 'draft-legacy-2' as DraftId }).toSnapshot(),
+      status: 'published',
+    } as unknown as Parameters<typeof db.drafts.put>[0]);
+
+    const outcome = await repo.findById('draft-legacy-2' as DraftId);
+
+    expect(outcome.kind).toBe('corrupt');
+    if (outcome.kind === 'corrupt') {
+      expect(outcome.cause).toBeInstanceOf(z.ZodError);
+      const cause = outcome.cause as z.ZodError;
+      const statusIssue = cause.issues.find(
+        (i) => i.path[0] === 'status' && i.code === 'invalid_value',
+      );
+      expect(statusIssue).toBeDefined();
+    }
   });
 });
