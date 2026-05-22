@@ -45,7 +45,6 @@ function buildInput(overrides: Partial<DraftCreateInput> = {}): DraftCreateInput
     caption: 'Look at this',
     hashtags: ['typescript'],
     platform: 'x',
-    thumbnail: null,
     createdAt: CREATED_AT,
     ...overrides,
   };
@@ -65,7 +64,6 @@ describe('Draft.create — happy path', () => {
     expect(draft.caption).toBe('Look at this');
     expect(draft.hashtags).toEqual(['#typescript']);
     expect(draft.platform).toBe('x');
-    expect(draft.thumbnail).toBeNull();
   });
 
   it('should_set_status_to_draft_on_creation', () => {
@@ -93,16 +91,9 @@ describe('Draft.create — happy path', () => {
     expect(draft.hashtags).toEqual(['#typescript']);
   });
 
-  it('should_accept_an_empty_title_and_no_thumbnail', () => {
-    const draft = Draft.create(buildInput({ title: '', thumbnail: null }));
+  it('should_accept_an_empty_title', () => {
+    const draft = Draft.create(buildInput({ title: '' }));
     expect(draft.title).toBe('');
-    expect(draft.thumbnail).toBeNull();
-  });
-
-  it('should_accept_a_thumbnail_as_a_blob', () => {
-    const blob = new Blob(['png-bytes'], { type: 'image/png' });
-    const draft = Draft.create(buildInput({ thumbnail: blob }));
-    expect(draft.thumbnail).toBe(blob);
   });
 
   it('should_return_a_draft_with_status_draft_and_updatedAt_equal_to_createdAt_when_create_is_called_with_valid_non_blank_code_and_valid_hashtags', () => {

@@ -14,7 +14,6 @@ export function anActiveDraft(overrides: { id?: string } = {}): Draft {
     caption: '',
     hashtags: [],
     platform: 'x',
-    thumbnail: null,
     createdAt: DEFAULT_CREATED_AT,
   });
 }

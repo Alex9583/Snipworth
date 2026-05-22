@@ -66,7 +66,6 @@ describe('SaveCurrentEditorAsDraft', () => {
       caption: '',
       hashtags: [],
       platform: 'x',
-      thumbnail: null,
       status: 'draft',
       createdAt: SAVED_AT.getTime(),
       updatedAt: SAVED_AT.getTime(),

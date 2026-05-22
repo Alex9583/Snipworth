@@ -29,7 +29,6 @@ export interface DraftCreateInput {
   readonly caption: string;
   readonly hashtags: readonly string[];
   readonly platform: Platform;
-  readonly thumbnail: Blob | null;
   readonly createdAt: Date;
 }
 
@@ -42,7 +41,6 @@ export interface DraftSnapshot {
   readonly caption: string;
   readonly hashtags: readonly string[];
   readonly platform: Platform;
-  readonly thumbnail: Blob | null;
   readonly status: DraftStatus;
   readonly createdAt: number;
   readonly updatedAt: number;
@@ -57,7 +55,6 @@ interface DraftProps {
   readonly caption: string;
   readonly hashtags: readonly string[];
   readonly platform: Platform;
-  readonly thumbnail: Blob | null;
   readonly status: DraftStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -72,7 +69,6 @@ export class Draft {
   readonly caption: string;
   readonly hashtags: readonly string[];
   readonly platform: Platform;
-  readonly thumbnail: Blob | null;
   readonly status: DraftStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -86,7 +82,6 @@ export class Draft {
     this.caption = props.caption;
     this.hashtags = props.hashtags;
     this.platform = props.platform;
-    this.thumbnail = props.thumbnail;
     this.status = props.status;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -115,7 +110,6 @@ export class Draft {
       caption: input.caption,
       hashtags,
       platform: input.platform,
-      thumbnail: input.thumbnail,
       status: 'draft',
       createdAt,
       updatedAt: new Date(createdAt),
@@ -132,7 +126,6 @@ export class Draft {
       caption: snapshot.caption,
       hashtags: [...snapshot.hashtags],
       platform: snapshot.platform,
-      thumbnail: snapshot.thumbnail,
       status: snapshot.status,
       createdAt: new Date(snapshot.createdAt),
       updatedAt: new Date(snapshot.updatedAt),
@@ -149,7 +142,6 @@ export class Draft {
       caption: this.caption,
       hashtags: [...this.hashtags],
       platform: this.platform,
-      thumbnail: this.thumbnail,
       status: this.status,
       createdAt: this.createdAt.getTime(),
       updatedAt: this.updatedAt.getTime(),
@@ -209,7 +201,6 @@ export class Draft {
       caption: this.caption,
       hashtags: [...this.hashtags],
       platform: this.platform,
-      thumbnail: this.thumbnail,
       status: this.status,
       createdAt: this.createdAt,
       updatedAt: new Date(now),

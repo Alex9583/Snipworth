@@ -21,8 +21,6 @@ export type SaveCurrentEditorAsDraftOutcome =
   | { readonly kind: 'empty_code' }
   | { readonly kind: 'storage_unavailable'; readonly cause: unknown };
 
-const INITIAL_THUMBNAIL = null;
-
 const failDraft = (reason: string): never => {
   throw new InvalidDraft(reason);
 };
@@ -48,7 +46,6 @@ export class SaveCurrentEditorAsDraft {
       caption: input.caption,
       hashtags: input.hashtags,
       platform: input.platform,
-      thumbnail: INITIAL_THUMBNAIL,
       createdAt: this.clock.now(),
     });
     let saved: SaveDraftOutcome;

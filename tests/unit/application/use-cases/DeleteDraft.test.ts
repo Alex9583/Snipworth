@@ -17,7 +17,6 @@ function aSeedDraft(overrides: { id?: string } = {}): Draft {
     caption: '',
     hashtags: [],
     platform: 'x',
-    thumbnail: null,
     createdAt: CREATED_AT,
   });
 }

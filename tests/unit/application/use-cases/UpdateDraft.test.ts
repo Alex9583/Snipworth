@@ -23,7 +23,6 @@ function aSeedDraft(
     caption: '',
     hashtags: [],
     platform: 'x',
-    thumbnail: null,
     createdAt: CREATED_AT,
   });
 }

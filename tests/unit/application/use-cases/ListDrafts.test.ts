@@ -28,7 +28,6 @@ function aDraftAt(updatedAt: Date, overrides: DraftOverrides = {}): Draft {
     caption: overrides.caption ?? '',
     hashtags: overrides.hashtags ?? [],
     platform: overrides.platform ?? 'x',
-    thumbnail: null,
     status: overrides.status ?? 'draft',
     createdAt: CREATED_AT.getTime(),
     updatedAt: updatedAt.getTime(),

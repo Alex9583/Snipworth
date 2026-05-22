@@ -39,7 +39,6 @@ function buildDraft(overrides: Partial<DraftCreateInput> = {}): Draft {
     caption: '',
     hashtags: [],
     platform: 'x',
-    thumbnail: null,
     createdAt: CREATED_AT,
     ...overrides,
   });
@@ -95,21 +94,33 @@ describe('DexieDraftRepository.save / findById', () => {
     }
   });
 
-  it('should_round_trip_a_blob_thumbnail', async () => {
+  it('should_persist_a_v2_row_with_no_thumbnail_key_when_save_is_called_with_a_v2_draft', async () => {
     const repo = new DexieDraftRepository(db);
-    const blob = new Blob(['png-bytes'], { type: 'image/png' });
-    const draft = buildDraft({ thumbnail: blob });
+    const draft = buildDraft();
 
     await repo.save(draft);
-    const found = await repo.findById(draft.id);
 
-    expect(found.kind).toBe('found');
-    if (found.kind === 'found') {
-      expect(found.draft.thumbnail).toBeInstanceOf(Blob);
-      expect(found.draft.thumbnail?.type).toBe('image/png');
-      const text = await found.draft.thumbnail?.text();
-      expect(text).toBe('png-bytes');
-    }
+    const row = await db.drafts.get(draft.id);
+    expect(row).toBeDefined();
+    expect(row).toEqual(draft.toSnapshot());
+    expect(row).not.toHaveProperty('thumbnail');
+  });
+
+  it('should_overwrite_an_existing_row_with_a_v2_shape_and_no_thumbnail_key_when_save_is_called_twice_with_the_same_id', async () => {
+    const repo = new DexieDraftRepository(db);
+    const legacy = buildDraft({ title: 'Legacy' });
+    await db.drafts.put({
+      ...legacy.toSnapshot(),
+      thumbnail: null,
+    } as unknown as Parameters<typeof db.drafts.put>[0]);
+
+    const updated = legacy.rename('Updated', new Date(CREATED_AT.getTime() + 60_000));
+    await repo.save(updated);
+
+    const row = await db.drafts.get(legacy.id);
+    expect(row).toBeDefined();
+    expect(row).toEqual(updated.toSnapshot());
+    expect(row).not.toHaveProperty('thumbnail');
   });
 });
 

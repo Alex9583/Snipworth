@@ -15,18 +15,13 @@ import type { SnippetSnapshot } from '@/domain/snippets/Snippet';
 
 import { renderConfigWireSchema } from '../rendering/render-config-wire';
 
-function isBlobLike(value: unknown): value is Blob {
-  if (value instanceof Blob) return true;
-  if (value === null || typeof value !== 'object') return false;
-  const candidate = value as { arrayBuffer?: unknown; size?: unknown; type?: unknown };
-  return (
-    typeof candidate.arrayBuffer === 'function' &&
-    typeof candidate.size === 'number' &&
-    typeof candidate.type === 'string'
-  );
-}
+// Intentionally broader than the domain's HASHTAG_PATTERN: this guards wire shape, the aggregate owns the semantic rule.
+const HASHTAG_BODY_MAX = HASHTAG_MAX_LENGTH - 1;
+const HASHTAG_ROW_REGEX = new RegExp(`^#\\S{1,${String(HASHTAG_BODY_MAX)}}$`);
 
-const hashtagsSchema = z.array(z.string().max(HASHTAG_MAX_LENGTH)).max(HASHTAG_LIST_MAX);
+const hashtagsSchema = z
+  .array(z.string().max(HASHTAG_MAX_LENGTH).regex(HASHTAG_ROW_REGEX))
+  .max(HASHTAG_LIST_MAX);
 
 export const draftRowSchema: z.ZodType<DraftSnapshot> = z.strictObject({
   id: z.string().min(1).max(ID_MAX),
@@ -37,7 +32,6 @@ export const draftRowSchema: z.ZodType<DraftSnapshot> = z.strictObject({
   caption: z.string().max(CAPTION_MAX),
   hashtags: hashtagsSchema,
   platform: z.enum(platforms),
-  thumbnail: z.union([z.custom<Blob>(isBlobLike, { message: 'expected Blob' }), z.null()]),
   status: z.enum(draftStatuses),
   createdAt: z.number(),
   updatedAt: z.number(),
