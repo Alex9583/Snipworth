@@ -20,6 +20,7 @@
   --color-canvas: #0a0a0b;
   --color-surface: #131316;
   --color-elevated: #1c1c21;
+  --color-preview-canvas: #0f0f14;
 
   --color-ink: #ececee;
   --color-ink-muted: #9b9ba3;
@@ -40,6 +41,7 @@
   --color-canvas: #fafafa;
   --color-surface: #ffffff;
   --color-elevated: #f4f4f5;
+  --color-preview-canvas: #0f0f14;
 
   --color-ink: #18181b;
   --color-ink-muted: #52525b;
