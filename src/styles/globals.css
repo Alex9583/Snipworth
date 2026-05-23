@@ -27,6 +27,10 @@
   --color-success: var(--color-success);
   --color-danger: var(--color-danger);
 
+  --color-traffic-light-close: var(--color-traffic-light-close);
+  --color-traffic-light-minimize: var(--color-traffic-light-minimize);
+  --color-traffic-light-maximize: var(--color-traffic-light-maximize);
+
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 
