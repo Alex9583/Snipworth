@@ -13,7 +13,7 @@ import {
 } from '@/domain/limits';
 import type { SnippetSnapshot } from '@/domain/snippets/Snippet';
 
-import { renderConfigWireSchema } from '../rendering/render-config-wire';
+import { renderConfigStrictWireSchema } from '../rendering/render-config-wire';
 
 // Intentionally broader than the domain's HASHTAG_PATTERN: this guards wire shape, the aggregate owns the semantic rule.
 const HASHTAG_BODY_MAX = HASHTAG_MAX_LENGTH - 1;
@@ -28,7 +28,7 @@ export const draftRowSchema: z.ZodType<DraftSnapshot> = z.strictObject({
   title: z.string().max(TITLE_MAX),
   code: z.string().max(CODE_MAX),
   language: z.string().min(1).max(LANGUAGE_MAX),
-  config: renderConfigWireSchema,
+  config: renderConfigStrictWireSchema,
   caption: z.string().max(CAPTION_MAX),
   hashtags: hashtagsSchema,
   platform: z.enum(platforms),

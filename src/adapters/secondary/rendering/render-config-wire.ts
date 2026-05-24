@@ -9,6 +9,7 @@ import {
   fontFamilies,
   LINE_HEIGHT_RANGE,
   RADIUS_RANGE,
+  RenderConfig,
   SHADOW_BLUR_RANGE,
   SHADOW_OFFSET_RANGE,
   windowStyles,
@@ -34,7 +35,7 @@ const aspectRatioWireSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('auto') }),
 ]);
 
-export const renderConfigWireSchema: z.ZodType<RenderConfigSnapshot> = z.object({
+const renderConfigBaseShape = {
   theme: z.string().min(1).max(THEME_MAX),
   fontFamily: z.enum(fontFamilies),
   fontSize: bounded(FONT_SIZE_RANGE),
@@ -49,7 +50,26 @@ export const renderConfigWireSchema: z.ZodType<RenderConfigSnapshot> = z.object(
   shadow: z.boolean(),
   shadowBlur: bounded(SHADOW_BLUR_RANGE),
   shadowOffsetY: bounded(SHADOW_OFFSET_RANGE),
-  aspectRatio: aspectRatioWireSchema,
   exportScale: z.union([z.literal(1), z.literal(2), z.literal(4)]),
   exportFormat: z.enum(exportFormats),
+};
+
+export const renderConfigStrictWireSchema: z.ZodType<RenderConfigSnapshot> = z.object({
+  ...renderConfigBaseShape,
+  aspectRatio: aspectRatioWireSchema,
 });
+
+export const renderConfigWireSchema = z.object({
+  ...renderConfigBaseShape,
+  aspectRatio: aspectRatioWireSchema.optional(),
+});
+
+export type RenderConfigWire = z.infer<typeof renderConfigWireSchema>;
+
+export function fillRenderConfigDefaults(stored: RenderConfigWire): RenderConfigSnapshot {
+  const defaults = RenderConfig.default().toSnapshot();
+  return {
+    ...stored,
+    aspectRatio: stored.aspectRatio ?? defaults.aspectRatio,
+  };
+}

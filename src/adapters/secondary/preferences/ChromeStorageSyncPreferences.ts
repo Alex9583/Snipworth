@@ -6,6 +6,7 @@ import type {
 import { UserPreferences } from '@/domain/preferences/UserPreferences';
 import { RenderConfig } from '@/domain/rendering/RenderConfig';
 
+import { fillRenderConfigDefaults } from '../rendering/render-config-wire';
 import { PREFS_KEY, userPreferencesWireSchema, type UserPreferencesWire } from './storage-format';
 
 export class ChromeStorageSyncPreferences implements UserPreferencesStore {
@@ -45,7 +46,7 @@ function mergeWithDefaults(stored: UserPreferencesWire): UserPreferences {
     defaultConfig:
       stored.defaultConfig === undefined
         ? undefined
-        : RenderConfig.fromSnapshot(stored.defaultConfig),
+        : RenderConfig.fromSnapshot(fillRenderConfigDefaults(stored.defaultConfig)),
     defaultPlatform: stored.defaultPlatform,
     autoDetectLanguage: stored.autoDetectLanguage,
     theme: stored.theme,
