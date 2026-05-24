@@ -1,7 +1,7 @@
 import type { Clock } from '@/application/ports/Clock';
 import type { DraftRepository, SaveDraftOutcome } from '@/application/ports/DraftRepository';
 import type { IdGenerator } from '@/application/ports/IdGenerator';
-import { Draft, InvalidDraft } from '@/domain/drafts/Draft';
+import { Draft, type DraftSnapshot, InvalidDraft } from '@/domain/drafts/Draft';
 import { DraftId } from '@/domain/drafts/DraftId';
 import { deriveTitleFromCode } from '@/domain/drafts/deriveTitleFromCode';
 import type { Platform } from '@/domain/drafts/Platform';
@@ -17,7 +17,7 @@ export interface SaveCurrentEditorAsDraftInput {
 }
 
 export type SaveCurrentEditorAsDraftOutcome =
-  | { readonly kind: 'saved'; readonly draftId: DraftId }
+  | { readonly kind: 'saved'; readonly draftId: DraftId; readonly snapshot: DraftSnapshot }
   | { readonly kind: 'empty_code' }
   | { readonly kind: 'storage_unavailable'; readonly cause: unknown };
 
@@ -57,6 +57,6 @@ export class SaveCurrentEditorAsDraft {
     if (saved.kind === 'storage_unavailable') {
       return { kind: 'storage_unavailable', cause: saved.cause };
     }
-    return { kind: 'saved', draftId };
+    return { kind: 'saved', draftId, snapshot: draft.toSnapshot() };
   }
 }

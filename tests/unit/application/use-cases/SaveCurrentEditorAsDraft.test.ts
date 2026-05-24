@@ -42,12 +42,15 @@ async function singlePersistedSnapshot(repo: InMemoryDraftRepository) {
 }
 
 describe('SaveCurrentEditorAsDraft', () => {
-  it('should_return_saved_with_the_generated_draftId_when_a_valid_editor_state_is_saved', async () => {
-    const { useCase } = buildHarness();
+  it('should_return_saved_with_the_generated_draftId_and_the_persisted_snapshot_when_a_valid_editor_state_is_saved', async () => {
+    const { repo, useCase } = buildHarness();
 
     const outcome = await useCase.execute(validInputWith({ code: 'const greeting = "hello";' }));
 
-    expect(outcome).toEqual({ kind: 'saved', draftId: 'draft-1' });
+    expect(outcome.kind).toBe('saved');
+    if (outcome.kind !== 'saved') return;
+    expect(outcome.draftId).toBe('draft-1');
+    expect(outcome.snapshot).toEqual(await singlePersistedSnapshot(repo));
   });
 
   it('should_persist_the_draft_with_id_code_language_platform_status_draft_and_the_clock_now_as_createdAt_and_updatedAt_when_a_valid_editor_state_is_saved', async () => {
