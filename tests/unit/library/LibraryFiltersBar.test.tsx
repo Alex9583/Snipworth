@@ -11,6 +11,7 @@ type BarProps = ComponentProps<typeof LibraryFiltersBar>;
 
 function renderBar(overrides: Partial<BarProps> = {}) {
   const defaults: BarProps = {
+    filters: {},
     onSearchChange: vi.fn(),
     onPlatformChange: vi.fn(),
     onLanguageChange: vi.fn(),
@@ -19,6 +20,7 @@ function renderBar(overrides: Partial<BarProps> = {}) {
     tagOptions: [],
     onNewDraft: vi.fn(),
     onStatusFilterChange: vi.fn(),
+    onClearFilter: vi.fn(),
   };
   return render(<LibraryFiltersBar {...defaults} {...overrides} />);
 }

@@ -36,13 +36,20 @@ async function buildHarness(seed: Draft) {
 }
 
 describe('UpdateDraft', () => {
-  it('should_return_updated_when_a_title_patch_is_applied_to_an_existing_draft', async () => {
+  it('should_return_updated_with_the_persisted_snapshot_when_a_title_patch_is_applied_to_an_existing_draft', async () => {
     const seed = aSeedDraft();
     const { useCase } = await buildHarness(seed);
 
     const outcome = await useCase.execute({ id: seed.id, patch: { title: 'New title' } });
 
-    expect(outcome).toEqual({ kind: 'updated' });
+    expect(outcome).toEqual({
+      kind: 'updated',
+      snapshot: {
+        ...seed.toSnapshot(),
+        title: 'New title',
+        updatedAt: UPDATED_AT.getTime(),
+      },
+    });
   });
 
   it('should_persist_the_renamed_title_and_bump_updatedAt_to_Clock_now_leaving_other_fields_unchanged_when_a_title_patch_is_applied', async () => {
@@ -131,14 +138,14 @@ describe('UpdateDraft', () => {
     expect(snapshot.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '4:5' });
   });
 
-  it('should_return_updated_and_skip_repo_save_and_leave_updatedAt_unchanged_when_the_patch_is_empty', async () => {
+  it('should_return_updated_with_the_unchanged_snapshot_and_skip_repo_save_when_the_patch_is_empty', async () => {
     const seed = aSeedDraft();
     const { repo, useCase } = await buildHarness(seed);
     const savesBeforeExecute = repo.savedSnapshots.length;
 
     const outcome = await useCase.execute({ id: seed.id, patch: {} });
 
-    expect(outcome).toEqual({ kind: 'updated' });
+    expect(outcome).toEqual({ kind: 'updated', snapshot: seed.toSnapshot() });
     expect(repo.savedSnapshots.length).toBe(savesBeforeExecute);
     const found = await repo.findById(seed.id);
     if (found.kind !== 'found') throw new Error('expected found');

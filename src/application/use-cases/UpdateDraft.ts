@@ -1,6 +1,6 @@
 import type { Clock } from '@/application/ports/Clock';
 import type { DraftRepository } from '@/application/ports/DraftRepository';
-import { Draft, InvalidDraft } from '@/domain/drafts/Draft';
+import { Draft, type DraftSnapshot, InvalidDraft } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import type { Platform } from '@/domain/drafts/Platform';
 import type { RenderConfig } from '@/domain/rendering/RenderConfig';
@@ -22,7 +22,7 @@ export interface UpdateDraftInput {
 }
 
 export type UpdateDraftOutcome =
-  | { readonly kind: 'updated' }
+  | { readonly kind: 'updated'; readonly snapshot: DraftSnapshot }
   | { readonly kind: 'empty_code' }
   | { readonly kind: 'invalid_field'; readonly field: string; readonly cause: unknown }
   | DraftTransitionFailure;
@@ -41,13 +41,17 @@ export class UpdateDraft {
     const loaded = await loadDraft(this.repo, input.id);
     if (!loaded.ok) return loaded.outcome;
 
-    if (isEmptyPatch(input.patch)) return { kind: 'updated' };
+    if (isEmptyPatch(input.patch)) {
+      return { kind: 'updated', snapshot: loaded.draft.toSnapshot() };
+    }
     if (hasBlankCode(input.patch)) return { kind: 'empty_code' };
 
     const applied = applyPatch(loaded.draft, input.patch, this.clock.now());
     if (!applied.ok) return applied.outcome;
 
-    return persistDraft(this.repo, applied.draft, 'updated');
+    const persisted = await persistDraft(this.repo, applied.draft, 'updated');
+    if (persisted.kind !== 'updated') return persisted;
+    return { kind: 'updated', snapshot: applied.draft.toSnapshot() };
   }
 }
 

@@ -1,24 +1,33 @@
-import { Suspense, useDeferredValue, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useDeferredValue,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+
+import { SaveDraftButton } from '@/adapters/primary/library/SaveDraftButton';
+import { SaveDraftToast } from '@/adapters/primary/library/SaveDraftToast';
+import { toSaveBinding, useDraftBinding } from '@/adapters/primary/library/useDraftBinding';
+import { RenderConfig } from '@/domain/rendering/RenderConfig';
 
 import type { AppDependencies } from './AppDependencies';
 import { ErrorBanner } from './ErrorBanner';
-import { HighlightedPreview } from './HighlightedPreview';
-import { LiveCodeEditor } from './LiveCodeEditor';
 import { Onboarding } from './onboarding/Onboarding';
-import { createHighlightCache } from './highlightCache';
+import { SidePanelCodeTab } from './SidePanelCodeTab';
+import { SidePanelPreviewTab } from './SidePanelPreviewTab';
 import { APP } from './app.strings';
 import { SIDE_PANEL_APP } from './SidePanelApp.strings';
-import { solidBackgroundCss } from './previewBackground';
-import { copyStatusLabel, downloadStatusLabel } from './ui/ExportControls.strings';
+import { createHighlightCache } from './highlightCache';
 import { AppFooter } from './ui/AppFooter';
 import { AppHeader } from './ui/AppHeader';
 import { ConfigPanel } from './ui/ConfigPanel';
-import { EditorStats } from './ui/EditorStats';
-import { ExportControls } from './ui/ExportControls';
-import { LanguagePicker } from './ui/LanguagePicker';
 import { CodeIcon, EyeIcon, SettingsIcon } from './ui/icons';
 import { Tabs } from './ui/Tabs';
 import { useEditorLanguageState } from './useEditorLanguageState';
+import { useEditorSession } from './useEditorSession';
 import { useOpenFullTabAction } from './useOpenFullTabAction';
 import { useSnippetExportHandles } from './useSnippetExportHandles';
 import { useUserPreferences } from './useUserPreferences';
@@ -38,8 +47,12 @@ export function SidePanelApp({
   userPreferencesStore,
   openFullTabEditor,
   clock,
+  saveDraft,
+  openDraft,
+  updateDraft,
 }: AppDependencies) {
   const [activeTab, setActiveTab] = useState<TabValue>('code');
+  const [toastVisible, setToastVisible] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const { code, setCode, language, detection, pickLanguage } = useEditorLanguageState(
@@ -52,6 +65,14 @@ export function SidePanelApp({
     userPreferencesStore,
     reportSidePanelFailure,
   );
+
+  const draftBinding = useDraftBinding({
+    saveUseCase: saveDraft,
+    openUseCase: openDraft,
+    updateUseCase: updateDraft,
+  });
+
+  const session = useEditorSession({ initialPlatform: prefs.defaultPlatform });
 
   const deferredCode = useDeferredValue(code);
 
@@ -66,6 +87,7 @@ export function SidePanelApp({
     exportFormat: renderConfig.exportFormat,
     clock,
   });
+
   const onOpenFullTab = useOpenFullTabAction(openFullTabEditor, code, (outcome) => {
     if (outcome.kind === 'opened') return;
     void reportSidePanelFailure.execute({
@@ -74,6 +96,81 @@ export function SidePanelApp({
       cause: outcome.cause,
     });
   });
+
+  const pushToBoundDraft = useEffectEvent((patch: Parameters<typeof draftBinding.mutate>[0]) => {
+    if (draftBinding.binding.kind !== 'bound') return;
+    draftBinding.mutate(patch);
+  });
+
+  useEffect(() => {
+    pushToBoundDraft({ code, language });
+  }, [code, language]);
+
+  useEffect(() => {
+    pushToBoundDraft({ config: RenderConfig.fromSnapshot(renderConfig) });
+  }, [renderConfig]);
+
+  const handleSave = useCallback(async () => {
+    const outcome = await draftBinding.save({
+      code,
+      language,
+      config: RenderConfig.fromSnapshot(renderConfig),
+      caption: session.caption,
+      hashtags: session.hashtags,
+      platform: session.platform,
+    });
+    if (outcome.kind === 'saved') setToastVisible(true);
+  }, [
+    draftBinding,
+    code,
+    language,
+    renderConfig,
+    session.caption,
+    session.hashtags,
+    session.platform,
+  ]);
+
+  const handleFlush = useCallback(() => {
+    void draftBinding.flush();
+  }, [draftBinding]);
+
+  const saveBinding = toSaveBinding(draftBinding.binding);
+  const modKey: 'mac' | 'pc' = navigator.platform.includes('Mac') ? 'mac' : 'pc';
+
+  const saveDraftSlot = (
+    <SaveDraftButton
+      binding={saveBinding}
+      modKey={modKey}
+      onSave={() => {
+        void handleSave();
+      }}
+      onFlush={handleFlush}
+      onRetry={() => {
+        void handleSave();
+      }}
+      onShowSavedToast={() => {
+        setToastVisible(true);
+      }}
+    />
+  );
+
+  const compactSaveDraftSlot = (
+    <SaveDraftButton
+      binding={saveBinding}
+      modKey={modKey}
+      compact
+      onSave={() => {
+        void handleSave();
+      }}
+      onFlush={handleFlush}
+      onRetry={() => {
+        void handleSave();
+      }}
+      onShowSavedToast={() => {
+        setToastVisible(true);
+      }}
+    />
+  );
 
   if (!hasLoaded) {
     return null;
@@ -118,61 +215,31 @@ export function SidePanelApp({
 
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           {activeTab === 'code' && (
-            <div className="flex min-h-0 flex-1 flex-col gap-2">
-              <LiveCodeEditor
-                value={code}
-                onChange={setCode}
-                language={language}
-                theme={renderConfig.theme}
-                fontSize={renderConfig.fontSize}
-                getHighlight={getHighlight}
-                label={SIDE_PANEL_APP.tabCodeLabel}
-                placeholder={APP.codePlaceholder}
-                className="flex-1"
-                topRightSlot={
-                  <LanguagePicker value={language} detection={detection} onChange={pickLanguage} />
-                }
-              />
-              <EditorStats code={code} />
-            </div>
+            <SidePanelCodeTab
+              code={code}
+              onCodeChange={setCode}
+              language={language}
+              detection={detection}
+              onLanguageChange={pickLanguage}
+              theme={renderConfig.theme}
+              fontSize={renderConfig.fontSize}
+              getHighlight={getHighlight}
+              saveSlot={saveDraftSlot}
+            />
           )}
 
           {activeTab === 'preview' && (
-            <Suspense fallback={<p className="text-ink-muted">{APP.previewLoading}</p>}>
-              <div className="flex min-h-0 flex-1 flex-col gap-2">
-                <div className="min-h-0 flex-1 overflow-auto">
-                  <div className="flex min-h-full items-center justify-center">
-                    <HighlightedPreview
-                      ref={previewRef}
-                      getHighlight={getHighlight}
-                      code={deferredCode}
-                      language={language}
-                      theme={renderConfig.theme}
-                      fontFamily={renderConfig.fontFamily}
-                      fontSize={renderConfig.fontSize}
-                      background={solidBackgroundCss(renderConfig.background)}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-                <ExportControls
-                  scale={renderConfig.exportScale}
-                  format={renderConfig.exportFormat}
-                  onScaleChange={(scale) => {
-                    patchConfig({ exportScale: scale });
-                  }}
-                  onFormatChange={(format) => {
-                    patchConfig({ exportFormat: format });
-                  }}
-                  onCopy={copyHandle.onCopy}
-                  onDownload={downloadHandle.onDownload}
-                />
-                {copyHandle.status && <p role="status">{copyStatusLabel(copyHandle.status)}</p>}
-                {downloadHandle.status && (
-                  <p role="status">{downloadStatusLabel(downloadHandle.status)}</p>
-                )}
-              </div>
-            </Suspense>
+            <SidePanelPreviewTab
+              previewRef={previewRef}
+              getHighlight={getHighlight}
+              code={deferredCode}
+              language={language}
+              renderConfig={renderConfig}
+              patchConfig={patchConfig}
+              copyHandle={copyHandle}
+              downloadHandle={downloadHandle}
+              saveSlot={compactSaveDraftSlot}
+            />
           )}
 
           {activeTab === 'config' && (
@@ -182,6 +249,13 @@ export function SidePanelApp({
           )}
         </div>
       </main>
+      <SaveDraftToast
+        visible={toastVisible}
+        onOpen={onOpenFullTab}
+        onDismiss={() => {
+          setToastVisible(false);
+        }}
+      />
       <AppFooter />
     </div>
   );

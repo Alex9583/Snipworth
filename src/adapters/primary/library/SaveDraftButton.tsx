@@ -60,20 +60,20 @@ export function SaveDraftButton({
   }
   if (binding.kind === 'bound' && binding.saveStatus === 'saving') {
     return (
-      <Button disabled aria-busy="true">
+      <Button size="sm" disabled aria-busy="true">
         {SAVE_DRAFT_BUTTON.savingLabel}
       </Button>
     );
   }
   if (binding.kind === 'bound' && binding.saveStatus === 'error') {
     return (
-      <Button variant="outline" onClick={onRetry}>
+      <Button size="sm" variant="outline" onClick={onRetry}>
         {SAVE_DRAFT_BUTTON.errorLabel}
       </Button>
     );
   }
   return (
-    <Button onClick={onSave}>
+    <Button size="sm" onClick={onSave} iconLeft={<SaveIcon size={13} />}>
       {SAVE_DRAFT_BUTTON.scratchPrefix}{' '}
       <kbd className="bg-black/15 ml-1 rounded-sm px-1.5 py-px text-[10px]">
         {shortcutHint(modKey)}
@@ -130,7 +130,7 @@ function BoundIdleButton({ lastSavedAt, onFlush }: BoundIdleButtonProps) {
     };
   }, []);
   return (
-    <Button variant="outline" onClick={onFlush}>
+    <Button size="sm" variant="outline" onClick={onFlush}>
       {SAVE_DRAFT_BUTTON.savedPrefix}
       {relativeTimeLabel(lastSavedAt, now)}
     </Button>

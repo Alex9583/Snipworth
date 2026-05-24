@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useDraftBinding } from '@/adapters/primary/library/useDraftBinding';
+import { toSaveBinding, useDraftBinding } from '@/adapters/primary/library/useDraftBinding';
 import { OpenDraft } from '@/application/use-cases/OpenDraft';
 import {
   SaveCurrentEditorAsDraft,
@@ -175,7 +175,8 @@ describe('useDraftBinding', () => {
     expect(spyUpdate.calls).toHaveLength(1);
 
     await act(async () => {
-      spyUpdate.resolveNextDeferred({ kind: 'updated' });
+      const seededSnapshot = anActiveDraft({ id: 'draft-1' }).toSnapshot();
+      spyUpdate.resolveNextDeferred({ kind: 'updated', snapshot: seededSnapshot });
       await Promise.resolve();
     });
     await act(async () => {
@@ -268,6 +269,41 @@ describe('useDraftBinding', () => {
     expect(result.current.binding).toEqual({ kind: 'scratch' });
   });
 
+  it('should_expose_saveStatus_saving_while_an_UpdateDraft_call_is_in_flight_and_idle_after_resolution', async () => {
+    const { repo, saveUseCase, openUseCase } = buildHarness();
+    const spyUpdate = new SpyUpdateDraft();
+    const seeded = anActiveDraft({ id: 'draft-1' });
+    await repo.save(seeded);
+    const refreshedSnapshot = { ...seeded.toSnapshot(), caption: 'changed', updatedAt: 999 };
+    const { result } = renderHook(() =>
+      useDraftBinding({ saveUseCase, openUseCase, updateUseCase: spyUpdate }),
+    );
+    await act(async () => {
+      await result.current.open(DRAFT_1);
+    });
+    spyUpdate.enqueueDeferredOutcome();
+
+    act(() => {
+      result.current.mutate({ caption: 'changed' });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+
+    expect(result.current.binding).toMatchObject({ kind: 'bound', saveStatus: 'saving' });
+
+    await act(async () => {
+      spyUpdate.resolveNextDeferred({ kind: 'updated', snapshot: refreshedSnapshot });
+      await Promise.resolve();
+    });
+
+    expect(result.current.binding).toEqual({
+      kind: 'bound',
+      draft: refreshedSnapshot,
+      saveStatus: 'idle',
+    });
+  });
+
   it('should_not_dispatch_a_scratch_era_pending_patch_after_save_transitions_to_bound', async () => {
     const { saveUseCase, openUseCase } = buildHarness();
     const spyUpdate = new SpyUpdateDraft();
@@ -286,5 +322,22 @@ describe('useDraftBinding', () => {
     });
 
     expect(spyUpdate.calls).toHaveLength(0);
+  });
+});
+
+describe('toSaveBinding', () => {
+  it('should_map_scratch_to_scratch', () => {
+    expect(toSaveBinding({ kind: 'scratch' })).toEqual({ kind: 'scratch' });
+  });
+
+  it('should_map_bound_to_bound_with_lastSavedAt_derived_from_draft_updatedAt_and_the_same_saveStatus', () => {
+    const snapshot = anActiveDraft({ id: 'draft-1' }).toSnapshot();
+    const draftWithStamp = { ...snapshot, updatedAt: new Date('2026-05-24T10:00:00Z').getTime() };
+
+    expect(toSaveBinding({ kind: 'bound', draft: draftWithStamp, saveStatus: 'saving' })).toEqual({
+      kind: 'bound',
+      lastSavedAt: new Date('2026-05-24T10:00:00Z'),
+      saveStatus: 'saving',
+    });
   });
 });

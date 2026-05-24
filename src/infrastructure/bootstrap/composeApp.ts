@@ -4,6 +4,7 @@ import { ChromeStorageCaptureInbox } from '@/adapters/secondary/capture/ChromeSt
 import { FULL_TAB_BOOTSTRAP_KEY } from '@/adapters/secondary/capture/pendingCaptureKey';
 import { BrowserClipboardCopier } from '@/adapters/secondary/clipboard/BrowserClipboardCopier';
 import { SystemClock } from '@/adapters/secondary/clock/SystemClock';
+import { DexieDraftRepository } from '@/adapters/secondary/dexie/DexieDraftRepository';
 import { BrowserBlobDownloader } from '@/adapters/secondary/download/BrowserBlobDownloader';
 import { ChromeStorageInboxReader } from '@/adapters/secondary/error-channel/ChromeStorageInboxReader';
 import { MessagingErrorReporter } from '@/adapters/secondary/error-channel/MessagingErrorReporter';
@@ -15,12 +16,21 @@ import { HighlightJsLanguageDetector } from '@/adapters/secondary/language-detec
 import { ChromeStorageSyncPreferences } from '@/adapters/secondary/preferences/ChromeStorageSyncPreferences';
 import { ShikiSyntaxHighlighter } from '@/adapters/secondary/syntax-highlighting/ShikiSyntaxHighlighter';
 import { ChromeTabOpener } from '@/adapters/secondary/tab/ChromeTabOpener';
+import { ArchiveDraft } from '@/application/use-cases/ArchiveDraft';
 import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
+import { DeleteDraft } from '@/application/use-cases/DeleteDraft';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
+import { ListDrafts } from '@/application/use-cases/ListDrafts';
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
+import { OpenDraft } from '@/application/use-cases/OpenDraft';
 import { OpenFullTabEditor } from '@/application/use-cases/OpenFullTabEditor';
 import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
+import { RestoreDraft } from '@/application/use-cases/RestoreDraft';
+import { SaveCurrentEditorAsDraft } from '@/application/use-cases/SaveCurrentEditorAsDraft';
+import { UpdateDraft } from '@/application/use-cases/UpdateDraft';
+
+import { getSnipworthDB } from './snipworth-db';
 
 export type { AppDependencies };
 
@@ -31,6 +41,7 @@ export function composeApp(): AppDependencies {
   const fontPreloader = new BrowserFontPreloader();
   const errorReporter = new MessagingErrorReporter();
   const languageDetector = new HighlightJsLanguageDetector();
+  const draftRepository = new DexieDraftRepository(getSnipworthDB());
   return {
     errorReader: new ChromeStorageInboxReader(clock, ids),
     errorAcknowledger: new MessagingInboxAcknowledger(),
@@ -56,5 +67,12 @@ export function composeApp(): AppDependencies {
       new ChromeTabOpener(),
     ),
     clock,
+    saveDraft: new SaveCurrentEditorAsDraft(draftRepository, ids, clock),
+    openDraft: new OpenDraft(draftRepository),
+    updateDraft: new UpdateDraft(draftRepository, clock),
+    deleteDraft: new DeleteDraft(draftRepository),
+    archiveDraft: new ArchiveDraft(draftRepository, clock),
+    restoreDraft: new RestoreDraft(draftRepository, clock),
+    listDrafts: new ListDrafts(draftRepository),
   };
 }

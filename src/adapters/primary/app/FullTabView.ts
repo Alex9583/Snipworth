@@ -1,1 +1,1 @@
-export type FullTabView = 'editor' | 'about';
+export type FullTabView = 'editor' | 'library' | 'about';

@@ -15,4 +15,5 @@ export const LIBRARY_FILTERS_BAR = {
   statusLabel: 'Status',
   statusOptions: STATUS_OPTIONS,
   exportAllButton: 'Export all (ZIP)',
+  clearFilterLabel: (filterName: string) => `Clear ${filterName} filter`,
 } as const;

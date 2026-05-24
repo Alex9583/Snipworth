@@ -1,8 +1,24 @@
 import type { UpdateDraftInput, UpdateDraftOutcome } from '@/application/use-cases/UpdateDraft';
+import type { DraftSnapshot } from '@/domain/drafts/Draft';
+import { RenderConfig } from '@/domain/rendering/RenderConfig';
 
 interface Deferred {
   readonly resolve: (outcome: UpdateDraftOutcome) => void;
 }
+
+const DEFAULT_UPDATED_SNAPSHOT: DraftSnapshot = {
+  id: 'spy-update-default',
+  title: 'spy-update default',
+  code: '// spy',
+  language: 'plaintext',
+  config: RenderConfig.default().toSnapshot(),
+  caption: '',
+  hashtags: [],
+  platform: 'x',
+  status: 'draft',
+  createdAt: 0,
+  updatedAt: 0,
+};
 
 export class SpyUpdateDraft {
   readonly calls: UpdateDraftInput[] = [];
@@ -29,6 +45,6 @@ export class SpyUpdateDraft {
         this.deferredQueue.push({ resolve });
       });
     }
-    return Promise.resolve({ kind: 'updated' });
+    return Promise.resolve({ kind: 'updated', snapshot: DEFAULT_UPDATED_SNAPSHOT });
   }
 }

@@ -4,10 +4,13 @@ import type { OpenDraft, OpenDraftOutcome } from '@/application/use-cases/OpenDr
 import type {
   SaveCurrentEditorAsDraft,
   SaveCurrentEditorAsDraftInput,
+  SaveCurrentEditorAsDraftOutcome,
 } from '@/application/use-cases/SaveCurrentEditorAsDraft';
 import type { UpdateDraft, UpdateDraftPatch } from '@/application/use-cases/UpdateDraft';
 import type { DraftSnapshot } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
+
+import type { SaveBinding } from './SaveDraftButton';
 
 const DEBOUNCE_MS = 500;
 
@@ -15,12 +18,14 @@ type SaveCurrentEditorAsDraftPort = Pick<SaveCurrentEditorAsDraft, 'execute'>;
 type OpenDraftPort = Pick<OpenDraft, 'execute'>;
 type UpdateDraftPort = Pick<UpdateDraft, 'execute'>;
 
+export type DraftSaveStatus = 'idle' | 'saving' | 'error';
+
 export type DraftBinding =
   | { readonly kind: 'scratch' }
   | {
       readonly kind: 'bound';
       readonly draft: DraftSnapshot;
-      readonly saveStatus: 'idle' | 'error';
+      readonly saveStatus: DraftSaveStatus;
     };
 
 export interface UseDraftBindingInput {
@@ -31,7 +36,7 @@ export interface UseDraftBindingInput {
 
 export interface UseDraftBindingResult {
   readonly binding: DraftBinding;
-  readonly save: (input: SaveCurrentEditorAsDraftInput) => Promise<void>;
+  readonly save: (input: SaveCurrentEditorAsDraftInput) => Promise<SaveCurrentEditorAsDraftOutcome>;
   readonly open: (id: DraftId) => Promise<OpenDraftOutcome>;
   readonly mutate: (patch: UpdateDraftPatch) => void;
   readonly flush: () => Promise<void>;
@@ -65,9 +70,14 @@ export function useDraftBinding(input: UseDraftBindingInput): UseDraftBindingRes
     pendingPatchRef.current = {};
     if (isPatchTriviallyNoop(accumulated, bindingRef.current.draft)) return;
     inFlightRef.current = true;
+    setBinding((prev) => (prev.kind === 'bound' ? { ...prev, saveStatus: 'saving' } : prev));
     try {
       const outcome = await updateUseCase.execute({ id, patch: accumulated });
-      if (outcome.kind !== 'updated') {
+      if (outcome.kind === 'updated') {
+        setBinding((prev) =>
+          prev.kind === 'bound' ? { ...prev, draft: outcome.snapshot, saveStatus: 'idle' } : prev,
+        );
+      } else {
         setBinding((prev) => (prev.kind === 'bound' ? { ...prev, saveStatus: 'error' } : prev));
       }
     } finally {
@@ -111,13 +121,14 @@ export function useDraftBinding(input: UseDraftBindingInput): UseDraftBindingRes
   };
 
   const save = useCallback(
-    async (saveInput: SaveCurrentEditorAsDraftInput): Promise<void> => {
+    async (saveInput: SaveCurrentEditorAsDraftInput): Promise<SaveCurrentEditorAsDraftOutcome> => {
       const outcome = await saveUseCase.execute(saveInput);
       if (outcome.kind === 'saved') {
         resetTransientState();
         boundIdRef.current = outcome.draftId;
         setBinding({ kind: 'bound', draft: outcome.snapshot, saveStatus: 'idle' });
       }
+      return outcome;
     },
     [saveUseCase],
   );
@@ -165,4 +176,13 @@ function isPatchTriviallyNoop(patch: UpdateDraftPatch, current: DraftSnapshot): 
 
 function hasKeys(patch: UpdateDraftPatch): boolean {
   return Object.keys(patch).length > 0;
+}
+
+export function toSaveBinding(binding: DraftBinding): SaveBinding {
+  if (binding.kind === 'scratch') return { kind: 'scratch' };
+  return {
+    kind: 'bound',
+    lastSavedAt: new Date(binding.draft.updatedAt),
+    saveStatus: binding.saveStatus,
+  };
 }
