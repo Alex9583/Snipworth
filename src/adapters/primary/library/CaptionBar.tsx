@@ -8,7 +8,7 @@ import type { Platform } from '@/domain/drafts/Platform';
 
 import { CAPTION_BAR, remainingHint } from './CaptionBar.strings';
 import { characterCounterState } from './characterCounterState';
-import { LIBRARY_FILTERS_BAR } from './LibraryFiltersBar.strings';
+import { platformDisplayLabel } from './platformLabels';
 import { splitHashtags } from './splitHashtags';
 
 interface CaptionBarProps {
@@ -121,7 +121,7 @@ function CharacterCounter({ used, limit, platform }: CharacterCounterProps) {
   if (limit === null) return null;
   const state = characterCounterState(used, limit);
   const fillPercent = Math.min(100, (used / limit) * 100);
-  const platformLabel = LIBRARY_FILTERS_BAR.platformOptions[platform];
+  const platformLabel = platformDisplayLabel(platform);
   return (
     <div className="flex w-55 flex-col gap-2">
       <div className="flex items-center justify-between">

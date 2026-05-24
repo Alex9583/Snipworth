@@ -12,6 +12,7 @@ import { draftStatuses, type DraftStatus } from '@/domain/drafts/Draft';
 import { platforms, type Platform } from '@/domain/drafts/Platform';
 
 import { LIBRARY_FILTERS_BAR } from './LibraryFiltersBar.strings';
+import { platformDisplayLabel } from './platformLabels';
 import { useDebouncedCallback } from './useDebouncedCallback';
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -70,7 +71,7 @@ export function LibraryFiltersBar({
         <ChipDropdown
           label={LIBRARY_FILTERS_BAR.platformLabel}
           options={platforms}
-          renderOption={(platform) => LIBRARY_FILTERS_BAR.platformOptions[platform]}
+          renderOption={platformDisplayLabel}
           onSelect={onPlatformChange}
           {...dropdownProps('platform')}
         />

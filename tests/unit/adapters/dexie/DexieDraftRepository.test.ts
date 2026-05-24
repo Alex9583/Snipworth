@@ -25,7 +25,7 @@ const baseConfig: RenderConfigInput = {
   shadow: true,
   shadowBlur: 10,
   shadowOffsetY: 4,
-  aspectRatio: 'auto',
+  aspectRatio: { kind: 'auto' },
   exportScale: 2,
   exportFormat: 'png',
 };

@@ -111,13 +111,13 @@ describe('UpdateDraft', () => {
     if (found.kind !== 'found') throw new Error('expected found');
     const snapshot = found.draft.toSnapshot();
     expect(snapshot.platform).toBe('instagram');
-    expect(snapshot.config.aspectRatio).toBe('1:1');
+    expect(snapshot.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '1:1' });
   });
 
   it('should_apply_the_manual_config_override_AFTER_the_platform_preset_when_BOTH_are_in_the_patch', async () => {
     const seed = aSeedDraft();
     const { repo, useCase } = await buildHarness(seed);
-    const overrideConfig = RenderConfig.default().withAspectRatio('4:5');
+    const overrideConfig = RenderConfig.default().withAspectRatio({ kind: 'fixed', ratio: '4:5' });
 
     await useCase.execute({
       id: seed.id,
@@ -128,7 +128,7 @@ describe('UpdateDraft', () => {
     if (found.kind !== 'found') throw new Error('expected found');
     const snapshot = found.draft.toSnapshot();
     expect(snapshot.platform).toBe('instagram');
-    expect(snapshot.config.aspectRatio).toBe('4:5');
+    expect(snapshot.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '4:5' });
   });
 
   it('should_return_updated_and_skip_repo_save_and_leave_updatedAt_unchanged_when_the_patch_is_empty', async () => {
@@ -281,7 +281,7 @@ describe('UpdateDraft', () => {
   it('should_apply_all_patch_fields_in_the_fixed_title_code_platform_config_caption_hashtags_order_when_the_patch_carries_every_field', async () => {
     const seed = aSeedDraft();
     const { repo, useCase } = await buildHarness(seed);
-    const overrideConfig = RenderConfig.default().withAspectRatio('16:9');
+    const overrideConfig = RenderConfig.default().withAspectRatio({ kind: 'fixed', ratio: '16:9' });
 
     await useCase.execute({
       id: seed.id,
@@ -303,7 +303,7 @@ describe('UpdateDraft', () => {
     expect(snapshot.code).toBe('print("hi")');
     expect(snapshot.language).toBe('python');
     expect(snapshot.platform).toBe('instagram');
-    expect(snapshot.config.aspectRatio).toBe('16:9');
+    expect(snapshot.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '16:9' });
     expect(snapshot.caption).toBe('A caption');
     expect(snapshot.hashtags).toEqual(['#typescript']);
   });

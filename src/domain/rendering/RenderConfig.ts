@@ -10,8 +10,11 @@ export type FontFamily = (typeof fontFamilies)[number];
 export const windowStyles = ['mac', 'windows', 'none'] as const;
 export type WindowStyle = (typeof windowStyles)[number];
 
-export const aspectRatios = ['1:1', '4:5', '16:9', '9:16', 'auto'] as const;
-export type AspectRatio = (typeof aspectRatios)[number];
+export const fixedAspectRatios = ['1:1', '4:5', '16:9', '9:16', '1.91:1'] as const;
+
+export type AspectRatio =
+  | { readonly kind: 'fixed'; readonly ratio: (typeof fixedAspectRatios)[number] }
+  | { readonly kind: 'auto' };
 
 export const exportScales = [1, 2, 4] as const;
 export type ExportScale = (typeof exportScales)[number];
@@ -129,7 +132,7 @@ export class RenderConfig {
     requireRange(input.lineHeight, LINE_HEIGHT_RANGE, 'lineHeight');
     requireRange(input.borderRadius, RADIUS_RANGE, 'borderRadius');
     requireMember(input.windowStyle, windowStyles, 'windowStyle');
-    requireMember(input.aspectRatio, aspectRatios, 'aspectRatio');
+    requireAspectRatio(input.aspectRatio);
     requireMember(input.exportFormat, exportFormats, 'exportFormat');
     requireScale(input.exportScale);
     requireFirstLineNumber(input.firstLineNumber);
@@ -161,7 +164,7 @@ export class RenderConfig {
       shadow: true,
       shadowBlur: 30,
       shadowOffsetY: 8,
-      aspectRatio: 'auto',
+      aspectRatio: { kind: 'auto' },
       exportScale: 2,
       exportFormat: 'png',
     });
@@ -252,6 +255,21 @@ function requireBackground(bg: Background): void {
     default: {
       throw new InvalidRenderConfig(
         `background.type "${String((bg as { type: unknown }).type)}" is not supported`,
+      );
+    }
+  }
+}
+
+function requireAspectRatio(aspectRatio: AspectRatio): void {
+  switch (aspectRatio.kind) {
+    case 'fixed':
+      requireMember(aspectRatio.ratio, fixedAspectRatios, 'aspectRatio.ratio');
+      return;
+    case 'auto':
+      return;
+    default: {
+      throw new InvalidRenderConfig(
+        `aspectRatio.kind "${String((aspectRatio as { kind: unknown }).kind)}" is not supported`,
       );
     }
   }

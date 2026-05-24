@@ -30,7 +30,7 @@ const baseConfig: RenderConfigInput = {
   shadow: true,
   shadowBlur: 10,
   shadowOffsetY: 4,
-  aspectRatio: 'auto',
+  aspectRatio: { kind: 'auto' },
   exportScale: 2,
   exportFormat: 'png',
 };
@@ -298,39 +298,39 @@ describe('Draft.switchPlatform', () => {
     const original = Draft.create(
       buildInput({
         platform: 'x',
-        config: RenderConfig.from({ ...baseConfig, aspectRatio: '16:9' }),
+        config: RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '16:9' } }),
       }),
     );
     const switched = original.switchPlatform('instagram', LATER);
     expect(switched.platform).toBe('instagram');
-    expect(switched.config.aspectRatio).toBe('1:1');
+    expect(switched.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '1:1' });
     expect(switched.updatedAt.getTime()).toBe(LATER.getTime());
     expect(original.platform).toBe('x');
-    expect(original.config.aspectRatio).toBe('16:9');
+    expect(original.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '16:9' });
   });
 
   it('should_set_platform_to_instagram_story_and_apply_the_9_16_aspect_ratio_preset_when_switchPlatform_is_called_with_instagram_story', () => {
     const original = Draft.create(
       buildInput({
         platform: 'linkedin',
-        config: RenderConfig.from({ ...baseConfig, aspectRatio: '16:9' }),
+        config: RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '16:9' } }),
       }),
     );
     const switched = original.switchPlatform('instagram-story', LATER);
     expect(switched.platform).toBe('instagram-story');
-    expect(switched.config.aspectRatio).toBe('9:16');
+    expect(switched.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '9:16' });
   });
 
   it('should_set_platform_to_generic_and_apply_the_auto_aspect_ratio_preset_when_switchPlatform_is_called_with_generic', () => {
     const original = Draft.create(
       buildInput({
         platform: 'instagram',
-        config: RenderConfig.from({ ...baseConfig, aspectRatio: '1:1' }),
+        config: RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '1:1' } }),
       }),
     );
     const switched = original.switchPlatform('generic', LATER);
     expect(switched.platform).toBe('generic');
-    expect(switched.config.aspectRatio).toBe('auto');
+    expect(switched.config.aspectRatio).toEqual({ kind: 'auto' });
   });
 
   it('should_overwrite_a_manual_aspect_ratio_override_when_switchPlatform_re_applies_the_same_platform', () => {
@@ -338,14 +338,17 @@ describe('Draft.switchPlatform', () => {
     const overridden = Draft.create(
       buildInput({
         platform: 'instagram',
-        config: RenderConfig.from({ ...baseConfig, aspectRatio: '1:1' }),
+        config: RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '1:1' } }),
       }),
-    ).replaceConfig(RenderConfig.from({ ...baseConfig, aspectRatio: '4:5' }), overrideAt);
-    expect(overridden.config.aspectRatio).toBe('4:5');
+    ).replaceConfig(
+      RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '4:5' } }),
+      overrideAt,
+    );
+    expect(overridden.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '4:5' });
 
     const switched = overridden.switchPlatform('instagram', LATER);
     expect(switched.platform).toBe('instagram');
-    expect(switched.config.aspectRatio).toBe('1:1');
+    expect(switched.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '1:1' });
   });
 
   it('should_throw_InvalidDraft_when_switchPlatform_is_called_with_an_unknown_platform_string', () => {

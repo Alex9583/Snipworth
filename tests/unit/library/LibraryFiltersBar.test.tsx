@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 
 import { LibraryFiltersBar } from '@/adapters/primary/library/LibraryFiltersBar';
 import { LIBRARY_FILTERS_BAR } from '@/adapters/primary/library/LibraryFiltersBar.strings';
+import { platformDisplayLabel } from '@/adapters/primary/library/platformLabels';
 
 type BarProps = ComponentProps<typeof LibraryFiltersBar>;
 
@@ -53,9 +54,7 @@ describe('LibraryFiltersBar', () => {
     renderBar({ onPlatformChange });
 
     await user.click(screen.getByRole('button', { name: LIBRARY_FILTERS_BAR.platformLabel }));
-    await user.click(
-      screen.getByRole('menuitem', { name: LIBRARY_FILTERS_BAR.platformOptions.linkedin }),
-    );
+    await user.click(screen.getByRole('menuitem', { name: platformDisplayLabel('linkedin') }));
 
     expect(onPlatformChange).toHaveBeenCalledExactlyOnceWith('linkedin');
   });

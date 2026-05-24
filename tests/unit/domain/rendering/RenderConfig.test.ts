@@ -21,7 +21,7 @@ const validInput: RenderConfigInput = {
   shadow: true,
   shadowBlur: 10,
   shadowOffsetY: 4,
-  aspectRatio: 'auto',
+  aspectRatio: { kind: 'auto' },
   exportScale: 2,
   exportFormat: 'png',
 };
@@ -43,7 +43,7 @@ describe('RenderConfig.default', () => {
     expect(config.shadow).toBe(true);
     expect(config.shadowBlur).toBe(30);
     expect(config.shadowOffsetY).toBe(8);
-    expect(config.aspectRatio).toBe('auto');
+    expect(config.aspectRatio).toEqual({ kind: 'auto' });
     expect(config.exportScale).toBe(2);
     expect(config.exportFormat).toBe('png');
   });
@@ -66,7 +66,7 @@ describe('RenderConfig.from — happy path', () => {
     expect(config.shadow).toBe(true);
     expect(config.shadowBlur).toBe(10);
     expect(config.shadowOffsetY).toBe(4);
-    expect(config.aspectRatio).toBe('auto');
+    expect(config.aspectRatio).toEqual({ kind: 'auto' });
     expect(config.exportScale).toBe(2);
     expect(config.exportFormat).toBe('png');
   });
@@ -135,10 +135,22 @@ describe('RenderConfig.from — string invariants', () => {
     );
   });
 
-  it('should_reject_an_unknown_aspectRatio', () => {
-    expect(() => RenderConfig.from({ ...validInput, aspectRatio: '21:9' as never })).toThrow(
-      /aspectRatio/,
-    );
+  it('should_reject_an_unknown_ratio_when_aspectRatio_kind_is_fixed', () => {
+    expect(() =>
+      RenderConfig.from({
+        ...validInput,
+        aspectRatio: { kind: 'fixed', ratio: '21:9' as never },
+      }),
+    ).toThrow(/aspectRatio/);
+  });
+
+  it('should_reject_an_unknown_aspectRatio_kind', () => {
+    expect(() =>
+      RenderConfig.from({
+        ...validInput,
+        aspectRatio: { kind: 'square' as never },
+      }),
+    ).toThrow(/aspectRatio/);
   });
 
   it('should_reject_an_unknown_exportFormat', () => {
@@ -251,9 +263,12 @@ describe('RenderConfig.from — background invariants', () => {
 describe('RenderConfig.withAspectRatio', () => {
   it('should_return_a_new_RenderConfig_with_the_given_aspectRatio_when_withAspectRatio_is_called', () => {
     const original = RenderConfig.from(validInput);
-    const updated = original.withAspectRatio('1:1');
-    expect(updated.aspectRatio).toBe('1:1');
-    expect(updated.toSnapshot()).toEqual({ ...original.toSnapshot(), aspectRatio: '1:1' });
-    expect(original.aspectRatio).toBe('auto');
+    const updated = original.withAspectRatio({ kind: 'fixed', ratio: '1:1' });
+    expect(updated.aspectRatio).toEqual({ kind: 'fixed', ratio: '1:1' });
+    expect(updated.toSnapshot()).toEqual({
+      ...original.toSnapshot(),
+      aspectRatio: { kind: 'fixed', ratio: '1:1' },
+    });
+    expect(original.aspectRatio).toEqual({ kind: 'auto' });
   });
 });
