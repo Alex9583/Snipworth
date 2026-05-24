@@ -7,7 +7,7 @@ import type { DraftSnapshot } from '@/domain/drafts/Draft';
 
 import { DRAFT_CARD } from './DraftCard.strings';
 import type { IntersectionObserverFactory } from './IntersectionObserverFactory';
-import { relativeDaysLabel } from './relativeTime';
+import { relativeTimeLabel } from './relativeTime';
 
 const LAZY_PREVIEW_ROOT_MARGIN = '200px';
 
@@ -130,7 +130,7 @@ interface DraftSummaryProps {
 }
 
 function DraftSummary({ title, language, platform, updatedAt, now }: DraftSummaryProps) {
-  const updatedLabel = `${DRAFT_CARD.updatedPrefix}${relativeDaysLabel(new Date(updatedAt), now)}`;
+  const updatedLabel = `${DRAFT_CARD.updatedPrefix}${relativeTimeLabel(new Date(updatedAt), now)}`;
   return (
     <div className="flex flex-col gap-2 px-3.5 pt-3.5 pb-3.5">
       <h3 className="truncate text-[13.5px] font-semibold">{title}</h3>
