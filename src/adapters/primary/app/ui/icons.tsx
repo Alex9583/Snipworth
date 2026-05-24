@@ -159,6 +159,27 @@ export function PlusIcon(props: IconProps) {
   );
 }
 
+export function TypeIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <polyline points="4 7 4 4 20 4 20 7" />
+      <line x1="9" y1="20" x2="15" y2="20" />
+      <line x1="12" y1="4" x2="12" y2="20" />
+    </Svg>
+  );
+}
+
+export function HashIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <line x1="4" y1="9" x2="20" y2="9" />
+      <line x1="4" y1="15" x2="20" y2="15" />
+      <line x1="10" y1="3" x2="8" y2="21" />
+      <line x1="16" y1="3" x2="14" y2="21" />
+    </Svg>
+  );
+}
+
 export function HelpCircleIcon(props: IconProps) {
   return (
     <Svg {...props}>
