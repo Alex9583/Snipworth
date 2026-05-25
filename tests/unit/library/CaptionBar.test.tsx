@@ -10,6 +10,7 @@ import type { Platform } from '@/domain/drafts/Platform';
 
 interface ControlledProps {
   readonly initialCaption?: string;
+  readonly initialHashtags?: readonly string[];
   readonly platform?: Platform;
   readonly onCaptionChange?: (caption: string) => void;
   readonly onHashtagsChange?: (hashtags: readonly string[]) => void;
@@ -17,20 +18,26 @@ interface ControlledProps {
 
 function ControlledCaptionBar({
   initialCaption = '',
+  initialHashtags = [],
   platform = 'x',
   onCaptionChange,
   onHashtagsChange,
 }: ControlledProps = {}) {
   const [caption, setCaption] = useState(initialCaption);
+  const [hashtags, setHashtags] = useState<readonly string[]>(initialHashtags);
   return (
     <CaptionBar
       caption={caption}
+      hashtags={hashtags}
       platform={platform}
       onCaptionChange={(next) => {
         setCaption(next);
         onCaptionChange?.(next);
       }}
-      onHashtagsChange={onHashtagsChange ?? (() => undefined)}
+      onHashtagsChange={(next) => {
+        setHashtags(next);
+        onHashtagsChange?.(next);
+      }}
     />
   );
 }

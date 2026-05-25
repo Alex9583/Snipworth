@@ -108,6 +108,9 @@ export function LibraryView({
             onArchive={(id) => {
               void library.archive(toDraftId(id));
             }}
+            onRestore={(id) => {
+              void library.restore(toDraftId(id));
+            }}
             onRequestDelete={(id) => {
               setPendingDeleteId(toDraftId(id));
             }}
@@ -145,6 +148,7 @@ interface DraftsGridProps {
   readonly getHighlight: HighlightLookup;
   readonly onOpen: (id: string) => void;
   readonly onArchive: (id: string) => void;
+  readonly onRestore: (id: string) => void;
   readonly onRequestDelete: (id: string) => void;
 }
 
@@ -155,6 +159,7 @@ function DraftsGrid({
   getHighlight,
   onOpen,
   onArchive,
+  onRestore,
   onRequestDelete,
 }: DraftsGridProps) {
   return (
@@ -174,6 +179,7 @@ function DraftsGrid({
               getHighlight={getHighlight}
               onOpen={onOpen}
               onArchive={onArchive}
+              onRestore={onRestore}
               onDelete={onRequestDelete}
             />
           </li>

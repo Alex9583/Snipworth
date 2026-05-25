@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 
 import { LibraryFiltersBar } from '@/adapters/primary/library/LibraryFiltersBar';
 import { LIBRARY_FILTERS_BAR } from '@/adapters/primary/library/LibraryFiltersBar.strings';
-import { platformDisplayLabel } from '@/adapters/primary/library/platformLabels';
+import { platformDisplayLabel } from '@/adapters/primary/shared/platformLabels';
 
 type BarProps = ComponentProps<typeof LibraryFiltersBar>;
 

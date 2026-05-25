@@ -3,7 +3,7 @@ import { platforms, type Platform } from '@/domain/drafts/Platform';
 import { pixelDimensionsForPlatform } from '@/domain/drafts/pixelDimensionsForPlatform';
 
 import { dimensionsLabel } from './PlatformRow.strings';
-import { platformDisplayLabel } from './platformLabels';
+import { platformDisplayLabel } from '@/adapters/primary/shared/platformLabels';
 
 interface PlatformRowProps {
   readonly currentPlatform: Platform;

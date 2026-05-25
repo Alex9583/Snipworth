@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { PlatformRow } from '@/adapters/primary/library/PlatformRow';
-import { platformDisplayLabel } from '@/adapters/primary/library/platformLabels';
+import { platformDisplayLabel } from '@/adapters/primary/shared/platformLabels';
 import { platforms } from '@/domain/drafts/Platform';
 
 describe('PlatformRow', () => {

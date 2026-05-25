@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { isPlatform, platforms, type Platform } from '@/domain/drafts/Platform';
+import { platformDisplayLabel } from '@/adapters/primary/shared/platformLabels';
 import {
   fontFamilies,
   FONT_SIZE_RANGE,
@@ -27,9 +29,16 @@ const CONTROL_CLASSES = 'bg-elevated text-ink h-8 w-full rounded-sm px-2 text-sm
 interface ConfigPanelProps {
   value: RenderConfigSnapshot;
   onChange: (patch: Partial<RenderConfigSnapshot>) => void;
+  defaultPlatform: Platform;
+  onDefaultPlatformChange: (next: Platform) => void;
 }
 
-export function ConfigPanel({ value, onChange }: ConfigPanelProps) {
+export function ConfigPanel({
+  value,
+  onChange,
+  defaultPlatform,
+  onDefaultPlatformChange,
+}: ConfigPanelProps) {
   return (
     <div className="flex flex-col">
       <ThemeRow
@@ -62,6 +71,7 @@ export function ConfigPanel({ value, onChange }: ConfigPanelProps) {
           onChange({ background: { type: 'solid', color } });
         }}
       />
+      <PlatformRow value={defaultPlatform} onChange={onDefaultPlatformChange} />
     </div>
   );
 }
@@ -187,6 +197,33 @@ function ColorRow({ label, value, onChange }: ColorRowProps) {
         }}
         className="bg-elevated h-8 w-full rounded-sm"
       />
+    </ConfigRow>
+  );
+}
+
+interface PlatformRowProps {
+  value: Platform;
+  onChange: (next: Platform) => void;
+}
+
+function PlatformRow({ value, onChange }: PlatformRowProps) {
+  return (
+    <ConfigRow label={CONFIG_PANEL.defaultPlatformLabel}>
+      <select
+        aria-label={CONFIG_PANEL.defaultPlatformLabel}
+        value={value}
+        onChange={(event) => {
+          const value = event.target.value;
+          if (isPlatform(value)) onChange(value);
+        }}
+        className={CONTROL_CLASSES}
+      >
+        {platforms.map((p) => (
+          <option key={p} value={p}>
+            {platformDisplayLabel(p)}
+          </option>
+        ))}
+      </select>
     </ConfigRow>
   );
 }

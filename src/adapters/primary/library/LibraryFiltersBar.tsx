@@ -13,7 +13,7 @@ import { draftStatuses, type DraftStatus } from '@/domain/drafts/Draft';
 import { platforms, type Platform } from '@/domain/drafts/Platform';
 
 import { LIBRARY_FILTERS_BAR } from './LibraryFiltersBar.strings';
-import { platformDisplayLabel } from './platformLabels';
+import { platformDisplayLabel } from '@/adapters/primary/shared/platformLabels';
 import type { LibraryFilters } from './useLibraryDrafts';
 import { useDebouncedCallback } from './useDebouncedCallback';
 

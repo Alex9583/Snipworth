@@ -1,15 +1,8 @@
-import {
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useDeferredValue,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useDeferredValue, useMemo, useRef, useState } from 'react';
 
 import { SaveDraftButton } from '@/adapters/primary/library/SaveDraftButton';
 import { SaveDraftToast } from '@/adapters/primary/library/SaveDraftToast';
+import { useDraftAutoSync } from '@/adapters/primary/library/useDraftAutoSync';
 import { toSaveBinding, useDraftBinding } from '@/adapters/primary/library/useDraftBinding';
 import { RenderConfig } from '@/domain/rendering/RenderConfig';
 
@@ -61,10 +54,8 @@ export function SidePanelApp({
     autoDetectLanguage,
   );
 
-  const { prefs, hasLoaded, renderConfig, patchConfig, completeOnboarding } = useUserPreferences(
-    userPreferencesStore,
-    reportSidePanelFailure,
-  );
+  const { prefs, hasLoaded, renderConfig, patchConfig, patchPrefs, completeOnboarding } =
+    useUserPreferences(userPreferencesStore, reportSidePanelFailure);
 
   const draftBinding = useDraftBinding({
     saveUseCase: saveDraft,
@@ -97,38 +88,25 @@ export function SidePanelApp({
     });
   });
 
-  const pushToBoundDraft = useEffectEvent((patch: Parameters<typeof draftBinding.mutate>[0]) => {
-    if (draftBinding.binding.kind !== 'bound') return;
-    draftBinding.mutate(patch);
-  });
+  useDraftAutoSync(draftBinding, { code, language, title: session.title, renderConfig });
 
-  useEffect(() => {
-    pushToBoundDraft({ code, language });
-  }, [code, language]);
-
-  useEffect(() => {
-    pushToBoundDraft({ config: RenderConfig.fromSnapshot(renderConfig) });
-  }, [renderConfig]);
+  const { caption, hashtags, platform, title, setTitle } = session;
 
   const handleSave = useCallback(async () => {
     const outcome = await draftBinding.save({
       code,
       language,
       config: RenderConfig.fromSnapshot(renderConfig),
-      caption: session.caption,
-      hashtags: session.hashtags,
-      platform: session.platform,
+      caption,
+      hashtags,
+      platform,
+      title,
     });
-    if (outcome.kind === 'saved') setToastVisible(true);
-  }, [
-    draftBinding,
-    code,
-    language,
-    renderConfig,
-    session.caption,
-    session.hashtags,
-    session.platform,
-  ]);
+    if (outcome.kind === 'saved') {
+      setTitle(outcome.snapshot.title);
+      setToastVisible(true);
+    }
+  }, [draftBinding, code, language, renderConfig, caption, hashtags, platform, title, setTitle]);
 
   const handleFlush = useCallback(() => {
     void draftBinding.flush();
@@ -216,6 +194,8 @@ export function SidePanelApp({
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           {activeTab === 'code' && (
             <SidePanelCodeTab
+              title={session.title}
+              onTitleChange={session.setTitle}
               code={code}
               onCodeChange={setCode}
               language={language}
@@ -230,6 +210,7 @@ export function SidePanelApp({
 
           {activeTab === 'preview' && (
             <SidePanelPreviewTab
+              title={session.title}
               previewRef={previewRef}
               getHighlight={getHighlight}
               code={deferredCode}
@@ -244,7 +225,14 @@ export function SidePanelApp({
 
           {activeTab === 'config' && (
             <div className="min-h-0 flex-1 overflow-auto">
-              <ConfigPanel value={renderConfig} onChange={patchConfig} />
+              <ConfigPanel
+                value={renderConfig}
+                onChange={patchConfig}
+                defaultPlatform={prefs.defaultPlatform}
+                onDefaultPlatformChange={(platform) => {
+                  patchPrefs({ defaultPlatform: platform });
+                }}
+              />
             </div>
           )}
         </div>

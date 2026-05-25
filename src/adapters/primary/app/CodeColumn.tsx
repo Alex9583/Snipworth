@@ -4,12 +4,14 @@ import { FULL_TAB_APP } from './FullTabApp.strings';
 import { LiveCodeEditor } from './LiveCodeEditor';
 import { APP } from './app.strings';
 import type { HighlightLookup } from './highlightCache';
-import { ColumnHeader } from './ui/ColumnHeader';
 import { EditorStats } from './ui/EditorStats';
 import { LanguagePicker } from './ui/LanguagePicker';
+import { TitleInput } from './ui/TitleInput';
 import { CodeIcon } from './ui/icons';
 
 interface CodeColumnProps {
+  readonly title: string;
+  readonly onTitleChange: (next: string) => void;
   readonly code: string;
   readonly onCodeChange: (next: string) => void;
   readonly language: string;
@@ -21,6 +23,8 @@ interface CodeColumnProps {
 }
 
 export function CodeColumn({
+  title,
+  onTitleChange,
   code,
   onCodeChange,
   language,
@@ -35,12 +39,24 @@ export function CodeColumn({
       aria-labelledby="code-column-heading"
       className="border-line flex min-h-96 flex-col border-b max-lg:max-h-[60vh] lg:min-h-0 lg:w-1/4 lg:min-w-65 lg:border-r lg:border-b-0"
     >
-      <ColumnHeader
-        id="code-column-heading"
-        icon={<CodeIcon size={14} />}
-        label={FULL_TAB_APP.codeColumnLabel}
-        slot={<LanguagePicker value={language} detection={detection} onChange={onLanguageChange} />}
-      />
+      <div className="border-line flex items-center gap-2 border-b px-4 py-3">
+        <h2
+          id="code-column-heading"
+          className="text-ink flex shrink-0 items-center gap-2 text-sm font-semibold"
+        >
+          <span className="text-ink-muted">
+            <CodeIcon size={14} />
+          </span>
+          {FULL_TAB_APP.codeColumnLabel}
+        </h2>
+        <TitleInput
+          value={title}
+          onChange={onTitleChange}
+          placeholder={FULL_TAB_APP.titlePlaceholder}
+          label={FULL_TAB_APP.titleLabel}
+        />
+        <LanguagePicker value={language} detection={detection} onChange={onLanguageChange} />
+      </div>
       <div className="min-h-0 flex-1 p-3">
         <LiveCodeEditor
           value={code}

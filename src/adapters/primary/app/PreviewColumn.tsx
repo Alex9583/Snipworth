@@ -15,6 +15,7 @@ import type { CopyActionHandle } from './useCopyAction';
 import type { DownloadActionHandle } from './useDownloadAction';
 
 interface PreviewColumnProps {
+  readonly title: string;
   readonly platform: Platform;
   readonly onPlatformChange: (next: Platform) => void;
   readonly previewRef: RefObject<HTMLDivElement | null>;
@@ -29,6 +30,7 @@ interface PreviewColumnProps {
 }
 
 export function PreviewColumn({
+  title,
   platform,
   onPlatformChange,
   previewRef,
@@ -60,6 +62,7 @@ export function PreviewColumn({
         }
       >
         <PreviewPane
+          title={title}
           previewRef={previewRef}
           getHighlight={getHighlight}
           code={code}
@@ -79,6 +82,7 @@ export function PreviewColumn({
 }
 
 interface PreviewPaneProps {
+  readonly title: string;
   readonly previewRef: RefObject<HTMLDivElement | null>;
   readonly getHighlight: HighlightLookup;
   readonly code: string;
@@ -86,7 +90,14 @@ interface PreviewPaneProps {
   readonly renderConfig: RenderConfigSnapshot;
 }
 
-function PreviewPane({ previewRef, getHighlight, code, language, renderConfig }: PreviewPaneProps) {
+function PreviewPane({
+  title,
+  previewRef,
+  getHighlight,
+  code,
+  language,
+  renderConfig,
+}: PreviewPaneProps) {
   return (
     <div className="min-h-0 flex-1 overflow-auto p-6">
       <div className="flex min-h-full items-center justify-center">
@@ -96,6 +107,7 @@ function PreviewPane({ previewRef, getHighlight, code, language, renderConfig }:
           code={code}
           language={language}
           theme={renderConfig.theme}
+          title={title}
           fontFamily={renderConfig.fontFamily}
           fontSize={renderConfig.fontSize}
           background={solidBackgroundCss(renderConfig.background)}

@@ -9,10 +9,12 @@ import type { FontFamily } from '@/domain/rendering/RenderConfig';
 
 interface PreviewProps {
   hast: Root;
+  title?: string;
   fontFamily?: FontFamily;
   fontSize?: number;
   background?: string;
   className?: string;
+  compact?: boolean;
   ref?: Ref<HTMLDivElement>;
 }
 
@@ -27,10 +29,12 @@ const HAST_NORMALIZE =
 
 export function Preview({
   hast,
+  title,
   fontFamily = 'JetBrains Mono',
   fontSize = 14,
   background = '#1C1C21',
   className,
+  compact = false,
   ref,
 }: PreviewProps) {
   const tree = useMemo<ReactElement>(
@@ -52,17 +56,27 @@ export function Preview({
       <div className="w-full overflow-hidden rounded-md shadow-2xl" style={{ background }}>
         <div
           aria-hidden="true"
-          className="flex items-center gap-1.5 border-b border-white/5 px-4 py-3"
+          className={clsx(
+            'flex items-center border-b border-white/5',
+            compact ? 'gap-1 px-2.5 py-2' : 'gap-1.5 px-4 py-3',
+          )}
         >
           {TRAFFIC_LIGHTS.map((light) => (
             <span
               key={light.label}
-              className="block h-3 w-3 rounded-full"
+              className={clsx('block rounded-full', compact ? 'h-2 w-2' : 'h-3 w-3')}
               style={{ background: light.color }}
             />
           ))}
+          {title !== undefined && title.length > 0 && (
+            <span className="flex-1 truncate text-center text-xs text-white/50">{title}</span>
+          )}
         </div>
-        <div className={clsx('px-4 py-4 leading-relaxed', HAST_NORMALIZE)}>{tree}</div>
+        <div
+          className={clsx('leading-relaxed', compact ? 'px-3 py-3' : 'px-4 py-4', HAST_NORMALIZE)}
+        >
+          {tree}
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { platformDisplayLabel } from '@/adapters/primary/library/platformLabels';
+import { platformDisplayLabel } from '@/adapters/primary/shared/platformLabels';
 
 describe('platformDisplayLabel', () => {
   it('should_return_X_when_platform_is_x', () => {

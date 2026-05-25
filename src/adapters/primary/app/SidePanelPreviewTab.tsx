@@ -12,6 +12,7 @@ import type { CopyActionHandle } from './useCopyAction';
 import type { DownloadActionHandle } from './useDownloadAction';
 
 interface SidePanelPreviewTabProps {
+  readonly title: string;
   readonly previewRef: RefObject<HTMLDivElement | null>;
   readonly getHighlight: HighlightLookup;
   readonly code: string;
@@ -24,6 +25,7 @@ interface SidePanelPreviewTabProps {
 }
 
 export function SidePanelPreviewTab({
+  title,
   previewRef,
   getHighlight,
   code,
@@ -45,6 +47,7 @@ export function SidePanelPreviewTab({
               code={code}
               language={language}
               theme={renderConfig.theme}
+              title={title}
               fontFamily={renderConfig.fontFamily}
               fontSize={renderConfig.fontSize}
               background={solidBackgroundCss(renderConfig.background)}

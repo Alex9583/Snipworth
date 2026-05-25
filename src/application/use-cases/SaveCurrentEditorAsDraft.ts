@@ -14,6 +14,7 @@ export interface SaveCurrentEditorAsDraftInput {
   readonly caption: string;
   readonly hashtags: readonly string[];
   readonly platform: Platform;
+  readonly title?: string;
 }
 
 export type SaveCurrentEditorAsDraftOutcome =
@@ -37,9 +38,13 @@ export class SaveCurrentEditorAsDraft {
       return { kind: 'empty_code' };
     }
     const draftId = DraftId.from(this.idGen.next(), failDraft);
+    const title =
+      input.title !== undefined && input.title.trim().length > 0
+        ? input.title
+        : deriveTitleFromCode(input.code);
     const draft = Draft.create({
       id: draftId,
-      title: deriveTitleFromCode(input.code),
+      title,
       code: input.code,
       language: input.language,
       config: input.config,

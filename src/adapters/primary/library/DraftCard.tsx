@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { HighlightLookup } from '@/adapters/primary/app/highlightCache';
 import { HighlightedPreview } from '@/adapters/primary/app/HighlightedPreview';
 import { Badge } from '@/adapters/primary/app/ui/Badge';
-import type { DraftSnapshot } from '@/domain/drafts/Draft';
+import type { DraftSnapshot, DraftStatus } from '@/domain/drafts/Draft';
 
 import { DRAFT_CARD } from './DraftCard.strings';
 import type { IntersectionObserverFactory } from './IntersectionObserverFactory';
@@ -19,6 +19,7 @@ interface DraftCardProps {
   readonly now: Date;
   readonly onOpen: (id: string) => void;
   readonly onArchive?: (id: string) => void;
+  readonly onRestore?: (id: string) => void;
   readonly onDelete?: (id: string) => void;
   readonly getHighlight?: HighlightLookup;
   readonly observerFactory?: IntersectionObserverFactory;
@@ -29,6 +30,7 @@ export function DraftCard({
   now,
   onOpen,
   onArchive,
+  onRestore,
   onDelete,
   getHighlight,
   observerFactory,
@@ -63,7 +65,13 @@ export function DraftCard({
           now={now}
         />
       </button>
-      <DraftActionsMenu draftId={snapshot.id} onArchive={onArchive} onDelete={onDelete} />
+      <DraftActionsMenu
+        draftId={snapshot.id}
+        status={snapshot.status}
+        onArchive={onArchive}
+        onRestore={onRestore}
+        onDelete={onDelete}
+      />
     </article>
   );
 }
@@ -102,13 +110,18 @@ function DraftPreview({ getHighlight, code, language, theme, observerFactory }: 
   }, [observerFactory]);
 
   return (
-    <div ref={containerRef} className="border-line bg-preview-canvas aspect-video w-full border-b">
+    <div
+      ref={containerRef}
+      className="border-line bg-preview-canvas aspect-video w-full overflow-hidden border-b"
+    >
       {hasBeenVisible ? (
         <HighlightedPreview
           getHighlight={getHighlight}
           code={code}
           language={language}
           theme={theme}
+          fontSize={10}
+          compact
         />
       ) : (
         <div
@@ -145,12 +158,21 @@ function DraftSummary({ title, language, platform, updatedAt, now }: DraftSummar
 
 interface DraftActionsMenuProps {
   readonly draftId: string;
+  readonly status: DraftStatus;
   readonly onArchive?: (id: string) => void;
+  readonly onRestore?: (id: string) => void;
   readonly onDelete?: (id: string) => void;
 }
 
-function DraftActionsMenu({ draftId, onArchive, onDelete }: DraftActionsMenuProps) {
+function DraftActionsMenu({
+  draftId,
+  status,
+  onArchive,
+  onRestore,
+  onDelete,
+}: DraftActionsMenuProps) {
   const [open, setOpen] = useState(false);
+  const isArchived = status === 'archived';
   return (
     <>
       <button
@@ -177,11 +199,15 @@ function DraftActionsMenu({ draftId, onArchive, onDelete }: DraftActionsMenuProp
               role="menuitem"
               onClick={() => {
                 setOpen(false);
-                onArchive?.(draftId);
+                if (isArchived) {
+                  onRestore?.(draftId);
+                } else {
+                  onArchive?.(draftId);
+                }
               }}
               className="text-ink hover:bg-elevated w-full px-3 py-1.5 text-left text-[12.5px]"
             >
-              {DRAFT_CARD.archiveLabel}
+              {isArchived ? DRAFT_CARD.restoreLabel : DRAFT_CARD.archiveLabel}
             </button>
           </li>
           <li role="none">

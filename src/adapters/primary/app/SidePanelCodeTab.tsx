@@ -8,8 +8,11 @@ import { APP } from './app.strings';
 import type { HighlightLookup } from './highlightCache';
 import { EditorStats } from './ui/EditorStats';
 import { LanguagePicker } from './ui/LanguagePicker';
+import { TitleInput } from './ui/TitleInput';
 
 interface SidePanelCodeTabProps {
+  readonly title: string;
+  readonly onTitleChange: (next: string) => void;
   readonly code: string;
   readonly onCodeChange: (next: string) => void;
   readonly language: string;
@@ -22,6 +25,8 @@ interface SidePanelCodeTabProps {
 }
 
 export function SidePanelCodeTab({
+  title,
+  onTitleChange,
   code,
   onCodeChange,
   language,
@@ -34,6 +39,15 @@ export function SidePanelCodeTab({
 }: SidePanelCodeTabProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <TitleInput
+          value={title}
+          onChange={onTitleChange}
+          placeholder={SIDE_PANEL_APP.titlePlaceholder}
+          label={SIDE_PANEL_APP.titleLabel}
+        />
+        <LanguagePicker value={language} detection={detection} onChange={onLanguageChange} />
+      </div>
       <LiveCodeEditor
         value={code}
         onChange={onCodeChange}
@@ -44,9 +58,6 @@ export function SidePanelCodeTab({
         label={SIDE_PANEL_APP.tabCodeLabel}
         placeholder={APP.codePlaceholder}
         className="flex-1"
-        topRightSlot={
-          <LanguagePicker value={language} detection={detection} onChange={onLanguageChange} />
-        }
       />
       <div className="flex items-center justify-between">
         <EditorStats code={code} />

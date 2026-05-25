@@ -3,4 +3,6 @@ export const SIDE_PANEL_APP = {
   tabCodeLabel: 'Code',
   tabPreviewLabel: 'Preview',
   tabConfigLabel: 'Config',
+  titlePlaceholder: 'Untitled',
+  titleLabel: 'Snippet title',
 } as const;

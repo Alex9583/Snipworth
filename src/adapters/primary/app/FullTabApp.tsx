@@ -9,6 +9,8 @@ import {
   useState,
 } from 'react';
 
+import { useDraftAutoSync } from '@/adapters/primary/library/useDraftAutoSync';
+
 import { CaptionBar } from '@/adapters/primary/library/CaptionBar';
 import { SaveDraftButton } from '@/adapters/primary/library/SaveDraftButton';
 import { LibraryView } from '@/adapters/primary/library/LibraryView';
@@ -55,11 +57,7 @@ export function FullTabApp({
   const [view, setView] = useState<FullTabView>('editor');
   const previewRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(() => new Date());
-
-  const handleViewChange = useCallback((next: FullTabView) => {
-    if (next === 'library') setNow(new Date());
-    setView(next);
-  }, []);
+  const [openSeq, setOpenSeq] = useState(0);
 
   const { code, setCode, language, detection, pickLanguage } = useEditorLanguageState(
     fullTabBootstrapInbox,
@@ -67,7 +65,7 @@ export function FullTabApp({
     autoDetectLanguage,
   );
 
-  const { prefs, hasLoaded, renderConfig, patchConfig } = useUserPreferences(
+  const { prefs, hasLoaded, renderConfig, patchConfig, patchPrefs } = useUserPreferences(
     userPreferencesStore,
     reportSidePanelFailure,
   );
@@ -81,6 +79,18 @@ export function FullTabApp({
   const session = useEditorSession({ initialPlatform: prefs.defaultPlatform });
 
   const library = useLibraryDrafts({ listDrafts, archiveDraft, restoreDraft, deleteDraft });
+  const refreshLibrary = library.refresh;
+
+  const handleViewChange = useCallback(
+    (next: FullTabView) => {
+      if (next === 'library') {
+        setNow(new Date());
+        void refreshLibrary();
+      }
+      setView(next);
+    },
+    [refreshLibrary],
+  );
 
   const deferredCode = useDeferredValue(code);
   const getHighlight = useMemo(() => createHighlightCache(syntaxHighlighter), [syntaxHighlighter]);
@@ -107,51 +117,34 @@ export function FullTabApp({
 
   useEffect(() => {
     syncFromDraft();
-  }, [boundId]);
+  }, [boundId, openSeq]);
 
-  const pushToBoundDraft = useEffectEvent((patch: Parameters<typeof draftBinding.mutate>[0]) => {
-    if (draftBinding.binding.kind !== 'bound') return;
-    draftBinding.mutate(patch);
+  useDraftAutoSync(draftBinding, {
+    code,
+    language,
+    title: session.title,
+    platform: session.platform,
+    caption: session.caption,
+    hashtags: session.hashtags,
+    renderConfig,
   });
 
-  useEffect(() => {
-    pushToBoundDraft({ code, language });
-  }, [code, language]);
-
-  useEffect(() => {
-    pushToBoundDraft({ platform: session.platform });
-  }, [session.platform]);
-
-  useEffect(() => {
-    pushToBoundDraft({ caption: session.caption });
-  }, [session.caption]);
-
-  useEffect(() => {
-    pushToBoundDraft({ hashtags: session.hashtags });
-  }, [session.hashtags]);
-
-  useEffect(() => {
-    pushToBoundDraft({ config: RenderConfig.fromSnapshot(renderConfig) });
-  }, [renderConfig]);
+  const { caption, hashtags, platform, title, setTitle } = session;
 
   const handleSave = useCallback(async () => {
-    await draftBinding.save({
+    const outcome = await draftBinding.save({
       code,
       language,
       config: RenderConfig.fromSnapshot(renderConfig),
-      caption: session.caption,
-      hashtags: session.hashtags,
-      platform: session.platform,
+      caption,
+      hashtags,
+      platform,
+      title,
     });
-  }, [
-    draftBinding,
-    code,
-    language,
-    renderConfig,
-    session.caption,
-    session.hashtags,
-    session.platform,
-  ]);
+    if (outcome.kind === 'saved') {
+      setTitle(outcome.snapshot.title);
+    }
+  }, [draftBinding, code, language, renderConfig, caption, hashtags, platform, title, setTitle]);
 
   const handleFlush = useCallback(() => {
     void draftBinding.flush();
@@ -160,6 +153,7 @@ export function FullTabApp({
   const handleOpenDraft = useCallback(
     async (id: DraftId) => {
       await draftBinding.open(id);
+      setOpenSeq((n) => n + 1);
       setView('editor');
     },
     [draftBinding],
@@ -193,6 +187,8 @@ export function FullTabApp({
           <ErrorBanner reader={errorReader} acknowledger={errorAcknowledger} />
           <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
             <CodeColumn
+              title={session.title}
+              onTitleChange={session.setTitle}
               code={code}
               onCodeChange={setCode}
               language={language}
@@ -203,6 +199,7 @@ export function FullTabApp({
               getHighlight={getHighlight}
             />
             <PreviewColumn
+              title={session.title}
               platform={session.platform}
               onPlatformChange={session.setPlatform}
               previewRef={previewRef}
@@ -227,10 +224,18 @@ export function FullTabApp({
                 />
               }
             />
-            <ConfigColumn renderConfig={renderConfig} patchConfig={patchConfig} />
+            <ConfigColumn
+              renderConfig={renderConfig}
+              patchConfig={patchConfig}
+              defaultPlatform={prefs.defaultPlatform}
+              onDefaultPlatformChange={(platform) => {
+                patchPrefs({ defaultPlatform: platform });
+              }}
+            />
           </div>
           <CaptionBar
             caption={session.caption}
+            hashtags={session.hashtags}
             platform={session.platform}
             onCaptionChange={session.setCaption}
             onHashtagsChange={session.setHashtags}

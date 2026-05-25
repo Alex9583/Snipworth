@@ -139,4 +139,36 @@ describe('SaveCurrentEditorAsDraft', () => {
     if (outcome.kind !== 'storage_unavailable') return;
     expect(outcome.cause).toBe(cause);
   });
+
+  it('should_use_the_provided_title_when_a_non_empty_title_is_given', async () => {
+    const { repo, useCase } = buildHarness();
+
+    await useCase.execute(validInputWith({ title: 'My custom title' }));
+
+    expect((await singlePersistedSnapshot(repo)).title).toBe('My custom title');
+  });
+
+  it('should_auto_derive_title_from_code_when_title_is_undefined', async () => {
+    const { repo, useCase } = buildHarness();
+
+    await useCase.execute(validInputWith({ code: 'const greeting = "hello";' }));
+
+    expect((await singlePersistedSnapshot(repo)).title).toBe('const greeting = "hello";');
+  });
+
+  it('should_auto_derive_title_from_code_when_title_is_empty_string', async () => {
+    const { repo, useCase } = buildHarness();
+
+    await useCase.execute(validInputWith({ title: '', code: 'let x = 42;' }));
+
+    expect((await singlePersistedSnapshot(repo)).title).toBe('let x = 42;');
+  });
+
+  it('should_auto_derive_title_from_code_when_title_is_whitespace_only', async () => {
+    const { repo, useCase } = buildHarness();
+
+    await useCase.execute(validInputWith({ title: '   ', code: 'let x = 42;' }));
+
+    expect((await singlePersistedSnapshot(repo)).title).toBe('let x = 42;');
+  });
 });

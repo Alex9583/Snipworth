@@ -1,18 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
-import { HashIcon, TypeIcon } from '@/adapters/primary/app/ui/icons';
+import { IconBtn } from '@/adapters/primary/app/ui/IconBtn';
+import { HashIcon, Maximize2Icon, TypeIcon } from '@/adapters/primary/app/ui/icons';
 import { Input } from '@/adapters/primary/app/ui/Input';
 import { platformCharLimit } from '@/domain/drafts/platformCharLimit';
 import type { Platform } from '@/domain/drafts/Platform';
 
 import { CAPTION_BAR, remainingHint } from './CaptionBar.strings';
+import { CaptionDialog } from './CaptionDialog';
+import { CAPTION_DIALOG } from './CaptionDialog.strings';
 import { characterCounterState } from './characterCounterState';
-import { platformDisplayLabel } from './platformLabels';
+import { platformDisplayLabel } from '@/adapters/primary/shared/platformLabels';
 import { splitHashtags } from './splitHashtags';
 
 interface CaptionBarProps {
   readonly caption: string;
+  readonly hashtags: readonly string[];
   readonly platform: Platform;
   readonly onCaptionChange: (caption: string) => void;
   readonly onHashtagsChange: (hashtags: readonly string[]) => void;
@@ -20,26 +24,61 @@ interface CaptionBarProps {
 
 export function CaptionBar({
   caption,
+  hashtags: externalHashtags,
   platform,
   onCaptionChange,
   onHashtagsChange,
 }: CaptionBarProps) {
-  const [hashtagsRaw, setHashtagsRaw] = useState('');
+  const [hashtagsRaw, setHashtagsRaw] = useState(() => externalHashtags.join(' '));
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const hashtagsRawRef = useRef(hashtagsRaw);
+  hashtagsRawRef.current = hashtagsRaw;
+
+  useEffect(() => {
+    const localNormalized = splitHashtags(hashtagsRawRef.current).join(' ');
+    const externalNormalized = externalHashtags.join(' ');
+    if (externalNormalized !== localNormalized) {
+      setHashtagsRaw(externalNormalized);
+    }
+  }, [externalHashtags]);
   const hashtags = splitHashtags(hashtagsRaw);
   const used = caption.length + hashtags.join(' ').length;
   const limit = platformCharLimit(platform);
+
+  const handleHashtagsRawChange = (next: string): void => {
+    setHashtagsRaw(next);
+    onHashtagsChange(splitHashtags(next));
+  };
+
   return (
-    <div className="border-line bg-surface flex h-32 shrink-0 items-stretch gap-4 border-t px-6 py-4">
-      <CaptionField value={caption} onChange={onCaptionChange} />
-      <HashtagsField
-        value={hashtagsRaw}
-        onChange={(next) => {
-          setHashtagsRaw(next);
-          onHashtagsChange(splitHashtags(next));
+    <>
+      <div className="border-line bg-surface flex h-32 shrink-0 items-stretch gap-4 border-t px-6 py-4">
+        <CaptionField value={caption} onChange={onCaptionChange} />
+        <HashtagsField value={hashtagsRaw} onChange={handleHashtagsRawChange} />
+        <CharacterCounter used={used} limit={limit} platform={platform} />
+        <div className="flex items-start pt-6">
+          <IconBtn
+            label={CAPTION_DIALOG.expandButtonLabel}
+            onClick={() => {
+              setDialogOpen(true);
+            }}
+          >
+            <Maximize2Icon size={14} />
+          </IconBtn>
+        </div>
+      </div>
+      <CaptionDialog
+        open={dialogOpen}
+        caption={caption}
+        hashtagsRaw={hashtagsRaw}
+        platform={platform}
+        onCaptionChange={onCaptionChange}
+        onHashtagsRawChange={handleHashtagsRawChange}
+        onClose={() => {
+          setDialogOpen(false);
         }}
       />
-      <CharacterCounter used={used} limit={limit} platform={platform} />
-    </div>
+    </>
   );
 }
 

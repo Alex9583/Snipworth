@@ -1,3 +1,4 @@
+import type { Platform } from '@/domain/drafts/Platform';
 import type { RenderConfigSnapshot } from '@/domain/rendering/RenderConfig';
 
 import { FULL_TAB_APP } from './FullTabApp.strings';
@@ -8,9 +9,16 @@ import { SettingsIcon } from './ui/icons';
 interface ConfigColumnProps {
   readonly renderConfig: RenderConfigSnapshot;
   readonly patchConfig: (patch: Partial<RenderConfigSnapshot>) => void;
+  readonly defaultPlatform: Platform;
+  readonly onDefaultPlatformChange: (next: Platform) => void;
 }
 
-export function ConfigColumn({ renderConfig, patchConfig }: ConfigColumnProps) {
+export function ConfigColumn({
+  renderConfig,
+  patchConfig,
+  defaultPlatform,
+  onDefaultPlatformChange,
+}: ConfigColumnProps) {
   return (
     <section
       aria-labelledby="config-column-heading"
@@ -22,7 +30,12 @@ export function ConfigColumn({ renderConfig, patchConfig }: ConfigColumnProps) {
         label={FULL_TAB_APP.configColumnLabel}
       />
       <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">
-        <ConfigPanel value={renderConfig} onChange={patchConfig} />
+        <ConfigPanel
+          value={renderConfig}
+          onChange={patchConfig}
+          defaultPlatform={defaultPlatform}
+          onDefaultPlatformChange={onDefaultPlatformChange}
+        />
       </div>
     </section>
   );

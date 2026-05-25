@@ -5,6 +5,7 @@ export const CONFIG_PANEL = {
   fontFamilyLabel: 'Font family',
   fontSizeLabel: 'Font size',
   backgroundColorLabel: 'Background color',
+  defaultPlatformLabel: 'Default platform',
 } as const;
 
 export function pxHintLabel(px: number): string {
