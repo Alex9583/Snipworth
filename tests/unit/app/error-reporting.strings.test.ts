@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  ISSUE_BODY_MAX_BYTES,
+  CONSOLE_FIELD_MAX_BYTES,
   reportIssueUrl,
   unexpectedEventsLabel,
 } from '@/adapters/primary/app/error-reporting.strings';
@@ -20,42 +20,57 @@ function anError(id: string, details?: string): ErrorReport {
   });
 }
 
+function extractParam(url: string, name: string): string | null {
+  const params = new URL(url).searchParams;
+  return params.get(name);
+}
+
 describe('reportIssueUrl', () => {
-  it('should_produce_a_url_pointing_to_the_repository_issues_form', () => {
+  it('should_select_the_bug_report_template', () => {
     const url = reportIssueUrl([anError('id-1')]);
 
-    expect(url).toMatch(/^https?:\/\/.+\/issues\/new\?body=/);
+    expect(extractParam(url, 'template')).toBe('bug_report.yml');
   });
 
-  it('should_include_the_error_kind_in_the_body_when_inbox_is_loaded', () => {
+  it('should_prefill_what_happened_with_the_event_summary', () => {
     const url = reportIssueUrl([anError('id-1')]);
 
-    expect(decodeURIComponent(url)).toContain('invalid_message');
+    const whatHappened = extractParam(url, 'what-happened');
+    expect(whatHappened).toContain('Snipworth encountered an unexpected event.');
+    expect(whatHappened).toContain('Console errors');
   });
 
-  it('should_use_a_minimal_body_when_no_errors_are_provided', () => {
+  it('should_prefill_console_with_the_error_json_when_inbox_is_loaded', () => {
+    const url = reportIssueUrl([anError('id-1')]);
+
+    expect(extractParam(url, 'console')).toContain('invalid_message');
+  });
+
+  it('should_omit_console_param_when_no_errors_are_provided', () => {
     const url = reportIssueUrl([]);
 
-    expect(decodeURIComponent(url)).toContain('Snipworth could not load its pending error inbox.');
+    expect(extractParam(url, 'console')).toBeNull();
+    expect(extractParam(url, 'what-happened')).toContain(
+      'Snipworth could not load its pending error inbox.',
+    );
   });
 
-  it('should_truncate_the_body_with_a_marker_when_payload_exceeds_the_budget', () => {
+  it('should_truncate_console_with_a_marker_when_payload_exceeds_the_budget', () => {
     const huge = Array.from({ length: 50 }, (_, i) => anError(`id-${String(i)}`, 'a'.repeat(1000)));
 
     const url = reportIssueUrl(huge);
-    const decodedBody = decodeURIComponent(url.split('?body=')[1] ?? '');
+    const consoleField = extractParam(url, 'console') ?? '';
 
-    expect(decodedBody.length).toBeLessThanOrEqual(ISSUE_BODY_MAX_BYTES);
-    expect(decodedBody).toContain('events truncated');
+    expect(consoleField.length).toBeLessThanOrEqual(CONSOLE_FIELD_MAX_BYTES);
+    expect(consoleField).toContain('events truncated');
   });
 
-  it('should_keep_the_full_body_when_payload_fits_in_the_budget', () => {
+  it('should_keep_full_console_when_payload_fits_in_the_budget', () => {
     const small = [anError('id-1', 'short')];
 
     const url = reportIssueUrl(small);
-    const decodedBody = decodeURIComponent(url.split('?body=')[1] ?? '');
 
-    expect(decodedBody).not.toContain('events truncated');
+    expect(extractParam(url, 'console')).not.toContain('events truncated');
   });
 });
 
