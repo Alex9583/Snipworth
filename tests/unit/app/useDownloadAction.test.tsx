@@ -14,7 +14,7 @@ import {
   DownloadSnippetAsImage,
   type DownloadSnippetOutcome,
 } from '@/application/use-cases/DownloadSnippetAsImage';
-import type { ExportFormat, FontFamily } from '@/domain/rendering/RenderConfig';
+import type { ExportFormat, ExportScale, FontFamily } from '@/domain/rendering/RenderConfig';
 
 import { FakeClock } from '../../setup/fakes/FakeClock';
 import { anExportedPng } from '../../setup/fakes/imageOutcomes';
@@ -23,6 +23,7 @@ import { SpyFontPreloader } from '../../setup/fakes/SpyFontPreloader';
 import { SpyImageExporter } from '../../setup/fakes/SpyImageExporter';
 
 const A_FONT: FontFamily = 'JetBrains Mono';
+const A_SCALE: ExportScale = 2;
 const FIXED_CLOCK = new FakeClock(new Date('2026-05-09T14:23:05.000Z'));
 
 interface Harnessed {
@@ -68,11 +69,7 @@ interface HarnessProps {
 function Harness({ useCase, format, onOutcome }: HarnessProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { onDownload, status } = useDownloadAction(
-    useCase,
-    ref,
-    A_FONT,
-    format,
-    FIXED_CLOCK,
+    { useCase, targetRef: ref, fontFamily: A_FONT, scale: A_SCALE, format, clock: FIXED_CLOCK },
     onOutcome,
   );
   return (

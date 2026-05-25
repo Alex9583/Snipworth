@@ -2,13 +2,18 @@ import { type ReactNode, type RefObject, Suspense } from 'react';
 
 import { PlatformRow } from '@/adapters/primary/library/PlatformRow';
 import type { Platform } from '@/domain/drafts/Platform';
+import {
+  pixelDimensionsForPlatform,
+  type PixelDimensions,
+} from '@/domain/drafts/pixelDimensionsForPlatform';
 import type { RenderConfigSnapshot } from '@/domain/rendering/RenderConfig';
 
 import { FULL_TAB_APP } from './FullTabApp.strings';
 import { HighlightedPreview } from './HighlightedPreview';
 import { APP } from './app.strings';
 import type { HighlightLookup } from './highlightCache';
-import { solidBackgroundCss } from './previewBackground';
+import { backgroundCss } from './previewBackground';
+import { ExportCanvas } from './ui/ExportCanvas';
 import { ExportControls } from './ui/ExportControls';
 import { copyStatusLabel, downloadStatusLabel } from './ui/ExportControls.strings';
 import type { CopyActionHandle } from './useCopyAction';
@@ -18,7 +23,7 @@ interface PreviewColumnProps {
   readonly title: string;
   readonly platform: Platform;
   readonly onPlatformChange: (next: Platform) => void;
-  readonly previewRef: RefObject<HTMLDivElement | null>;
+  readonly canvasRef: RefObject<HTMLDivElement | null>;
   readonly getHighlight: HighlightLookup;
   readonly code: string;
   readonly language: string;
@@ -33,7 +38,7 @@ export function PreviewColumn({
   title,
   platform,
   onPlatformChange,
-  previewRef,
+  canvasRef,
   getHighlight,
   code,
   language,
@@ -43,6 +48,7 @@ export function PreviewColumn({
   downloadHandle,
   saveSlot,
 }: PreviewColumnProps) {
+  const dimensions = pixelDimensionsForPlatform(platform);
   return (
     <section
       aria-labelledby="preview-column-heading"
@@ -63,7 +69,8 @@ export function PreviewColumn({
       >
         <PreviewPane
           title={title}
-          previewRef={previewRef}
+          canvasRef={canvasRef}
+          dimensions={dimensions}
           getHighlight={getHighlight}
           code={code}
           language={language}
@@ -83,7 +90,8 @@ export function PreviewColumn({
 
 interface PreviewPaneProps {
   readonly title: string;
-  readonly previewRef: RefObject<HTMLDivElement | null>;
+  readonly canvasRef: RefObject<HTMLDivElement | null>;
+  readonly dimensions: PixelDimensions;
   readonly getHighlight: HighlightLookup;
   readonly code: string;
   readonly language: string;
@@ -92,27 +100,54 @@ interface PreviewPaneProps {
 
 function PreviewPane({
   title,
-  previewRef,
+  canvasRef,
+  dimensions,
   getHighlight,
   code,
   language,
   renderConfig,
 }: PreviewPaneProps) {
+  if (dimensions.kind === 'auto') {
+    return (
+      <div className="min-h-0 flex-1 overflow-auto p-6">
+        <div className="flex min-h-full items-center justify-center">
+          <HighlightedPreview
+            ref={canvasRef}
+            getHighlight={getHighlight}
+            code={code}
+            language={language}
+            theme={renderConfig.theme}
+            title={title}
+            fontFamily={renderConfig.fontFamily}
+            fontSize={renderConfig.fontSize}
+            background={backgroundCss(renderConfig.background)}
+            className="w-full max-w-2xl"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-0 flex-1 overflow-auto p-6">
       <div className="flex min-h-full items-center justify-center">
-        <HighlightedPreview
-          ref={previewRef}
-          getHighlight={getHighlight}
-          code={code}
-          language={language}
-          theme={renderConfig.theme}
-          title={title}
-          fontFamily={renderConfig.fontFamily}
-          fontSize={renderConfig.fontSize}
-          background={solidBackgroundCss(renderConfig.background)}
-          className="w-full max-w-2xl"
-        />
+        <ExportCanvas
+          ref={canvasRef}
+          dimensions={dimensions}
+          canvasBackground={backgroundCss(renderConfig.canvasBackground)}
+          canvasPadding={renderConfig.canvasPadding}
+        >
+          <HighlightedPreview
+            getHighlight={getHighlight}
+            code={code}
+            language={language}
+            theme={renderConfig.theme}
+            title={title}
+            fontFamily={renderConfig.fontFamily}
+            fontSize={renderConfig.fontSize}
+            background={backgroundCss(renderConfig.background)}
+          />
+        </ExportCanvas>
       </div>
     </div>
   );

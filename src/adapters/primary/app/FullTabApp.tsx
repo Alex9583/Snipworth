@@ -55,7 +55,7 @@ export function FullTabApp({
   listDrafts,
 }: AppDependencies) {
   const [view, setView] = useState<FullTabView>('editor');
-  const previewRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(() => new Date());
   const [openSeq, setOpenSeq] = useState(0);
 
@@ -77,6 +77,13 @@ export function FullTabApp({
   });
 
   const session = useEditorSession({ initialPlatform: prefs.defaultPlatform });
+  const { setPlatform } = session;
+
+  useEffect(() => {
+    if (draftBinding.binding.kind === 'scratch') {
+      setPlatform(prefs.defaultPlatform);
+    }
+  }, [prefs.defaultPlatform, draftBinding.binding.kind, setPlatform]);
 
   const library = useLibraryDrafts({ listDrafts, archiveDraft, restoreDraft, deleteDraft });
   const refreshLibrary = library.refresh;
@@ -99,8 +106,9 @@ export function FullTabApp({
     copySnippetAsImage,
     downloadSnippetAsImage,
     reportSidePanelFailure,
-    previewRef,
+    canvasRef,
     fontFamily: renderConfig.fontFamily,
+    exportScale: renderConfig.exportScale,
     exportFormat: renderConfig.exportFormat,
     clock,
   });
@@ -202,7 +210,7 @@ export function FullTabApp({
               title={session.title}
               platform={session.platform}
               onPlatformChange={session.setPlatform}
-              previewRef={previewRef}
+              canvasRef={canvasRef}
               getHighlight={getHighlight}
               code={deferredCode}
               language={language}

@@ -38,6 +38,7 @@ export const RADIUS_RANGE = [0, 64] as const;
 export const SHADOW_BLUR_RANGE = [0, 100] as const;
 export const SHADOW_OFFSET_RANGE = [-50, 50] as const;
 export const ANGLE_RANGE = [0, 360] as const;
+export const CANVAS_PADDING_RANGE = [0, 50] as const;
 
 export interface RenderConfigInput {
   readonly theme: string;
@@ -46,6 +47,8 @@ export interface RenderConfigInput {
   readonly lineHeight: number;
   readonly borderRadius: number;
   readonly background: Background;
+  readonly canvasBackground: Background;
+  readonly canvasPadding: number;
   readonly showWindowControls: boolean;
   readonly windowStyle: WindowStyle;
   readonly showLineNumbers: boolean;
@@ -66,6 +69,8 @@ export interface RenderConfigSnapshot {
   readonly lineHeight: number;
   readonly borderRadius: number;
   readonly background: Background;
+  readonly canvasBackground: Background;
+  readonly canvasPadding: number;
   readonly showWindowControls: boolean;
   readonly windowStyle: WindowStyle;
   readonly showLineNumbers: boolean;
@@ -93,6 +98,8 @@ export class RenderConfig {
   readonly lineHeight: number;
   readonly borderRadius: number;
   readonly background: Background;
+  readonly canvasBackground: Background;
+  readonly canvasPadding: number;
   readonly showWindowControls: boolean;
   readonly windowStyle: WindowStyle;
   readonly showLineNumbers: boolean;
@@ -112,6 +119,8 @@ export class RenderConfig {
     this.lineHeight = props.lineHeight;
     this.borderRadius = props.borderRadius;
     this.background = props.background;
+    this.canvasBackground = props.canvasBackground;
+    this.canvasPadding = props.canvasPadding;
     this.showWindowControls = props.showWindowControls;
     this.windowStyle = props.windowStyle;
     this.showLineNumbers = props.showLineNumbers;
@@ -140,6 +149,8 @@ export class RenderConfig {
     requireRange(input.shadowBlur, SHADOW_BLUR_RANGE, 'shadowBlur');
     requireRange(input.shadowOffsetY, SHADOW_OFFSET_RANGE, 'shadowOffsetY');
     requireBackground(input.background);
+    requireBackground(input.canvasBackground);
+    requireRange(input.canvasPadding, CANVAS_PADDING_RANGE, 'canvasPadding');
 
     return new RenderConfig({ ...input, highlightLines: [...input.highlightLines] });
   }
@@ -156,6 +167,8 @@ export class RenderConfig {
       lineHeight: 1.5,
       borderRadius: 10,
       background: { type: 'solid', color: '#1C1C21' },
+      canvasBackground: { type: 'solid', color: '#1C1C21' },
+      canvasPadding: 10,
       showWindowControls: true,
       windowStyle: 'mac',
       showLineNumbers: false,
@@ -182,6 +195,8 @@ export class RenderConfig {
       lineHeight: this.lineHeight,
       borderRadius: this.borderRadius,
       background: this.background,
+      canvasBackground: this.canvasBackground,
+      canvasPadding: this.canvasPadding,
       showWindowControls: this.showWindowControls,
       windowStyle: this.windowStyle,
       showLineNumbers: this.showLineNumbers,

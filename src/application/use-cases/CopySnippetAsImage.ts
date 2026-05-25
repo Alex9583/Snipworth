@@ -1,13 +1,7 @@
 import type { ClipboardCopier, CopyImageOutcome } from '@/application/ports/ClipboardCopier';
 import type { FontPreloader } from '@/application/ports/FontPreloader';
-import type {
-  ExportImageOutcome,
-  ImageExporter,
-  ImageExportOptions,
-} from '@/application/ports/ImageExporter';
-import type { FontFamily } from '@/domain/rendering/RenderConfig';
-
-const COPY_OPTIONS: ImageExportOptions = { scale: 2, format: 'png' };
+import type { ExportImageOutcome, ImageExporter } from '@/application/ports/ImageExporter';
+import type { ExportScale, FontFamily } from '@/domain/rendering/RenderConfig';
 
 export type CopySnippetOutcome =
   | CopyImageOutcome
@@ -20,8 +14,12 @@ export class CopySnippetAsImage {
     private readonly clipboardCopier: ClipboardCopier,
   ) {}
 
-  async execute(target: HTMLElement, fontFamily: FontFamily): Promise<CopySnippetOutcome> {
-    const exportPromise = this.preloadThenExport(target, fontFamily);
+  async execute(
+    target: HTMLElement,
+    fontFamily: FontFamily,
+    scale: ExportScale,
+  ): Promise<CopySnippetOutcome> {
+    const exportPromise = this.preloadThenExport(target, fontFamily, scale);
     const copyPromise = this.clipboardCopier.copyImage(async () => {
       const exported = await exportPromise;
       if (exported.kind === 'exported') return exported.blob;
@@ -38,8 +36,9 @@ export class CopySnippetAsImage {
   private async preloadThenExport(
     target: HTMLElement,
     fontFamily: FontFamily,
+    scale: ExportScale,
   ): Promise<ExportImageOutcome> {
     await this.fontPreloader.preload(fontFamily);
-    return this.imageExporter.export(target, COPY_OPTIONS);
+    return this.imageExporter.export(target, { scale, format: 'png' });
   }
 }

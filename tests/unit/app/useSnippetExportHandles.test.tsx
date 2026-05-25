@@ -10,7 +10,7 @@ import type { ExportImageOutcome } from '@/application/ports/ImageExporter';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
-import type { ExportFormat, FontFamily } from '@/domain/rendering/RenderConfig';
+import type { ExportFormat, ExportScale, FontFamily } from '@/domain/rendering/RenderConfig';
 
 import { FakeClock } from '../../setup/fakes/FakeClock';
 import { FixedIdGenerator } from '../../setup/fakes/FixedIdGenerator';
@@ -22,6 +22,7 @@ import { SpyFontPreloader } from '../../setup/fakes/SpyFontPreloader';
 import { SpyImageExporter } from '../../setup/fakes/SpyImageExporter';
 
 const A_FONT: FontFamily = 'JetBrains Mono';
+const A_SCALE: ExportScale = 2;
 const A_FORMAT: ExportFormat = 'png';
 const A_CLOCK = new FakeClock(new Date('2026-05-12T10:00:00.000Z'));
 
@@ -68,8 +69,9 @@ function Harness({ sut }: HarnessProps) {
     copySnippetAsImage: sut.copyUseCase,
     downloadSnippetAsImage: sut.downloadUseCase,
     reportSidePanelFailure: sut.reportFailureUseCase,
-    previewRef: ref,
+    canvasRef: ref,
     fontFamily: A_FONT,
+    exportScale: A_SCALE,
     exportFormat: A_FORMAT,
     clock: A_CLOCK,
   });

@@ -10,7 +10,7 @@ import {
   type DownloadSnippetOutcome,
 } from '@/application/use-cases/DownloadSnippetAsImage';
 import type { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
-import type { ExportFormat, FontFamily } from '@/domain/rendering/RenderConfig';
+import type { ExportFormat, ExportScale, FontFamily } from '@/domain/rendering/RenderConfig';
 
 import { EXPORT_CONTROLS } from './ui/ExportControls.strings';
 import { useCopyAction, type CopyActionHandle } from './useCopyAction';
@@ -20,8 +20,9 @@ export interface SnippetExportHandlesDeps<T extends HTMLElement> {
   readonly copySnippetAsImage: CopySnippetAsImage;
   readonly downloadSnippetAsImage: DownloadSnippetAsImage;
   readonly reportSidePanelFailure: ReportSidePanelFailure;
-  readonly previewRef: RefObject<T | null>;
+  readonly canvasRef: RefObject<T | null>;
   readonly fontFamily: FontFamily;
+  readonly exportScale: ExportScale;
   readonly exportFormat: ExportFormat;
   readonly clock: Clock;
 }
@@ -53,17 +54,23 @@ export function useSnippetExportHandles<T extends HTMLElement>(
   };
 
   const copyHandle = useCopyAction(
-    deps.copySnippetAsImage,
-    deps.previewRef,
-    deps.fontFamily,
+    {
+      useCase: deps.copySnippetAsImage,
+      targetRef: deps.canvasRef,
+      fontFamily: deps.fontFamily,
+      scale: deps.exportScale,
+    },
     onCopyOutcome,
   );
   const downloadHandle = useDownloadAction(
-    deps.downloadSnippetAsImage,
-    deps.previewRef,
-    deps.fontFamily,
-    deps.exportFormat,
-    deps.clock,
+    {
+      useCase: deps.downloadSnippetAsImage,
+      targetRef: deps.canvasRef,
+      fontFamily: deps.fontFamily,
+      scale: deps.exportScale,
+      format: deps.exportFormat,
+      clock: deps.clock,
+    },
     onDownloadOutcome,
   );
 

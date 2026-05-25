@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { SaveDraftButton } from '@/adapters/primary/library/SaveDraftButton';
 import { SaveDraftToast } from '@/adapters/primary/library/SaveDraftToast';
@@ -46,7 +46,7 @@ export function SidePanelApp({
 }: AppDependencies) {
   const [activeTab, setActiveTab] = useState<TabValue>('code');
   const [toastVisible, setToastVisible] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   const { code, setCode, language, detection, pickLanguage } = useEditorLanguageState(
     captureInbox,
@@ -73,8 +73,9 @@ export function SidePanelApp({
     copySnippetAsImage,
     downloadSnippetAsImage,
     reportSidePanelFailure,
-    previewRef,
+    canvasRef,
     fontFamily: renderConfig.fontFamily,
+    exportScale: renderConfig.exportScale,
     exportFormat: renderConfig.exportFormat,
     clock,
   });
@@ -88,9 +89,15 @@ export function SidePanelApp({
     });
   });
 
-  useDraftAutoSync(draftBinding, { code, language, title: session.title, renderConfig });
+  const { caption, hashtags, platform, title, setTitle, setPlatform } = session;
 
-  const { caption, hashtags, platform, title, setTitle } = session;
+  useEffect(() => {
+    if (draftBinding.binding.kind === 'scratch') {
+      setPlatform(prefs.defaultPlatform);
+    }
+  }, [prefs.defaultPlatform, draftBinding.binding.kind, setPlatform]);
+
+  useDraftAutoSync(draftBinding, { code, language, title, renderConfig });
 
   const handleSave = useCallback(async () => {
     const outcome = await draftBinding.save({
@@ -119,24 +126,6 @@ export function SidePanelApp({
     <SaveDraftButton
       binding={saveBinding}
       modKey={modKey}
-      onSave={() => {
-        void handleSave();
-      }}
-      onFlush={handleFlush}
-      onRetry={() => {
-        void handleSave();
-      }}
-      onShowSavedToast={() => {
-        setToastVisible(true);
-      }}
-    />
-  );
-
-  const compactSaveDraftSlot = (
-    <SaveDraftButton
-      binding={saveBinding}
-      modKey={modKey}
-      compact
       onSave={() => {
         void handleSave();
       }}
@@ -211,7 +200,8 @@ export function SidePanelApp({
           {activeTab === 'preview' && (
             <SidePanelPreviewTab
               title={session.title}
-              previewRef={previewRef}
+              platform={session.platform}
+              canvasRef={canvasRef}
               getHighlight={getHighlight}
               code={deferredCode}
               language={language}
@@ -219,7 +209,6 @@ export function SidePanelApp({
               patchConfig={patchConfig}
               copyHandle={copyHandle}
               downloadHandle={downloadHandle}
-              saveSlot={compactSaveDraftSlot}
             />
           )}
 

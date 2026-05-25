@@ -13,6 +13,8 @@ const validInput: RenderConfigInput = {
   lineHeight: 1.5,
   borderRadius: 8,
   background: { type: 'solid', color: '#1e1e1e' },
+  canvasBackground: { type: 'solid', color: '#1e1e1e' },
+  canvasPadding: 10,
   showWindowControls: true,
   windowStyle: 'mac',
   showLineNumbers: false,
@@ -35,6 +37,8 @@ describe('RenderConfig.default', () => {
     expect(config.lineHeight).toBe(1.5);
     expect(config.borderRadius).toBe(10);
     expect(config.background).toEqual({ type: 'solid', color: '#1C1C21' });
+    expect(config.canvasBackground).toEqual({ type: 'solid', color: '#1C1C21' });
+    expect(config.canvasPadding).toBe(10);
     expect(config.showWindowControls).toBe(true);
     expect(config.windowStyle).toBe('mac');
     expect(config.showLineNumbers).toBe(false);
@@ -58,6 +62,7 @@ describe('RenderConfig.from — happy path', () => {
     expect(config.lineHeight).toBe(1.5);
     expect(config.borderRadius).toBe(8);
     expect(config.background).toEqual({ type: 'solid', color: '#1e1e1e' });
+    expect(config.canvasBackground).toEqual({ type: 'solid', color: '#1e1e1e' });
     expect(config.showWindowControls).toBe(true);
     expect(config.windowStyle).toBe('mac');
     expect(config.showLineNumbers).toBe(false);

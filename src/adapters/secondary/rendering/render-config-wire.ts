@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { THEME_MAX } from '@/domain/limits';
 import {
   ANGLE_RANGE,
+  CANVAS_PADDING_RANGE,
   exportFormats,
   fixedAspectRatios,
   FONT_SIZE_RANGE,
@@ -42,6 +43,8 @@ const renderConfigBaseShape = {
   lineHeight: bounded(LINE_HEIGHT_RANGE),
   borderRadius: bounded(RADIUS_RANGE),
   background: backgroundWireSchema,
+  canvasBackground: backgroundWireSchema.optional(),
+  canvasPadding: bounded(CANVAS_PADDING_RANGE).optional(),
   showWindowControls: z.boolean(),
   windowStyle: z.enum(windowStyles),
   showLineNumbers: z.boolean(),
@@ -54,7 +57,7 @@ const renderConfigBaseShape = {
   exportFormat: z.enum(exportFormats),
 };
 
-export const renderConfigStrictWireSchema: z.ZodType<RenderConfigSnapshot> = z.object({
+export const renderConfigStrictWireSchema = z.object({
   ...renderConfigBaseShape,
   aspectRatio: aspectRatioWireSchema,
 });
@@ -66,10 +69,14 @@ export const renderConfigWireSchema = z.object({
 
 export type RenderConfigWire = z.infer<typeof renderConfigWireSchema>;
 
-export function fillRenderConfigDefaults(stored: RenderConfigWire): RenderConfigSnapshot {
+export function fillRenderConfigDefaults(
+  stored: RenderConfigWire | z.infer<typeof renderConfigStrictWireSchema>,
+): RenderConfigSnapshot {
   const defaults = RenderConfig.default().toSnapshot();
   return {
     ...stored,
+    canvasBackground: stored.canvasBackground ?? stored.background,
+    canvasPadding: stored.canvasPadding ?? defaults.canvasPadding,
     aspectRatio: stored.aspectRatio ?? defaults.aspectRatio,
   };
 }

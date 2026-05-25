@@ -22,6 +22,8 @@ const baseConfig: RenderConfigInput = {
   lineHeight: 1.5,
   borderRadius: 8,
   background: { type: 'solid', color: '#1e1e1e' },
+  canvasBackground: { type: 'solid', color: '#1e1e1e' },
+  canvasPadding: 10,
   showWindowControls: true,
   windowStyle: 'mac',
   showLineNumbers: false,

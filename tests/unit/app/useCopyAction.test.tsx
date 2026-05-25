@@ -10,7 +10,7 @@ import {
   CopySnippetAsImage,
   type CopySnippetOutcome,
 } from '@/application/use-cases/CopySnippetAsImage';
-import type { FontFamily } from '@/domain/rendering/RenderConfig';
+import type { ExportScale, FontFamily } from '@/domain/rendering/RenderConfig';
 
 import { anExportedPng } from '../../setup/fakes/imageOutcomes';
 import { SpyClipboardCopier } from '../../setup/fakes/SpyClipboardCopier';
@@ -18,6 +18,7 @@ import { SpyFontPreloader } from '../../setup/fakes/SpyFontPreloader';
 import { SpyImageExporter } from '../../setup/fakes/SpyImageExporter';
 
 const A_FONT: FontFamily = 'JetBrains Mono';
+const A_SCALE: ExportScale = 2;
 
 function aUseCase(
   exporterOutcome: ExportImageOutcome,
@@ -32,12 +33,16 @@ function aUseCase(
 
 interface HarnessProps {
   readonly useCase: CopySnippetAsImage;
+  readonly scale?: ExportScale;
   readonly onOutcome?: (outcome: CopySnippetOutcome) => void;
 }
 
-function Harness({ useCase, onOutcome }: HarnessProps) {
+function Harness({ useCase, scale = A_SCALE, onOutcome }: HarnessProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const { onCopy, status } = useCopyAction(useCase, ref, A_FONT, onOutcome);
+  const { onCopy, status } = useCopyAction(
+    { useCase, targetRef: ref, fontFamily: A_FONT, scale },
+    onOutcome,
+  );
   return (
     <>
       <div ref={ref}>preview</div>
@@ -84,6 +89,22 @@ describe('useCopyAction', () => {
     await user.click(screen.getByRole('button', { name: 'copy' }));
 
     expect(await screen.findByTestId('status')).toHaveTextContent('denied');
+  });
+
+  it('should_forward_the_provided_scale_to_the_image_exporter', async () => {
+    const user = userEvent.setup();
+    const exporter = new SpyImageExporter(anExportedPng());
+    const useCase = new CopySnippetAsImage(
+      new SpyFontPreloader(),
+      exporter,
+      new SpyClipboardCopier({ kind: 'copied' }),
+    );
+    render(<Harness useCase={useCase} scale={4} />);
+
+    await user.click(screen.getByRole('button', { name: 'copy' }));
+    await screen.findByTestId('status');
+
+    expect(exporter.calls[0]?.options.scale).toBe(4);
   });
 
   it('should_invoke_the_outcome_callback_when_copy_resolves', async () => {

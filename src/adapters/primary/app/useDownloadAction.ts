@@ -6,7 +6,7 @@ import type {
   DownloadSnippetOutcome,
 } from '@/application/use-cases/DownloadSnippetAsImage';
 import { buildExportFilename } from '@/domain/export/buildExportFilename';
-import type { ExportFormat, FontFamily } from '@/domain/rendering/RenderConfig';
+import type { ExportFormat, ExportScale, FontFamily } from '@/domain/rendering/RenderConfig';
 
 import { useAsyncAction } from './useAsyncAction';
 
@@ -17,20 +17,27 @@ export interface DownloadActionHandle {
 
 export type DownloadOutcomeListener = (outcome: DownloadSnippetOutcome) => void;
 
+export interface DownloadActionDeps<T extends HTMLElement> {
+  readonly useCase: DownloadSnippetAsImage;
+  readonly targetRef: RefObject<T | null>;
+  readonly fontFamily: FontFamily;
+  readonly scale: ExportScale;
+  readonly format: ExportFormat;
+  readonly clock: Clock;
+}
+
 export function useDownloadAction<T extends HTMLElement>(
-  useCase: DownloadSnippetAsImage,
-  targetRef: RefObject<T | null>,
-  fontFamily: FontFamily,
-  format: ExportFormat,
-  clock: Clock,
+  deps: DownloadActionDeps<T>,
   onOutcome?: DownloadOutcomeListener,
 ): DownloadActionHandle {
+  const { useCase, targetRef, fontFamily, scale, format, clock } = deps;
+
   const run = useCallback((): Promise<DownloadSnippetOutcome> | null => {
     const target = targetRef.current;
     if (target === null) return null;
     const filename = buildExportFilename(clock.now(), format);
-    return useCase.execute(target, fontFamily, format, filename);
-  }, [useCase, targetRef, fontFamily, format, clock]);
+    return useCase.execute(target, { fontFamily, scale, format, filename });
+  }, [useCase, targetRef, fontFamily, scale, format, clock]);
 
   const { trigger, status } = useAsyncAction(run, onOutcome);
   return { onDownload: trigger, status };

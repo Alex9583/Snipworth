@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
-import type { FontFamily } from '@/domain/rendering/RenderConfig';
+import type { ExportScale, FontFamily } from '@/domain/rendering/RenderConfig';
 
 import { aPngBlob, anExportedPng } from '../../../setup/fakes/imageOutcomes';
 import { SpyBlobDownloader } from '../../../setup/fakes/SpyBlobDownloader';
@@ -9,6 +9,7 @@ import { SpyFontPreloader } from '../../../setup/fakes/SpyFontPreloader';
 import { SpyImageExporter } from '../../../setup/fakes/SpyImageExporter';
 
 const DEFAULT_FONT: FontFamily = 'JetBrains Mono';
+const DEFAULT_SCALE: ExportScale = 2;
 
 describe('DownloadSnippetAsImage', () => {
   it('should_return_downloaded_when_export_and_download_both_succeed', async () => {
@@ -17,26 +18,31 @@ describe('DownloadSnippetAsImage', () => {
     const downloader = new SpyBlobDownloader({ kind: 'downloaded' });
     const useCase = new DownloadSnippetAsImage(fontPreloader, exporter, downloader);
 
-    const outcome = await useCase.execute(
-      document.createElement('div'),
-      DEFAULT_FONT,
-      'png',
-      'snipworth-2026-05-09-14-23-05.png',
-    );
+    const outcome = await useCase.execute(document.createElement('div'), {
+      fontFamily: DEFAULT_FONT,
+      scale: DEFAULT_SCALE,
+      format: 'png',
+      filename: 'snipworth-2026-05-09-14-23-05.png',
+    });
 
     expect(outcome).toEqual({ kind: 'downloaded' });
   });
 
-  it('should_export_the_target_at_the_default_two_x_scale_in_the_requested_format', async () => {
+  it('should_export_the_target_at_the_provided_scale_in_the_requested_format', async () => {
     const target = document.createElement('div');
     const fontPreloader = new SpyFontPreloader();
     const exporter = new SpyImageExporter(anExportedPng());
     const downloader = new SpyBlobDownloader({ kind: 'downloaded' });
     const useCase = new DownloadSnippetAsImage(fontPreloader, exporter, downloader);
 
-    await useCase.execute(target, DEFAULT_FONT, 'svg', 'snipworth.svg');
+    await useCase.execute(target, {
+      fontFamily: DEFAULT_FONT,
+      scale: 4,
+      format: 'svg',
+      filename: 'snipworth.svg',
+    });
 
-    expect(exporter.calls).toEqual([{ target, options: { scale: 2, format: 'svg' } }]);
+    expect(exporter.calls).toEqual([{ target, options: { scale: 4, format: 'svg' } }]);
   });
 
   it('should_save_the_exported_blob_under_the_requested_filename', async () => {
@@ -46,7 +52,12 @@ describe('DownloadSnippetAsImage', () => {
     const downloader = new SpyBlobDownloader({ kind: 'downloaded' });
     const useCase = new DownloadSnippetAsImage(fontPreloader, exporter, downloader);
 
-    await useCase.execute(document.createElement('div'), DEFAULT_FONT, 'png', 'snipworth.png');
+    await useCase.execute(document.createElement('div'), {
+      fontFamily: DEFAULT_FONT,
+      scale: DEFAULT_SCALE,
+      format: 'png',
+      filename: 'snipworth.png',
+    });
 
     expect(downloader.calls).toEqual([{ blob, filename: 'snipworth.png' }]);
   });
@@ -58,12 +69,12 @@ describe('DownloadSnippetAsImage', () => {
     const downloader = new SpyBlobDownloader({ kind: 'download_failed', cause });
     const useCase = new DownloadSnippetAsImage(fontPreloader, exporter, downloader);
 
-    const outcome = await useCase.execute(
-      document.createElement('div'),
-      DEFAULT_FONT,
-      'png',
-      'snipworth.png',
-    );
+    const outcome = await useCase.execute(document.createElement('div'), {
+      fontFamily: DEFAULT_FONT,
+      scale: DEFAULT_SCALE,
+      format: 'png',
+      filename: 'snipworth.png',
+    });
 
     expect(outcome).toEqual({ kind: 'download_failed', cause });
   });
@@ -75,12 +86,12 @@ describe('DownloadSnippetAsImage', () => {
     const downloader = new SpyBlobDownloader({ kind: 'downloaded' });
     const useCase = new DownloadSnippetAsImage(fontPreloader, exporter, downloader);
 
-    const outcome = await useCase.execute(
-      document.createElement('div'),
-      DEFAULT_FONT,
-      'png',
-      'snipworth.png',
-    );
+    const outcome = await useCase.execute(document.createElement('div'), {
+      fontFamily: DEFAULT_FONT,
+      scale: DEFAULT_SCALE,
+      format: 'png',
+      filename: 'snipworth.png',
+    });
 
     expect(outcome).toEqual({ kind: 'export_failed', cause });
   });
@@ -94,7 +105,12 @@ describe('DownloadSnippetAsImage', () => {
     const downloader = new SpyBlobDownloader({ kind: 'downloaded' });
     const useCase = new DownloadSnippetAsImage(fontPreloader, exporter, downloader);
 
-    await useCase.execute(document.createElement('div'), DEFAULT_FONT, 'png', 'snipworth.png');
+    await useCase.execute(document.createElement('div'), {
+      fontFamily: DEFAULT_FONT,
+      scale: DEFAULT_SCALE,
+      format: 'png',
+      filename: 'snipworth.png',
+    });
 
     expect(downloader.calls).toHaveLength(0);
   });
@@ -106,7 +122,12 @@ describe('DownloadSnippetAsImage', () => {
     const downloader = new SpyBlobDownloader({ kind: 'downloaded' });
     const useCase = new DownloadSnippetAsImage(fontPreloader, exporter, downloader);
 
-    await useCase.execute(document.createElement('div'), 'Fira Code', 'png', 'snipworth.png');
+    await useCase.execute(document.createElement('div'), {
+      fontFamily: 'Fira Code',
+      scale: DEFAULT_SCALE,
+      format: 'png',
+      filename: 'snipworth.png',
+    });
 
     expect(events).toEqual(['preload:Fira Code', 'export']);
   });
