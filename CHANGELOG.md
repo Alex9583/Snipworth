@@ -15,6 +15,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 
 
 
+
+## [1.0.0] - 2026-05-25
+
+### Added
+
+- Add draft management with library, editor session, and platform-specific export
+
 ## [0.1.2] - 2026-05-18
 
 ### Removed
