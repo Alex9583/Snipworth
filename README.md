@@ -39,7 +39,9 @@ Save snippets you want to keep for later — either to come back and refine, or 
 
 ## Install
 
-> **Not yet published** — install from source below, or follow the repo for release announcements.
+### Chrome Web Store
+
+[**Install Snipworth**](https://chromewebstore.google.com/detail/snipworth/fbijpggmbnpllapfaphdamaiepjfflnd)
 
 ### From source
 

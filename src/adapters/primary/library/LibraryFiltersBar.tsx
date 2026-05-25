@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { Button } from '@/adapters/primary/app/ui/Button';
@@ -105,6 +106,7 @@ export function LibraryFiltersBar({
           onClear={() => {
             onClearFilter('tags');
           }}
+          scrollable
           {...dropdownProps('tag')}
         />
         <ChipDropdown
@@ -120,9 +122,11 @@ export function LibraryFiltersBar({
         />
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" iconLeft={<DownloadIcon size={13} />} disabled>
-          {LIBRARY_FILTERS_BAR.exportAllButton}
-        </Button>
+        <span title={LIBRARY_FILTERS_BAR.exportAllTooltip}>
+          <Button variant="outline" size="sm" iconLeft={<DownloadIcon size={13} />} disabled>
+            {LIBRARY_FILTERS_BAR.exportAllButton}
+          </Button>
+        </span>
         <Button size="sm" iconLeft={<PlusIcon size={13} />} onClick={onNewDraft}>
           {LIBRARY_FILTERS_BAR.newDraftButton}
         </Button>
@@ -140,6 +144,7 @@ interface ChipDropdownProps<T extends string> {
   readonly onOpenChange: (open: boolean) => void;
   readonly activeValue?: string;
   readonly onClear: () => void;
+  readonly scrollable?: boolean;
 }
 
 function ChipDropdown<T extends string>({
@@ -151,6 +156,7 @@ function ChipDropdown<T extends string>({
   onOpenChange,
   activeValue,
   onClear,
+  scrollable,
 }: ChipDropdownProps<T>) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const isActive = activeValue !== undefined;
@@ -192,6 +198,7 @@ function ChipDropdown<T extends string>({
             onOpenChange(false);
             onSelect(option);
           }}
+          scrollable={scrollable}
         />
       )}
     </div>
@@ -250,6 +257,7 @@ interface ChipMenuListProps<T extends string> {
   readonly options: readonly T[];
   readonly renderOption: (value: T) => string;
   readonly onSelect: (value: T) => void;
+  readonly scrollable?: boolean;
 }
 
 function ChipMenuList<T extends string>({
@@ -257,12 +265,16 @@ function ChipMenuList<T extends string>({
   options,
   renderOption,
   onSelect,
+  scrollable,
 }: ChipMenuListProps<T>) {
   return (
     <ul
       role="menu"
       aria-label={label}
-      className="border-line bg-surface absolute top-9 left-0 z-10 flex min-w-32 flex-col rounded-md border py-1 shadow-md"
+      className={clsx(
+        'border-line bg-surface absolute top-9 left-0 z-10 flex min-w-32 flex-col rounded-md border py-1 shadow-md',
+        scrollable && 'max-h-64 overflow-y-auto',
+      )}
     >
       {options.map((option) => (
         <li key={option} role="none">

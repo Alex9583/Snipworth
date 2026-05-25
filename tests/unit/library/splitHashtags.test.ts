@@ -30,4 +30,12 @@ describe('splitHashtags', () => {
   it('should_preserve_tokens_without_a_hash_prefix_when_user_omits_it', () => {
     expect(splitHashtags('typescript react')).toEqual(['typescript', 'react']);
   });
+
+  it('should_split_on_commas_when_input_uses_them_as_separators', () => {
+    expect(splitHashtags('grid, grid2, grid3, grid4')).toEqual(['grid', 'grid2', 'grid3', 'grid4']);
+  });
+
+  it('should_split_on_commas_without_spaces_when_input_omits_padding', () => {
+    expect(splitHashtags('#a,#b,#c')).toEqual(['#a', '#b', '#c']);
+  });
 });

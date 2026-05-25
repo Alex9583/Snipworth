@@ -59,11 +59,8 @@ export function FullTabApp({
   const [now, setNow] = useState(() => new Date());
   const [openSeq, setOpenSeq] = useState(0);
 
-  const { code, setCode, language, detection, pickLanguage } = useEditorLanguageState(
-    fullTabBootstrapInbox,
-    loadCapturedCode,
-    autoDetectLanguage,
-  );
+  const { code, setCode, language, detection, pickLanguage, resetLanguage } =
+    useEditorLanguageState(fullTabBootstrapInbox, loadCapturedCode, autoDetectLanguage);
 
   const { prefs, hasLoaded, renderConfig, patchConfig, patchPrefs } = useUserPreferences(
     userPreferencesStore,
@@ -171,9 +168,9 @@ export function FullTabApp({
     await draftBinding.unbind();
     session.resetToDefault(prefs.defaultPlatform);
     setCode('');
-    pickLanguage('plaintext');
+    resetLanguage();
     setView('editor');
-  }, [draftBinding, session, prefs.defaultPlatform, setCode, pickLanguage]);
+  }, [draftBinding, session, prefs.defaultPlatform, setCode, resetLanguage]);
 
   const saveBinding = toSaveBinding(draftBinding.binding);
   const modKey: 'mac' | 'pc' = navigator.platform.includes('Mac') ? 'mac' : 'pc';
