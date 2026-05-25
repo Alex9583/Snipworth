@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
-import type { FontFamily } from '@/domain/rendering/RenderConfig';
+import type { ExportScale, FontFamily } from '@/domain/rendering/RenderConfig';
 
 import { anExportedPng } from '../../../setup/fakes/imageOutcomes';
 import { SpyClipboardCopier } from '../../../setup/fakes/SpyClipboardCopier';
@@ -9,6 +9,7 @@ import { SpyFontPreloader } from '../../../setup/fakes/SpyFontPreloader';
 import { SpyImageExporter } from '../../../setup/fakes/SpyImageExporter';
 
 const DEFAULT_FONT: FontFamily = 'JetBrains Mono';
+const DEFAULT_SCALE: ExportScale = 2;
 
 describe('CopySnippetAsImage', () => {
   it('should_return_copied_when_export_and_copy_both_succeed', async () => {
@@ -17,7 +18,11 @@ describe('CopySnippetAsImage', () => {
     const clipboard = new SpyClipboardCopier({ kind: 'copied' });
     const useCase = new CopySnippetAsImage(fontPreloader, exporter, clipboard);
 
-    const outcome = await useCase.execute(document.createElement('div'), DEFAULT_FONT);
+    const outcome = await useCase.execute(
+      document.createElement('div'),
+      DEFAULT_FONT,
+      DEFAULT_SCALE,
+    );
 
     expect(outcome).toEqual({ kind: 'copied' });
   });
@@ -29,7 +34,11 @@ describe('CopySnippetAsImage', () => {
     const clipboard = new SpyClipboardCopier({ kind: 'denied', cause });
     const useCase = new CopySnippetAsImage(fontPreloader, exporter, clipboard);
 
-    const outcome = await useCase.execute(document.createElement('div'), DEFAULT_FONT);
+    const outcome = await useCase.execute(
+      document.createElement('div'),
+      DEFAULT_FONT,
+      DEFAULT_SCALE,
+    );
 
     expect(outcome).toEqual({ kind: 'denied', cause });
   });
@@ -41,7 +50,11 @@ describe('CopySnippetAsImage', () => {
     const clipboard = new SpyClipboardCopier({ kind: 'copy_failed', cause });
     const useCase = new CopySnippetAsImage(fontPreloader, exporter, clipboard);
 
-    const outcome = await useCase.execute(document.createElement('div'), DEFAULT_FONT);
+    const outcome = await useCase.execute(
+      document.createElement('div'),
+      DEFAULT_FONT,
+      DEFAULT_SCALE,
+    );
 
     expect(outcome).toEqual({ kind: 'copy_failed', cause });
   });
@@ -53,7 +66,11 @@ describe('CopySnippetAsImage', () => {
     const clipboard = new SpyClipboardCopier({ kind: 'copied' });
     const useCase = new CopySnippetAsImage(fontPreloader, exporter, clipboard);
 
-    const outcome = await useCase.execute(document.createElement('div'), DEFAULT_FONT);
+    const outcome = await useCase.execute(
+      document.createElement('div'),
+      DEFAULT_FONT,
+      DEFAULT_SCALE,
+    );
 
     expect(outcome).toEqual({ kind: 'export_failed', cause });
   });
@@ -64,22 +81,22 @@ describe('CopySnippetAsImage', () => {
     const clipboard = new SpyClipboardCopier({ kind: 'copied' });
     const useCase = new CopySnippetAsImage(fontPreloader, exporter, clipboard);
 
-    void useCase.execute(document.createElement('div'), DEFAULT_FONT);
+    void useCase.execute(document.createElement('div'), DEFAULT_FONT, DEFAULT_SCALE);
 
     expect(fontPreloader.calls).toHaveLength(1);
     expect(clipboard.factories).toHaveLength(1);
   });
 
-  it('should_pass_the_target_and_the_2x_png_export_options_to_image_exporter', async () => {
+  it('should_pass_the_target_and_the_provided_scale_as_png_export_options_to_image_exporter', async () => {
     const target = document.createElement('div');
     const fontPreloader = new SpyFontPreloader();
     const exporter = new SpyImageExporter(anExportedPng());
     const clipboard = new SpyClipboardCopier({ kind: 'copied' });
     const useCase = new CopySnippetAsImage(fontPreloader, exporter, clipboard);
 
-    await useCase.execute(target, DEFAULT_FONT);
+    await useCase.execute(target, DEFAULT_FONT, 4);
 
-    expect(exporter.calls).toEqual([{ target, options: { scale: 2, format: 'png' } }]);
+    expect(exporter.calls).toEqual([{ target, options: { scale: 4, format: 'png' } }]);
   });
 
   it('should_preload_the_provided_font_family_before_invoking_image_exporter', async () => {
@@ -89,7 +106,7 @@ describe('CopySnippetAsImage', () => {
     const clipboard = new SpyClipboardCopier({ kind: 'copied' });
     const useCase = new CopySnippetAsImage(fontPreloader, exporter, clipboard);
 
-    await useCase.execute(document.createElement('div'), 'Fira Code');
+    await useCase.execute(document.createElement('div'), 'Fira Code', DEFAULT_SCALE);
 
     expect(events).toEqual(['preload:Fira Code', 'export']);
   });

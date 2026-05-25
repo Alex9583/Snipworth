@@ -7,6 +7,8 @@ import {
   type DraftSnapshot,
 } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
+import type { Platform } from '@/domain/drafts/Platform';
+import { CAPTION_MAX, HASHTAG_LIST_MAX, HASHTAG_MAX_LENGTH, ID_MAX } from '@/domain/limits';
 import { RenderConfig, type RenderConfigInput } from '@/domain/rendering/RenderConfig';
 
 const CREATED_AT = new Date('2026-03-15T10:00:00.000Z');
@@ -20,6 +22,8 @@ const baseConfig: RenderConfigInput = {
   lineHeight: 1.5,
   borderRadius: 8,
   background: { type: 'solid', color: '#1e1e1e' },
+  canvasBackground: { type: 'solid', color: '#1e1e1e' },
+  canvasPadding: 10,
   showWindowControls: true,
   windowStyle: 'mac',
   showLineNumbers: false,
@@ -28,7 +32,7 @@ const baseConfig: RenderConfigInput = {
   shadow: true,
   shadowBlur: 10,
   shadowOffsetY: 4,
-  aspectRatio: 'auto',
+  aspectRatio: { kind: 'auto' },
   exportScale: 2,
   exportFormat: 'png',
 };
@@ -43,11 +47,13 @@ function buildInput(overrides: Partial<DraftCreateInput> = {}): DraftCreateInput
     caption: 'Look at this',
     hashtags: ['typescript'],
     platform: 'x',
-    thumbnail: null,
-    tags: ['demo'],
     createdAt: CREATED_AT,
     ...overrides,
   };
+}
+
+function aDraftWithNoHashtags(): Draft {
+  return Draft.create(buildInput({ hashtags: [] }));
 }
 
 describe('Draft.create — happy path', () => {
@@ -58,10 +64,8 @@ describe('Draft.create — happy path', () => {
     expect(draft.code).toBe('const x = 1;');
     expect(draft.language).toBe('typescript');
     expect(draft.caption).toBe('Look at this');
-    expect(draft.hashtags).toEqual(['typescript']);
+    expect(draft.hashtags).toEqual(['#typescript']);
     expect(draft.platform).toBe('x');
-    expect(draft.thumbnail).toBeNull();
-    expect(draft.tags).toEqual(['demo']);
   });
 
   it('should_set_status_to_draft_on_creation', () => {
@@ -82,27 +86,33 @@ describe('Draft.create — happy path', () => {
     expect(draft.createdAt.getFullYear()).toBe(2026);
   });
 
-  it('should_isolate_hashtags_and_tags_from_caller_mutation_after_construction', () => {
-    const tags = ['demo'];
+  it('should_isolate_hashtags_from_caller_mutation_after_construction', () => {
     const hashtags = ['typescript'];
-    const draft = Draft.create(buildInput({ tags, hashtags }));
-    tags.push('mutation');
+    const draft = Draft.create(buildInput({ hashtags }));
     hashtags.push('mutation');
-    expect(draft.tags).toEqual(['demo']);
-    expect(draft.hashtags).toEqual(['typescript']);
+    expect(draft.hashtags).toEqual(['#typescript']);
   });
 
-  it('should_accept_an_empty_title_an_empty_code_and_no_thumbnail', () => {
-    const draft = Draft.create(buildInput({ title: '', code: '', thumbnail: null }));
+  it('should_accept_an_empty_title', () => {
+    const draft = Draft.create(buildInput({ title: '' }));
     expect(draft.title).toBe('');
-    expect(draft.code).toBe('');
-    expect(draft.thumbnail).toBeNull();
   });
 
-  it('should_accept_a_thumbnail_as_a_blob', () => {
-    const blob = new Blob(['png-bytes'], { type: 'image/png' });
-    const draft = Draft.create(buildInput({ thumbnail: blob }));
-    expect(draft.thumbnail).toBe(blob);
+  it('should_return_a_draft_with_status_draft_and_updatedAt_equal_to_createdAt_when_create_is_called_with_valid_non_blank_code_and_valid_hashtags', () => {
+    const draft = Draft.create(
+      buildInput({
+        code: 'const x = 1;',
+        language: 'typescript',
+        title: 'const x = 1;',
+        caption: '',
+        hashtags: [],
+        platform: 'x',
+      }),
+    );
+    expect(draft.status).toBe('draft');
+    expect(draft.updatedAt.getTime()).toBe(draft.createdAt.getTime());
+    expect(draft.code).toBe('const x = 1;');
+    expect(draft.hashtags).toEqual([]);
   });
 });
 
@@ -110,6 +120,12 @@ describe('Draft.create — invariants', () => {
   it('should_reject_an_empty_id', () => {
     expect(() => Draft.create(buildInput({ id: '' as DraftId }))).toThrow(InvalidDraft);
     expect(() => Draft.create(buildInput({ id: '   ' as DraftId }))).toThrow(/id/);
+  });
+
+  it('should_reject_an_id_exceeding_ID_MAX_characters', () => {
+    const tooLong = 'x'.repeat(ID_MAX + 1) as DraftId;
+    expect(() => Draft.create(buildInput({ id: tooLong }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ id: tooLong }))).toThrow(/^InvalidDraft: id /);
   });
 
   it('should_reject_an_empty_language', () => {
@@ -139,22 +155,26 @@ describe('Draft.create — invariants', () => {
     expect(() => Draft.create(buildInput({ code: 'x'.repeat(200_001) }))).toThrow(/code/);
   });
 
-  it('should_reject_more_than_50_tags_or_50_hashtags', () => {
-    const many = Array.from({ length: 51 }, (_, i) => `tag${String(i)}`);
-    expect(() => Draft.create(buildInput({ tags: many }))).toThrow(/tags/);
-    expect(() => Draft.create(buildInput({ hashtags: many }))).toThrow(/hashtags/);
+  it('should_throw_InvalidDraft_referencing_the_code_field_when_create_is_called_with_an_empty_code', () => {
+    expect(() => Draft.create(buildInput({ code: '' }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ code: '' }))).toThrow(/^InvalidDraft: code /);
   });
 
-  it('should_reject_empty_or_whitespace_tags_and_hashtags', () => {
-    expect(() => Draft.create(buildInput({ tags: ['ok', ''] }))).toThrow(/tags/);
-    expect(() => Draft.create(buildInput({ hashtags: ['ok', '   '] }))).toThrow(/hashtags/);
+  it('should_throw_InvalidDraft_referencing_the_code_field_when_create_is_called_with_whitespace_only_code', () => {
+    const blank = '   \n\t  \n   ';
+    expect(() => Draft.create(buildInput({ code: blank }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ code: blank }))).toThrow(/^InvalidDraft: code /);
   });
 
-  it('should_reject_duplicate_tags_or_hashtags', () => {
-    expect(() => Draft.create(buildInput({ tags: ['demo', 'demo'] }))).toThrow(/tags/);
-    expect(() => Draft.create(buildInput({ hashtags: ['typescript', 'typescript'] }))).toThrow(
-      /hashtags/,
-    );
+  it('should_reject_more_than_HASHTAG_LIST_MAX_unique_hashtags', () => {
+    const tokens = Array.from({ length: HASHTAG_LIST_MAX + 1 }, (_, i) => `#tag${String(i)}`);
+    expect(() => Draft.create(buildInput({ hashtags: tokens }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ hashtags: tokens }))).toThrow(/hashtags/);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_hashtags_field_when_create_is_called_with_a_malformed_hashtag', () => {
+    expect(() => Draft.create(buildInput({ hashtags: ['#bad tag'] }))).toThrow(InvalidDraft);
+    expect(() => Draft.create(buildInput({ hashtags: ['#bad tag'] }))).toThrow(/hashtags/);
   });
 });
 
@@ -191,7 +211,22 @@ describe('Draft.fromSnapshot / toSnapshot', () => {
   });
 
   it('should_expose_every_status_value_from_the_closed_enum', () => {
-    expect(draftStatuses).toEqual(['draft', 'published', 'archived']);
+    expect(draftStatuses).toEqual(['draft', 'archived']);
+  });
+
+  // Snapshots are trusted: the persistence layer (Dexie + migrations) is the
+  // gate that prevents invalid rows from reaching fromSnapshot. Tightening this constructor
+  // without first wiring the migration would break Dexie load paths for legacy rows.
+  it('should_accept_a_snapshot_carrying_values_that_Draft_create_would_reject', () => {
+    const baseSnapshot = Draft.create(buildInput()).toSnapshot();
+    const corrupt: DraftSnapshot = {
+      ...baseSnapshot,
+      code: '',
+      hashtags: ['#bad tag'],
+    };
+    const draft = Draft.fromSnapshot(corrupt);
+    expect(draft.code).toBe('');
+    expect(draft.hashtags).toEqual(['#bad tag']);
   });
 });
 
@@ -235,6 +270,19 @@ describe('Draft.updateCode', () => {
     const original = Draft.create(buildInput());
     expect(() => original.updateCode('code', '', LATER)).toThrow(/language/);
   });
+
+  it('should_throw_InvalidDraft_referencing_the_code_field_when_updateCode_is_called_with_an_empty_string', () => {
+    const original = Draft.create(buildInput());
+    expect(() => original.updateCode('', 'typescript', LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateCode('', 'typescript', LATER)).toThrow(/^InvalidDraft: code /);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_code_field_when_updateCode_is_called_with_whitespace_only_code', () => {
+    const original = Draft.create(buildInput());
+    const blank = '   \n\t  \n   ';
+    expect(() => original.updateCode(blank, 'typescript', LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateCode(blank, 'typescript', LATER)).toThrow(/^InvalidDraft: code /);
+  });
 });
 
 describe('Draft.replaceConfig', () => {
@@ -244,5 +292,247 @@ describe('Draft.replaceConfig', () => {
     const updated = original.replaceConfig(newConfig, LATER);
     expect(updated.config.fontSize).toBe(18);
     expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+});
+
+describe('Draft.switchPlatform', () => {
+  it('should_set_platform_to_instagram_and_apply_the_1_1_aspect_ratio_preset_when_switchPlatform_is_called_with_instagram', () => {
+    const original = Draft.create(
+      buildInput({
+        platform: 'x',
+        config: RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '16:9' } }),
+      }),
+    );
+    const switched = original.switchPlatform('instagram', LATER);
+    expect(switched.platform).toBe('instagram');
+    expect(switched.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '1:1' });
+    expect(switched.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(original.platform).toBe('x');
+    expect(original.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '16:9' });
+  });
+
+  it('should_set_platform_to_instagram_story_and_apply_the_9_16_aspect_ratio_preset_when_switchPlatform_is_called_with_instagram_story', () => {
+    const original = Draft.create(
+      buildInput({
+        platform: 'linkedin',
+        config: RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '16:9' } }),
+      }),
+    );
+    const switched = original.switchPlatform('instagram-story', LATER);
+    expect(switched.platform).toBe('instagram-story');
+    expect(switched.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '9:16' });
+  });
+
+  it('should_set_platform_to_generic_and_apply_the_auto_aspect_ratio_preset_when_switchPlatform_is_called_with_generic', () => {
+    const original = Draft.create(
+      buildInput({
+        platform: 'instagram',
+        config: RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '1:1' } }),
+      }),
+    );
+    const switched = original.switchPlatform('generic', LATER);
+    expect(switched.platform).toBe('generic');
+    expect(switched.config.aspectRatio).toEqual({ kind: 'auto' });
+  });
+
+  it('should_overwrite_a_manual_aspect_ratio_override_when_switchPlatform_re_applies_the_same_platform', () => {
+    const overrideAt = new Date('2026-03-15T10:15:00.000Z');
+    const overridden = Draft.create(
+      buildInput({
+        platform: 'instagram',
+        config: RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '1:1' } }),
+      }),
+    ).replaceConfig(
+      RenderConfig.from({ ...baseConfig, aspectRatio: { kind: 'fixed', ratio: '4:5' } }),
+      overrideAt,
+    );
+    expect(overridden.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '4:5' });
+
+    const switched = overridden.switchPlatform('instagram', LATER);
+    expect(switched.platform).toBe('instagram');
+    expect(switched.config.aspectRatio).toEqual({ kind: 'fixed', ratio: '1:1' });
+  });
+
+  it('should_throw_InvalidDraft_when_switchPlatform_is_called_with_an_unknown_platform_string', () => {
+    const original = Draft.create(buildInput());
+    expect(() => original.switchPlatform('tiktok' as Platform, LATER)).toThrow(InvalidDraft);
+    expect(() => original.switchPlatform('tiktok' as Platform, LATER)).toThrow(
+      /^InvalidDraft: platform /,
+    );
+  });
+});
+
+describe('Draft.archive', () => {
+  it('should_return_a_new_draft_with_status_archived_and_updatedAt_set_to_now_when_archive_is_called_on_an_active_draft', () => {
+    const original = Draft.create(buildInput());
+    const archived = original.archive(LATER);
+    expect(archived.status).toBe('archived');
+    expect(archived.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(original.status).toBe('draft');
+    expect(original.updatedAt.getTime()).toBe(CREATED_AT.getTime());
+  });
+
+  it('should_return_a_new_draft_with_status_archived_and_updatedAt_set_to_now_when_archive_is_called_on_an_already_archived_draft', () => {
+    const firstArchive = new Date('2026-03-15T10:15:00.000Z');
+    const alreadyArchived = Draft.create(buildInput()).archive(firstArchive);
+    const reArchived = alreadyArchived.archive(LATER);
+    expect(reArchived.status).toBe('archived');
+    expect(reArchived.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+
+  it('should_throw_InvalidDraft_when_archive_is_called_with_now_earlier_than_createdAt', () => {
+    const original = Draft.create(buildInput());
+    expect(() => original.archive(EARLIER)).toThrow(InvalidDraft);
+    expect(() => original.archive(EARLIER)).toThrow(/updatedAt must not precede createdAt/);
+  });
+});
+
+describe('Draft.updateCaption', () => {
+  it('should_return_a_new_draft_with_the_updated_caption_and_updatedAt_when_updateCaption_is_called_with_a_non_empty_string', () => {
+    const original = Draft.create(buildInput({ caption: 'Old caption' }));
+    const updated = original.updateCaption('New caption text', LATER);
+    expect(updated.caption).toBe('New caption text');
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(original.caption).toBe('Old caption');
+    expect(original.updatedAt.getTime()).toBe(CREATED_AT.getTime());
+  });
+
+  it('should_accept_an_empty_caption_when_updateCaption_is_called_with_empty_string', () => {
+    const original = Draft.create(buildInput({ caption: 'Some caption' }));
+    const updated = original.updateCaption('', LATER);
+    expect(updated.caption).toBe('');
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+
+  it('should_accept_a_caption_of_exactly_CAPTION_MAX_characters_when_updateCaption_is_called', () => {
+    const original = Draft.create(buildInput());
+    const boundary = 'a'.repeat(CAPTION_MAX);
+    const updated = original.updateCaption(boundary, LATER);
+    expect(updated.caption).toBe(boundary);
+    expect(updated.caption.length).toBe(CAPTION_MAX);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_caption_field_when_updateCaption_exceeds_CAPTION_MAX_characters', () => {
+    const original = Draft.create(buildInput());
+    const overflow = 'a'.repeat(CAPTION_MAX + 1);
+    expect(() => original.updateCaption(overflow, LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateCaption(overflow, LATER)).toThrow(/^InvalidDraft: caption /);
+  });
+
+  it('should_bump_updatedAt_when_updateCaption_is_called_with_a_caption_equal_to_the_current_one', () => {
+    const original = Draft.create(buildInput({ caption: 'Hello world' }));
+    const updated = original.updateCaption('Hello world', LATER);
+    expect(updated.caption).toBe('Hello world');
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(original.updatedAt.getTime()).toBe(CREATED_AT.getTime());
+  });
+});
+
+describe('Draft.restore', () => {
+  it('should_return_a_new_draft_with_status_draft_and_updatedAt_set_to_now_when_restore_is_called_on_an_archived_draft', () => {
+    const firstArchive = new Date('2026-03-15T10:15:00.000Z');
+    const archived = Draft.create(buildInput()).archive(firstArchive);
+    const restored = archived.restore(LATER);
+    expect(restored.status).toBe('draft');
+    expect(restored.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(archived.status).toBe('archived');
+    expect(archived.updatedAt.getTime()).toBe(firstArchive.getTime());
+  });
+
+  it('should_return_a_new_draft_with_status_draft_and_updatedAt_set_to_now_when_restore_is_called_on_an_already_active_draft', () => {
+    const active = Draft.create(buildInput());
+    const restored = active.restore(LATER);
+    expect(restored.status).toBe('draft');
+    expect(restored.updatedAt.getTime()).toBe(LATER.getTime());
+  });
+
+  it('should_throw_InvalidDraft_when_restore_is_called_with_now_earlier_than_createdAt', () => {
+    const firstArchive = new Date('2026-03-15T10:15:00.000Z');
+    const archived = Draft.create(buildInput()).archive(firstArchive);
+    expect(() => archived.restore(EARLIER)).toThrow(InvalidDraft);
+    expect(() => archived.restore(EARLIER)).toThrow(/updatedAt must not precede createdAt/);
+  });
+});
+
+describe('Draft.updateHashtags', () => {
+  it('should_auto_prefix_each_hashtag_with_a_hash_sign_when_updateHashtags_is_called_with_unprefixed_tokens', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['typescript', 'react'], LATER);
+    expect(updated.hashtags).toEqual(['#typescript', '#react']);
+    expect(updated.updatedAt.getTime()).toBe(LATER.getTime());
+    expect(original.hashtags).toEqual([]);
+    expect(original.updatedAt.getTime()).toBe(CREATED_AT.getTime());
+  });
+
+  it('should_leave_already_prefixed_hashtags_unchanged_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['#typescript', '#react'], LATER);
+    expect(updated.hashtags).toEqual(['#typescript', '#react']);
+  });
+
+  it('should_clear_all_hashtags_when_updateHashtags_is_called_with_an_empty_array', () => {
+    const original = Draft.create(buildInput({ hashtags: ['typescript', 'react'] }));
+    const updated = original.updateHashtags([], LATER);
+    expect(updated.hashtags).toEqual([]);
+  });
+
+  it('should_drop_empty_and_whitespace_only_tokens_when_updateHashtags_normalizes_the_list', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['#a', '', '   ', '\t', '#b'], LATER);
+    expect(updated.hashtags).toEqual(['#a', '#b']);
+  });
+
+  it('should_dedup_hashtags_case_insensitively_and_preserve_first_occurrence_casing_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['#TypeScript', '#typescript', '#TYPESCRIPT'], LATER);
+    expect(updated.hashtags).toEqual(['#TypeScript']);
+  });
+
+  it('should_accept_hashtags_containing_unicode_characters_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const updated = original.updateHashtags(['#café', '#江戸'], LATER);
+    expect(updated.hashtags).toEqual(['#café', '#江戸']);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_hashtag_when_updateHashtags_contains_a_token_with_inner_whitespace', () => {
+    const original = aDraftWithNoHashtags();
+    expect(() => original.updateHashtags(['#hello world'], LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateHashtags(['#hello world'], LATER)).toThrow(/hello world/);
+  });
+
+  it('should_throw_InvalidDraft_when_updateHashtags_contains_a_bare_hash_with_no_body', () => {
+    const original = aDraftWithNoHashtags();
+    expect(() => original.updateHashtags(['#'], LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateHashtags(['#'], LATER)).toThrow(/hashtags/);
+  });
+
+  it('should_throw_InvalidDraft_when_updateHashtags_contains_a_hashtag_longer_than_HASHTAG_MAX_LENGTH', () => {
+    const original = aDraftWithNoHashtags();
+    const overflow = '#' + 'a'.repeat(HASHTAG_MAX_LENGTH);
+    expect(() => original.updateHashtags([overflow], LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateHashtags([overflow], LATER)).toThrow(/hashtags/);
+  });
+
+  it('should_accept_a_hashtag_of_exactly_HASHTAG_MAX_LENGTH_characters_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const boundary = '#' + 'a'.repeat(HASHTAG_MAX_LENGTH - 1);
+    const updated = original.updateHashtags([boundary], LATER);
+    expect(updated.hashtags).toEqual([boundary]);
+    expect(updated.hashtags[0]?.length).toBe(HASHTAG_MAX_LENGTH);
+  });
+
+  it('should_accept_exactly_HASHTAG_LIST_MAX_unique_hashtags_when_updateHashtags_is_called', () => {
+    const original = aDraftWithNoHashtags();
+    const tokens = Array.from({ length: HASHTAG_LIST_MAX }, (_, i) => `#tag${String(i)}`);
+    const updated = original.updateHashtags(tokens, LATER);
+    expect(updated.hashtags).toHaveLength(HASHTAG_LIST_MAX);
+    expect(updated.hashtags).toEqual(tokens);
+  });
+
+  it('should_throw_InvalidDraft_referencing_the_hashtags_field_when_updateHashtags_exceeds_HASHTAG_LIST_MAX_unique_entries', () => {
+    const original = aDraftWithNoHashtags();
+    const tokens = Array.from({ length: HASHTAG_LIST_MAX + 1 }, (_, i) => `#tag${String(i)}`);
+    expect(() => original.updateHashtags(tokens, LATER)).toThrow(InvalidDraft);
+    expect(() => original.updateHashtags(tokens, LATER)).toThrow(/hashtags/);
   });
 });

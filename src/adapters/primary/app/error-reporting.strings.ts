@@ -3,7 +3,8 @@ import type { ErrorReport, ErrorReportSnapshot } from '@/domain/error-reporting/
 import { describeCause } from '@/domain/error-reporting/describeCause';
 
 const ISSUES_NEW_PATH = '/issues/new';
-export const ISSUE_BODY_MAX_BYTES = 6000;
+const TEMPLATE = 'bug_report.yml';
+export const CONSOLE_FIELD_MAX_BYTES = 6000;
 
 export type DismissFailure =
   | { readonly kind: 'inbox_unavailable'; readonly cause: unknown }
@@ -32,8 +33,14 @@ export function reportIssueUrl(
   errors: readonly ErrorReport[],
   dismissFailure?: DismissFailure,
 ): string {
-  const body = renderBody(errors, dismissFailure);
-  return `${repoUrl}${ISSUES_NEW_PATH}?body=${encodeURIComponent(body)}`;
+  const whatHappened = renderWhatHappened(errors, dismissFailure);
+  const consoleErrors = renderConsoleErrors(errors);
+
+  const params = [`template=${TEMPLATE}`, `what-happened=${encodeURIComponent(whatHappened)}`];
+  if (consoleErrors) {
+    params.push(`console=${encodeURIComponent(consoleErrors)}`);
+  }
+  return `${repoUrl}${ISSUES_NEW_PATH}?${params.join('&')}`;
 }
 
 export function unexpectedEventsLabel(count: number): string {
@@ -42,22 +49,32 @@ export function unexpectedEventsLabel(count: number): string {
     : `Snipworth encountered ${String(count)} unexpected events.`;
 }
 
-function renderBody(
+function renderWhatHappened(
   errors: readonly ErrorReport[],
   dismissFailure: DismissFailure | undefined,
 ): string {
-  const dismissSection = dismissFailure ? renderDismissSection(dismissFailure) : '';
+  const lines: string[] = [];
   if (errors.length === 0) {
-    return [
+    lines.push(
       'Snipworth could not load its pending error inbox.',
       'No structured details are available.',
-      ...(dismissSection ? ['', dismissSection] : []),
-    ].join('\n');
+    );
+  } else {
+    lines.push(unexpectedEventsLabel(errors.length));
+    lines.push('See the "Console errors" field below for technical details.');
   }
+  if (dismissFailure) {
+    lines.push('', renderDismissSection(dismissFailure));
+  }
+  return lines.join('\n');
+}
+
+function renderConsoleErrors(errors: readonly ErrorReport[]): string {
+  if (errors.length === 0) return '';
   const snapshots = errors.map((e) => e.toSnapshot());
-  const fullBody = renderBodyFromSnapshots(snapshots, 0, dismissSection);
-  if (fullBody.length <= ISSUE_BODY_MAX_BYTES) return fullBody;
-  return renderTruncatedBody(snapshots, dismissSection);
+  const full = JSON.stringify(snapshots, null, 2);
+  if (full.length <= CONSOLE_FIELD_MAX_BYTES) return full;
+  return renderTruncatedConsole(snapshots);
 }
 
 function renderDismissSection(failure: DismissFailure): string {
@@ -76,43 +93,25 @@ function renderDismissSection(failure: DismissFailure): string {
   return lines.join('\n');
 }
 
-function renderTruncatedBody(
-  snapshots: readonly ErrorReportSnapshot[],
-  dismissSection: string,
-): string {
+function renderTruncatedConsole(snapshots: readonly ErrorReportSnapshot[]): string {
   let lo = 1;
   let hi = snapshots.length;
   while (lo < hi) {
     const mid = Math.ceil((lo + hi) / 2);
     if (
-      renderBodyFromSnapshots(snapshots.slice(0, mid), snapshots.length - mid, dismissSection)
-        .length <= ISSUE_BODY_MAX_BYTES
+      renderConsoleSlice(snapshots.slice(0, mid), snapshots.length - mid).length <=
+      CONSOLE_FIELD_MAX_BYTES
     ) {
       lo = mid;
     } else {
       hi = mid - 1;
     }
   }
-  return renderBodyFromSnapshots(snapshots.slice(0, lo), snapshots.length - lo, dismissSection);
+  return renderConsoleSlice(snapshots.slice(0, lo), snapshots.length - lo);
 }
 
-function renderBodyFromSnapshots(
-  snapshots: readonly ErrorReportSnapshot[],
-  remaining: number,
-  dismissSection: string,
-): string {
-  const lines = [
-    'Snipworth encountered the following unexpected events:',
-    '',
-    '```json',
-    JSON.stringify(snapshots, null, 2),
-    '```',
-  ];
-  if (remaining > 0) {
-    lines.push('', `... (${String(remaining)} more events truncated to fit GitHub's URL budget)`);
-  }
-  if (dismissSection) {
-    lines.push('', dismissSection);
-  }
-  return lines.join('\n');
+function renderConsoleSlice(snapshots: readonly ErrorReportSnapshot[], remaining: number): string {
+  const json = JSON.stringify(snapshots, null, 2);
+  if (remaining === 0) return json;
+  return `${json}\n\n... (${String(remaining)} more events truncated to fit GitHub's URL budget)`;
 }

@@ -1,7 +1,12 @@
 import type { Background } from '@/domain/rendering/RenderConfig';
 
-const FALLBACK_BACKGROUND_CSS = '#1C1C21';
-
-export function solidBackgroundCss(background: Background): string {
-  return background.type === 'solid' ? background.color : FALLBACK_BACKGROUND_CSS;
+export function backgroundCss(background: Background): string {
+  switch (background.type) {
+    case 'solid':
+      return background.color;
+    case 'gradient':
+      return `linear-gradient(${String(background.angle)}deg, ${background.from}, ${background.to})`;
+    case 'transparent':
+      return 'transparent';
+  }
 }

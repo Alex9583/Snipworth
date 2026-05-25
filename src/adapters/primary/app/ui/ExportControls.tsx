@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import {
   exportFormats,
   exportScales,
@@ -17,6 +19,7 @@ interface ExportControlsProps {
   readonly onFormatChange: (format: ExportFormat) => void;
   readonly onCopy: () => void;
   readonly onDownload: () => void;
+  readonly slot?: ReactNode;
 }
 
 const FORMAT_OPTIONS: readonly SegmentedOption<ExportFormat>[] = exportFormats.map((value) => ({
@@ -36,6 +39,7 @@ export function ExportControls({
   onFormatChange,
   onCopy,
   onDownload,
+  slot,
 }: ExportControlsProps) {
   return (
     <div className="@container border-line bg-surface flex items-center justify-between gap-1.5 rounded-lg border px-1.5 py-2 @[380px]:gap-2 @[380px]:px-2.5">
@@ -60,6 +64,7 @@ export function ExportControls({
         <Button onClick={onDownload} size="sm" iconLeft={<DownloadIcon size={13} />}>
           {EXPORT_CONTROLS.downloadButton}
         </Button>
+        {slot}
       </div>
     </div>
   );

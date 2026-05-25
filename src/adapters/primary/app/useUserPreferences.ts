@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { UserPreferencesStore } from '@/application/ports/UserPreferencesStore';
 import type { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
-import { UserPreferences } from '@/domain/preferences/UserPreferences';
+import { UserPreferences, type UserPreferencesInput } from '@/domain/preferences/UserPreferences';
 import { RenderConfig, type RenderConfigSnapshot } from '@/domain/rendering/RenderConfig';
 
 import { APP } from './app.strings';
@@ -14,6 +14,7 @@ export interface UserPreferencesHandle {
   readonly hasLoaded: boolean;
   readonly renderConfig: RenderConfigSnapshot;
   readonly patchConfig: (patch: Partial<RenderConfigSnapshot>) => void;
+  readonly patchPrefs: (patch: Partial<UserPreferencesInput>) => void;
   readonly completeOnboarding: () => Promise<void>;
 }
 
@@ -67,6 +68,10 @@ export function useUserPreferences(
     );
   }, []);
 
+  const patchPrefs = useCallback((patch: Partial<UserPreferencesInput>): void => {
+    setPrefs((prev) => prev.with(patch));
+  }, []);
+
   const completeOnboarding = useCallback(async (): Promise<void> => {
     const next = prefs.with({ onboardingCompleted: true });
     const outcome = await store.save(next);
@@ -81,5 +86,5 @@ export function useUserPreferences(
     });
   }, [prefs, store, reportFailure]);
 
-  return { prefs, hasLoaded, renderConfig, patchConfig, completeOnboarding };
+  return { prefs, hasLoaded, renderConfig, patchConfig, patchPrefs, completeOnboarding };
 }

@@ -41,11 +41,29 @@ describe('TabTopNav', () => {
     expect(screen.getByText('v9.9.9')).toBeInTheDocument();
   });
 
-  it('should_render_the_editor_and_about_sub_tabs', () => {
+  it('should_render_the_editor_library_and_about_sub_tabs', () => {
     render(<TabTopNav activeView="editor" onChangeView={noop} />);
 
     expect(screen.getByRole('tab', { name: 'Editor' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Library' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'About' })).toBeInTheDocument();
+  });
+
+  it('should_invoke_on_change_view_with_library_when_user_clicks_the_library_sub_tab', async () => {
+    const user = userEvent.setup();
+    const changes: string[] = [];
+    render(
+      <TabTopNav
+        activeView="editor"
+        onChangeView={(next) => {
+          changes.push(next);
+        }}
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: 'Library' }));
+
+    expect(changes).toEqual(['library']);
   });
 
   it('should_expose_an_accessible_name_for_the_sub_tab_list', () => {

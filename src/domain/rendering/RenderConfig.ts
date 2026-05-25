@@ -10,8 +10,11 @@ export type FontFamily = (typeof fontFamilies)[number];
 export const windowStyles = ['mac', 'windows', 'none'] as const;
 export type WindowStyle = (typeof windowStyles)[number];
 
-export const aspectRatios = ['1:1', '4:5', '16:9', '9:16', 'auto'] as const;
-export type AspectRatio = (typeof aspectRatios)[number];
+export const fixedAspectRatios = ['1:1', '4:5', '16:9', '9:16', '1.91:1'] as const;
+
+export type AspectRatio =
+  | { readonly kind: 'fixed'; readonly ratio: (typeof fixedAspectRatios)[number] }
+  | { readonly kind: 'auto' };
 
 export const exportScales = [1, 2, 4] as const;
 export type ExportScale = (typeof exportScales)[number];
@@ -35,6 +38,7 @@ export const RADIUS_RANGE = [0, 64] as const;
 export const SHADOW_BLUR_RANGE = [0, 100] as const;
 export const SHADOW_OFFSET_RANGE = [-50, 50] as const;
 export const ANGLE_RANGE = [0, 360] as const;
+export const CANVAS_PADDING_RANGE = [0, 50] as const;
 
 export interface RenderConfigInput {
   readonly theme: string;
@@ -43,6 +47,8 @@ export interface RenderConfigInput {
   readonly lineHeight: number;
   readonly borderRadius: number;
   readonly background: Background;
+  readonly canvasBackground: Background;
+  readonly canvasPadding: number;
   readonly showWindowControls: boolean;
   readonly windowStyle: WindowStyle;
   readonly showLineNumbers: boolean;
@@ -63,6 +69,8 @@ export interface RenderConfigSnapshot {
   readonly lineHeight: number;
   readonly borderRadius: number;
   readonly background: Background;
+  readonly canvasBackground: Background;
+  readonly canvasPadding: number;
   readonly showWindowControls: boolean;
   readonly windowStyle: WindowStyle;
   readonly showLineNumbers: boolean;
@@ -90,6 +98,8 @@ export class RenderConfig {
   readonly lineHeight: number;
   readonly borderRadius: number;
   readonly background: Background;
+  readonly canvasBackground: Background;
+  readonly canvasPadding: number;
   readonly showWindowControls: boolean;
   readonly windowStyle: WindowStyle;
   readonly showLineNumbers: boolean;
@@ -109,6 +119,8 @@ export class RenderConfig {
     this.lineHeight = props.lineHeight;
     this.borderRadius = props.borderRadius;
     this.background = props.background;
+    this.canvasBackground = props.canvasBackground;
+    this.canvasPadding = props.canvasPadding;
     this.showWindowControls = props.showWindowControls;
     this.windowStyle = props.windowStyle;
     this.showLineNumbers = props.showLineNumbers;
@@ -129,7 +141,7 @@ export class RenderConfig {
     requireRange(input.lineHeight, LINE_HEIGHT_RANGE, 'lineHeight');
     requireRange(input.borderRadius, RADIUS_RANGE, 'borderRadius');
     requireMember(input.windowStyle, windowStyles, 'windowStyle');
-    requireMember(input.aspectRatio, aspectRatios, 'aspectRatio');
+    requireAspectRatio(input.aspectRatio);
     requireMember(input.exportFormat, exportFormats, 'exportFormat');
     requireScale(input.exportScale);
     requireFirstLineNumber(input.firstLineNumber);
@@ -137,6 +149,8 @@ export class RenderConfig {
     requireRange(input.shadowBlur, SHADOW_BLUR_RANGE, 'shadowBlur');
     requireRange(input.shadowOffsetY, SHADOW_OFFSET_RANGE, 'shadowOffsetY');
     requireBackground(input.background);
+    requireBackground(input.canvasBackground);
+    requireRange(input.canvasPadding, CANVAS_PADDING_RANGE, 'canvasPadding');
 
     return new RenderConfig({ ...input, highlightLines: [...input.highlightLines] });
   }
@@ -153,6 +167,8 @@ export class RenderConfig {
       lineHeight: 1.5,
       borderRadius: 10,
       background: { type: 'solid', color: '#1C1C21' },
+      canvasBackground: { type: 'solid', color: '#1C1C21' },
+      canvasPadding: 10,
       showWindowControls: true,
       windowStyle: 'mac',
       showLineNumbers: false,
@@ -161,10 +177,14 @@ export class RenderConfig {
       shadow: true,
       shadowBlur: 30,
       shadowOffsetY: 8,
-      aspectRatio: 'auto',
+      aspectRatio: { kind: 'auto' },
       exportScale: 2,
       exportFormat: 'png',
     });
+  }
+
+  withAspectRatio(aspectRatio: AspectRatio): RenderConfig {
+    return RenderConfig.fromSnapshot({ ...this.toSnapshot(), aspectRatio });
   }
 
   toSnapshot(): RenderConfigSnapshot {
@@ -175,6 +195,8 @@ export class RenderConfig {
       lineHeight: this.lineHeight,
       borderRadius: this.borderRadius,
       background: this.background,
+      canvasBackground: this.canvasBackground,
+      canvasPadding: this.canvasPadding,
       showWindowControls: this.showWindowControls,
       windowStyle: this.windowStyle,
       showLineNumbers: this.showLineNumbers,
@@ -248,6 +270,21 @@ function requireBackground(bg: Background): void {
     default: {
       throw new InvalidRenderConfig(
         `background.type "${String((bg as { type: unknown }).type)}" is not supported`,
+      );
+    }
+  }
+}
+
+function requireAspectRatio(aspectRatio: AspectRatio): void {
+  switch (aspectRatio.kind) {
+    case 'fixed':
+      requireMember(aspectRatio.ratio, fixedAspectRatios, 'aspectRatio.ratio');
+      return;
+    case 'auto':
+      return;
+    default: {
+      throw new InvalidRenderConfig(
+        `aspectRatio.kind "${String((aspectRatio as { kind: unknown }).kind)}" is not supported`,
       );
     }
   }

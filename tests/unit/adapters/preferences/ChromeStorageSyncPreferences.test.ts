@@ -4,6 +4,7 @@ import { queueStorageFault } from '../../../setup/chrome-mock';
 import { ChromeStorageSyncPreferences } from '@/adapters/secondary/preferences/ChromeStorageSyncPreferences';
 import { PREFS_KEY } from '@/adapters/secondary/preferences/storage-format';
 import { UserPreferences } from '@/domain/preferences/UserPreferences';
+import { RenderConfig } from '@/domain/rendering/RenderConfig';
 
 describe('ChromeStorageSyncPreferences — load', () => {
   it('should_return_defaults_when_storage_is_empty', async () => {
@@ -48,6 +49,33 @@ describe('ChromeStorageSyncPreferences — load', () => {
       throw new Error(`expected loaded, got ${outcome.kind}`);
     }
     expect(outcome.preferences.toSnapshot().theme).toBe('dark');
+  });
+
+  it('should_fill_default_aspectRatio_when_stored_renderConfig_predates_the_field', async () => {
+    const { aspectRatio: _stripped, ...legacyRenderConfig } = RenderConfig.default().toSnapshot();
+    await chrome.storage.sync.set({
+      [PREFS_KEY]: { defaultConfig: legacyRenderConfig },
+    });
+    const store = new ChromeStorageSyncPreferences();
+
+    const outcome = await store.load();
+
+    if (outcome.kind !== 'loaded') {
+      throw new Error(`expected loaded, got ${outcome.kind}`);
+    }
+    expect(outcome.preferences.defaultConfig.aspectRatio).toEqual({ kind: 'auto' });
+  });
+
+  it('should_report_corrupt_when_stored_aspectRatio_has_an_invalid_kind', async () => {
+    const baseline = RenderConfig.default().toSnapshot();
+    await chrome.storage.sync.set({
+      [PREFS_KEY]: { defaultConfig: { ...baseline, aspectRatio: { kind: 'unknown' } } },
+    });
+    const store = new ChromeStorageSyncPreferences();
+
+    const outcome = await store.load();
+
+    expect(outcome.kind).toBe('corrupt');
   });
 
   it('should_report_corrupt_when_a_known_field_has_an_invalid_value', async () => {

@@ -149,15 +149,14 @@ describe('ErrorBanner — loaded paths', () => {
     );
   });
 
-  it('should_link_to_an_issue_creation_form_with_a_url_encoded_body_containing_the_error_kind', async () => {
+  it('should_link_to_the_bug_report_template_with_the_error_kind_in_the_console_field', async () => {
     renderBanner({ reader: anInboxWith(aSetupError), acknowledger: aWorkingAcknowledger() });
 
     const link = await screen.findByRole('link', { name: /report/i });
-    const href = link.getAttribute('href') ?? '';
-    expect(href).toContain('/issues/new');
-    expect(href).toMatch(/\?body=/);
-    const decodedBody = decodeURIComponent(href.split('?body=')[1] ?? '');
-    expect(decodedBody).toContain('side_panel_setup_failed');
+    const url = new URL(link.getAttribute('href') ?? '');
+    expect(url.pathname).toContain('/issues/new');
+    expect(url.searchParams.get('template')).toBe('bug_report.yml');
+    expect(url.searchParams.get('console')).toContain('side_panel_setup_failed');
   });
 });
 
@@ -251,10 +250,8 @@ describe('ErrorBanner — dismiss failure paths', () => {
     await user.click(screen.getByRole('button', { name: /dismiss/i }));
 
     const link = await screen.findByRole('link', { name: /report/i });
-    const decodedBody = decodeURIComponent(
-      (link.getAttribute('href') ?? '').split('?body=')[1] ?? '',
-    );
-    expect(decodedBody).toContain('storage offline');
+    const url = new URL(link.getAttribute('href') ?? '');
+    expect(url.searchParams.get('what-happened')).toContain('storage offline');
   });
 
   it('should_keep_errors_visible_when_acknowledge_returns_background_failed', async () => {
@@ -287,10 +284,8 @@ describe('ErrorBanner — dismiss failure paths', () => {
     await user.click(screen.getByRole('button', { name: /dismiss/i }));
 
     const link = await screen.findByRole('link', { name: /report/i });
-    const decodedBody = decodeURIComponent(
-      (link.getAttribute('href') ?? '').split('?body=')[1] ?? '',
-    );
-    expect(decodedBody).toContain('handler_crashed');
+    const url = new URL(link.getAttribute('href') ?? '');
+    expect(url.searchParams.get('what-happened')).toContain('handler_crashed');
   });
 });
 

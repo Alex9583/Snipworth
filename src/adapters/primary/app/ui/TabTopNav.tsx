@@ -3,7 +3,7 @@ import { APP, versionBadgeLabel } from '../app.strings';
 import { WINDOW_OPENER, type LinkOpener } from '../LinkOpener';
 import { Badge } from './Badge';
 import { Button } from './Button';
-import { CoffeeIcon, GithubIcon } from './icons';
+import { CodeIcon, CoffeeIcon, FolderIcon, GithubIcon, HelpCircleIcon } from './icons';
 import { IconBtn } from './IconBtn';
 import { LogoChip } from './LogoChip';
 import { Tabs } from './Tabs';
@@ -37,8 +37,15 @@ export function TabTopNav({
         }}
       >
         <Tabs.List label={TAB_TOP_NAV.navLabel}>
-          <Tabs.Trigger value="editor">{TAB_TOP_NAV.editorTabLabel}</Tabs.Trigger>
-          <Tabs.Trigger value="about">{TAB_TOP_NAV.aboutTabLabel}</Tabs.Trigger>
+          <Tabs.Trigger value="editor" iconLeft={<CodeIcon size={13} />}>
+            {TAB_TOP_NAV.editorTabLabel}
+          </Tabs.Trigger>
+          <Tabs.Trigger value="library" iconLeft={<FolderIcon size={13} />}>
+            {TAB_TOP_NAV.libraryTabLabel}
+          </Tabs.Trigger>
+          <Tabs.Trigger value="about" iconLeft={<HelpCircleIcon size={13} />}>
+            {TAB_TOP_NAV.aboutTabLabel}
+          </Tabs.Trigger>
         </Tabs.List>
       </Tabs>
 

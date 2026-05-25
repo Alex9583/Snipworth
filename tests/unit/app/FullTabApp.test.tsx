@@ -26,6 +26,7 @@ import type {
 } from '@/application/ports/UserPreferencesStore';
 
 import { FakeCaptureInbox } from '../../setup/fakes/FakeCaptureInbox';
+import { buildDefaultDraftUseCases } from '../../setup/fakes/defaultDraftUseCases';
 import { FakeClock } from '../../setup/fakes/FakeClock';
 import { FakeSyntaxHighlighter } from '../../setup/fakes/FakeSyntaxHighlighter';
 import { FakeUserPreferencesStore } from '../../setup/fakes/FakeUserPreferencesStore';
@@ -128,6 +129,7 @@ function defaultProps(): FullTabAppProps {
       new SpyFullTabOpener({ kind: 'opened' }),
     ),
     clock: new FakeClock(),
+    ...buildDefaultDraftUseCases(),
   };
 }
 

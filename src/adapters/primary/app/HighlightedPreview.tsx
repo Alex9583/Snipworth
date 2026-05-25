@@ -10,10 +10,12 @@ interface HighlightedPreviewProps {
   readonly code: string;
   readonly language: string;
   readonly theme: string;
+  readonly title?: string;
   readonly fontFamily?: FontFamily;
   readonly fontSize?: number;
   readonly background?: string;
   readonly className?: string;
+  readonly compact?: boolean;
   readonly ref?: Ref<HTMLDivElement>;
 }
 
@@ -22,20 +24,24 @@ export function HighlightedPreview({
   code,
   language,
   theme,
+  title,
   fontFamily,
   fontSize,
   background,
   className,
+  compact,
   ref,
 }: HighlightedPreviewProps) {
   const highlighted = use(getHighlight(code, language, theme));
   return (
     <Preview
       hast={highlighted.hast}
+      title={title}
       fontFamily={fontFamily}
       fontSize={fontSize}
       background={background}
       className={className}
+      compact={compact}
       ref={ref}
     />
   );

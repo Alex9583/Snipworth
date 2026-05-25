@@ -15,6 +15,7 @@ export interface EditorLanguageStateHandle {
   readonly language: string;
   readonly detection: DetectionStatus;
   readonly pickLanguage: (next: string) => void;
+  readonly resetLanguage: () => void;
 }
 
 const PLAINTEXT = 'plaintext';
@@ -57,6 +58,10 @@ export function useEditorLanguageState(
     setLanguageState({ value: next, detection: { kind: 'manual' } });
   }, []);
 
+  const resetLanguage = useCallback((): void => {
+    setLanguageState({ value: PLAINTEXT, detection: { kind: 'idle' } });
+  }, []);
+
   const effective: LanguageState =
     code === '' && languageState.detection.kind !== 'manual'
       ? { value: PLAINTEXT, detection: { kind: 'idle' } }
@@ -68,5 +73,6 @@ export function useEditorLanguageState(
     language: effective.value,
     detection: effective.detection,
     pickLanguage,
+    resetLanguage,
   };
 }

@@ -11,6 +11,7 @@
   --color-canvas: var(--color-canvas);
   --color-surface: var(--color-surface);
   --color-elevated: var(--color-elevated);
+  --color-preview-canvas: var(--color-preview-canvas);
 
   --color-ink: var(--color-ink);
   --color-ink-muted: var(--color-ink-muted);
@@ -25,6 +26,10 @@
 
   --color-success: var(--color-success);
   --color-danger: var(--color-danger);
+
+  --color-traffic-light-close: var(--color-traffic-light-close);
+  --color-traffic-light-minimize: var(--color-traffic-light-minimize);
+  --color-traffic-light-maximize: var(--color-traffic-light-maximize);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);

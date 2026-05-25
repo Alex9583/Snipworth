@@ -1,15 +1,12 @@
-import {
-  requireFiniteDate,
-  requireMaxLength,
-  requireNonEmpty,
-  requireTagList,
-} from '@/domain/invariants';
+import { requireFiniteDate, requireMaxLength, requireNonEmpty } from '@/domain/invariants';
 import { isPlatform, type Platform } from '@/domain/drafts/Platform';
-import type { DraftId } from '@/domain/drafts/DraftId';
-import { CAPTION_MAX, CODE_MAX, TAG_LIST_MAX, TITLE_MAX } from '@/domain/limits';
+import { aspectRatioForPlatform } from '@/domain/drafts/aspectRatioForPlatform';
+import { DraftId } from '@/domain/drafts/DraftId';
+import { normalizeHashtags } from '@/domain/hashtags/normalizeHashtags';
+import { CAPTION_MAX, CODE_MAX, ID_MAX, TITLE_MAX } from '@/domain/limits';
 import { RenderConfig, type RenderConfigSnapshot } from '@/domain/rendering/RenderConfig';
 
-export const draftStatuses = ['draft', 'published', 'archived'] as const;
+export const draftStatuses = ['draft', 'archived'] as const;
 export type DraftStatus = (typeof draftStatuses)[number];
 
 export class InvalidDraft extends Error {
@@ -32,8 +29,6 @@ export interface DraftCreateInput {
   readonly caption: string;
   readonly hashtags: readonly string[];
   readonly platform: Platform;
-  readonly thumbnail: Blob | null;
-  readonly tags: readonly string[];
   readonly createdAt: Date;
 }
 
@@ -46,8 +41,6 @@ export interface DraftSnapshot {
   readonly caption: string;
   readonly hashtags: readonly string[];
   readonly platform: Platform;
-  readonly thumbnail: Blob | null;
-  readonly tags: readonly string[];
   readonly status: DraftStatus;
   readonly createdAt: number;
   readonly updatedAt: number;
@@ -62,8 +55,6 @@ interface DraftProps {
   readonly caption: string;
   readonly hashtags: readonly string[];
   readonly platform: Platform;
-  readonly thumbnail: Blob | null;
-  readonly tags: readonly string[];
   readonly status: DraftStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -78,8 +69,6 @@ export class Draft {
   readonly caption: string;
   readonly hashtags: readonly string[];
   readonly platform: Platform;
-  readonly thumbnail: Blob | null;
-  readonly tags: readonly string[];
   readonly status: DraftStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -93,8 +82,6 @@ export class Draft {
     this.caption = props.caption;
     this.hashtags = props.hashtags;
     this.platform = props.platform;
-    this.thumbnail = props.thumbnail;
-    this.tags = props.tags;
     this.status = props.status;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -102,14 +89,15 @@ export class Draft {
 
   static create(input: DraftCreateInput): Draft {
     requireNonEmpty(input.id, 'id', fail);
+    requireMaxLength(input.id, ID_MAX, 'id', fail);
     requireNonEmpty(input.language, 'language', fail);
+    requireNonEmpty(input.code, 'code', fail);
     requirePlatform(input.platform);
     requireFiniteDate(input.createdAt, 'createdAt', fail);
     requireMaxLength(input.title, TITLE_MAX, 'title', fail);
     requireMaxLength(input.caption, CAPTION_MAX, 'caption', fail);
     requireMaxLength(input.code, CODE_MAX, 'code', fail);
-    requireTagList(input.tags, 'tags', TAG_LIST_MAX, fail);
-    requireTagList(input.hashtags, 'hashtags', TAG_LIST_MAX, fail);
+    const hashtags = normalizeHashtags(input.hashtags, fail);
 
     const createdAt = new Date(input.createdAt);
 
@@ -120,10 +108,8 @@ export class Draft {
       language: input.language,
       config: input.config,
       caption: input.caption,
-      hashtags: [...input.hashtags],
+      hashtags,
       platform: input.platform,
-      thumbnail: input.thumbnail,
-      tags: [...input.tags],
       status: 'draft',
       createdAt,
       updatedAt: new Date(createdAt),
@@ -132,7 +118,7 @@ export class Draft {
 
   static fromSnapshot(snapshot: DraftSnapshot): Draft {
     return new Draft({
-      id: snapshot.id as DraftId,
+      id: DraftId.from(snapshot.id, fail),
       title: snapshot.title,
       code: snapshot.code,
       language: snapshot.language,
@@ -140,8 +126,6 @@ export class Draft {
       caption: snapshot.caption,
       hashtags: [...snapshot.hashtags],
       platform: snapshot.platform,
-      thumbnail: snapshot.thumbnail,
-      tags: [...snapshot.tags],
       status: snapshot.status,
       createdAt: new Date(snapshot.createdAt),
       updatedAt: new Date(snapshot.updatedAt),
@@ -158,8 +142,6 @@ export class Draft {
       caption: this.caption,
       hashtags: [...this.hashtags],
       platform: this.platform,
-      thumbnail: this.thumbnail,
-      tags: [...this.tags],
       status: this.status,
       createdAt: this.createdAt.getTime(),
       updatedAt: this.updatedAt.getTime(),
@@ -172,13 +154,37 @@ export class Draft {
   }
 
   updateCode(code: string, language: string, now: Date): Draft {
+    requireNonEmpty(code, 'code', fail);
     requireNonEmpty(language, 'language', fail);
     requireMaxLength(code, CODE_MAX, 'code', fail);
     return this.withUpdate({ code, language }, now);
   }
 
+  updateCaption(caption: string, now: Date): Draft {
+    requireMaxLength(caption, CAPTION_MAX, 'caption', fail);
+    return this.withUpdate({ caption }, now);
+  }
+
+  updateHashtags(hashtags: readonly string[], now: Date): Draft {
+    return this.withUpdate({ hashtags: normalizeHashtags(hashtags, fail) }, now);
+  }
+
   replaceConfig(config: RenderConfig, now: Date): Draft {
     return this.withUpdate({ config }, now);
+  }
+
+  switchPlatform(platform: Platform, now: Date): Draft {
+    requirePlatform(platform);
+    const config = this.config.withAspectRatio(aspectRatioForPlatform(platform));
+    return this.withUpdate({ platform, config }, now);
+  }
+
+  archive(now: Date): Draft {
+    return this.withUpdate({ status: 'archived' }, now);
+  }
+
+  restore(now: Date): Draft {
+    return this.withUpdate({ status: 'draft' }, now);
   }
 
   private withUpdate(patch: Partial<DraftProps>, now: Date): Draft {
@@ -195,8 +201,6 @@ export class Draft {
       caption: this.caption,
       hashtags: [...this.hashtags],
       platform: this.platform,
-      thumbnail: this.thumbnail,
-      tags: [...this.tags],
       status: this.status,
       createdAt: this.createdAt,
       updatedAt: new Date(now),

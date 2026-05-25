@@ -7,6 +7,7 @@ export { ConfigPanel } from './ConfigPanel';
 export { EditorStats } from './EditorStats';
 export { ExportControls } from './ExportControls';
 export { IconBtn } from './IconBtn';
+export { Input } from './Input';
 export { LanguagePicker } from './LanguagePicker';
 export { LogoChip } from './LogoChip';
 export { Preview } from './Preview';

@@ -3,12 +3,19 @@ import type { Clock } from '@/application/ports/Clock';
 import type { InboxAcknowledger, InboxReader } from '@/application/ports/ErrorInbox';
 import type { SyntaxHighlighter } from '@/application/ports/SyntaxHighlighter';
 import type { UserPreferencesStore } from '@/application/ports/UserPreferencesStore';
+import type { ArchiveDraft } from '@/application/use-cases/ArchiveDraft';
 import type { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import type { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
+import type { DeleteDraft } from '@/application/use-cases/DeleteDraft';
 import type { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
+import type { ListDrafts } from '@/application/use-cases/ListDrafts';
 import type { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
+import type { OpenDraft } from '@/application/use-cases/OpenDraft';
 import type { OpenFullTabEditor } from '@/application/use-cases/OpenFullTabEditor';
 import type { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
+import type { RestoreDraft } from '@/application/use-cases/RestoreDraft';
+import type { SaveCurrentEditorAsDraft } from '@/application/use-cases/SaveCurrentEditorAsDraft';
+import type { UpdateDraft } from '@/application/use-cases/UpdateDraft';
 
 export interface AppDependencies {
   readonly errorReader: InboxReader;
@@ -24,4 +31,11 @@ export interface AppDependencies {
   readonly userPreferencesStore: UserPreferencesStore;
   readonly openFullTabEditor: OpenFullTabEditor;
   readonly clock: Clock;
+  readonly saveDraft: SaveCurrentEditorAsDraft;
+  readonly openDraft: OpenDraft;
+  readonly updateDraft: UpdateDraft;
+  readonly deleteDraft: DeleteDraft;
+  readonly archiveDraft: ArchiveDraft;
+  readonly restoreDraft: RestoreDraft;
+  readonly listDrafts: ListDrafts;
 }
