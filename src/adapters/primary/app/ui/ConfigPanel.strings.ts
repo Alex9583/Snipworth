@@ -1,4 +1,8 @@
 export const CONFIG_PANEL = {
+  sectionCodeAppearance: 'Code Appearance',
+  sectionCanvas: 'Canvas',
+  sectionTitle: 'Title',
+  sectionPreferences: 'Preferences',
   themeLabel: 'Theme',
   themeDarkGroupLabel: 'Dark',
   themeLightGroupLabel: 'Light',
