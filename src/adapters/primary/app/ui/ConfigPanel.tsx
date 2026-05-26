@@ -7,6 +7,7 @@ import {
   CANVAS_PADDING_RANGE,
   fontFamilies,
   FONT_SIZE_RANGE,
+  TITLE_FONT_SIZE_RANGE,
   type Background,
   type FontFamily,
   type RenderConfigSnapshot,
@@ -24,6 +25,7 @@ const DARK_THEMES = themesByVariant('dark');
 const LIGHT_THEMES = themesByVariant('light');
 
 const [FONT_SIZE_MIN, FONT_SIZE_MAX] = FONT_SIZE_RANGE;
+const [TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX] = TITLE_FONT_SIZE_RANGE;
 const [CANVAS_PADDING_MIN, CANVAS_PADDING_MAX] = CANVAS_PADDING_RANGE;
 const [ANGLE_MIN, ANGLE_MAX] = ANGLE_RANGE;
 
@@ -97,6 +99,22 @@ export function ConfigPanel({
         max={CANVAS_PADDING_MAX}
         onChange={(canvasPadding) => {
           onChange({ canvasPadding });
+        }}
+      />
+      <ColorRow
+        label={CONFIG_PANEL.titleColorLabel}
+        value={value.titleColor}
+        onChange={(titleColor) => {
+          onChange({ titleColor });
+        }}
+      />
+      <SliderRow
+        label={CONFIG_PANEL.titleFontSizeLabel}
+        value={value.titleFontSize}
+        min={TITLE_FONT_SIZE_MIN}
+        max={TITLE_FONT_SIZE_MAX}
+        onChange={(titleFontSize) => {
+          onChange({ titleFontSize });
         }}
       />
       <PlatformRow value={defaultPlatform} onChange={onDefaultPlatformChange} />

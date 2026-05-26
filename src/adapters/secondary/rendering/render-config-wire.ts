@@ -13,6 +13,7 @@ import {
   RenderConfig,
   SHADOW_BLUR_RANGE,
   SHADOW_OFFSET_RANGE,
+  TITLE_FONT_SIZE_RANGE,
   windowStyles,
   type RenderConfigSnapshot,
 } from '@/domain/rendering/RenderConfig';
@@ -45,6 +46,8 @@ const renderConfigBaseShape = {
   background: backgroundWireSchema,
   canvasBackground: backgroundWireSchema.optional(),
   canvasPadding: bounded(CANVAS_PADDING_RANGE).optional(),
+  titleColor: z.string().min(1).optional(),
+  titleFontSize: bounded(TITLE_FONT_SIZE_RANGE).optional(),
   showWindowControls: z.boolean(),
   windowStyle: z.enum(windowStyles),
   showLineNumbers: z.boolean(),
@@ -77,6 +80,8 @@ export function fillRenderConfigDefaults(
     ...stored,
     canvasBackground: stored.canvasBackground ?? stored.background,
     canvasPadding: stored.canvasPadding ?? defaults.canvasPadding,
+    titleColor: stored.titleColor ?? defaults.titleColor,
+    titleFontSize: stored.titleFontSize ?? defaults.titleFontSize,
     aspectRatio: stored.aspectRatio ?? defaults.aspectRatio,
   };
 }

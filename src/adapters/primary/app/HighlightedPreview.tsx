@@ -11,6 +11,8 @@ interface HighlightedPreviewProps {
   readonly language: string;
   readonly theme: string;
   readonly title?: string;
+  readonly titleColor?: string;
+  readonly titleFontSize?: number;
   readonly fontFamily?: FontFamily;
   readonly fontSize?: number;
   readonly background?: string;
@@ -25,6 +27,8 @@ export function HighlightedPreview({
   language,
   theme,
   title,
+  titleColor,
+  titleFontSize,
   fontFamily,
   fontSize,
   background,
@@ -37,6 +41,8 @@ export function HighlightedPreview({
     <Preview
       hast={highlighted.hast}
       title={title}
+      titleColor={titleColor}
+      titleFontSize={titleFontSize}
       fontFamily={fontFamily}
       fontSize={fontSize}
       background={background}

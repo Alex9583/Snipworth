@@ -15,6 +15,8 @@ import type { OpenFullTabEditor } from '@/application/use-cases/OpenFullTabEdito
 import type { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
 import type { RestoreDraft } from '@/application/use-cases/RestoreDraft';
 import type { SaveCurrentEditorAsDraft } from '@/application/use-cases/SaveCurrentEditorAsDraft';
+import type { ExportAllDrafts } from '@/application/use-cases/ExportAllDrafts';
+import type { ImportDrafts } from '@/application/use-cases/ImportDrafts';
 import type { UpdateDraft } from '@/application/use-cases/UpdateDraft';
 
 export interface AppDependencies {
@@ -38,4 +40,6 @@ export interface AppDependencies {
   readonly archiveDraft: ArchiveDraft;
   readonly restoreDraft: RestoreDraft;
   readonly listDrafts: ListDrafts;
+  readonly exportAllDrafts: ExportAllDrafts;
+  readonly importDrafts: ImportDrafts;
 }

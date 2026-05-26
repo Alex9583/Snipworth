@@ -28,6 +28,8 @@ import { OpenFullTabEditor } from '@/application/use-cases/OpenFullTabEditor';
 import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
 import { RestoreDraft } from '@/application/use-cases/RestoreDraft';
 import { SaveCurrentEditorAsDraft } from '@/application/use-cases/SaveCurrentEditorAsDraft';
+import { ExportAllDrafts } from '@/application/use-cases/ExportAllDrafts';
+import { ImportDrafts } from '@/application/use-cases/ImportDrafts';
 import { UpdateDraft } from '@/application/use-cases/UpdateDraft';
 
 import { getSnipworthDB } from './snipworth-db';
@@ -74,5 +76,7 @@ export function composeApp(): AppDependencies {
     archiveDraft: new ArchiveDraft(draftRepository, clock),
     restoreDraft: new RestoreDraft(draftRepository, clock),
     listDrafts: new ListDrafts(draftRepository),
+    exportAllDrafts: new ExportAllDrafts(draftRepository, clock),
+    importDrafts: new ImportDrafts(draftRepository, ids),
   };
 }

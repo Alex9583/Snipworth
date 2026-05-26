@@ -118,6 +118,8 @@ function PreviewPane({
             language={language}
             theme={renderConfig.theme}
             title={title}
+            titleColor={renderConfig.titleColor}
+            titleFontSize={renderConfig.titleFontSize}
             fontFamily={renderConfig.fontFamily}
             fontSize={renderConfig.fontSize}
             background={backgroundCss(renderConfig.background)}
@@ -143,6 +145,8 @@ function PreviewPane({
             language={language}
             theme={renderConfig.theme}
             title={title}
+            titleColor={renderConfig.titleColor}
+            titleFontSize={renderConfig.titleFontSize}
             fontFamily={renderConfig.fontFamily}
             fontSize={renderConfig.fontSize}
             background={backgroundCss(renderConfig.background)}

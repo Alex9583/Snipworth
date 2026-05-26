@@ -15,6 +15,7 @@ import { CaptionBar } from '@/adapters/primary/library/CaptionBar';
 import { SaveDraftButton } from '@/adapters/primary/library/SaveDraftButton';
 import { LibraryView } from '@/adapters/primary/library/LibraryView';
 import { toSaveBinding, useDraftBinding } from '@/adapters/primary/library/useDraftBinding';
+import { useExportImport } from '@/adapters/primary/library/useExportImport';
 import { useLibraryDrafts } from '@/adapters/primary/library/useLibraryDrafts';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import { RenderConfig } from '@/domain/rendering/RenderConfig';
@@ -53,6 +54,8 @@ export function FullTabApp({
   archiveDraft,
   restoreDraft,
   listDrafts,
+  exportAllDrafts,
+  importDrafts,
 }: AppDependencies) {
   const [view, setView] = useState<FullTabView>('editor');
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -84,6 +87,15 @@ export function FullTabApp({
 
   const library = useLibraryDrafts({ listDrafts, archiveDraft, restoreDraft, deleteDraft });
   const refreshLibrary = library.refresh;
+
+  const exportImport = useExportImport({
+    exportAllDrafts,
+    importDrafts,
+    clock,
+    onImported: () => {
+      void refreshLibrary();
+    },
+  });
 
   const handleViewChange = useCallback(
     (next: FullTabView) => {
@@ -262,6 +274,8 @@ export function FullTabApp({
           onReportCorruption={() => {
             /* no-op for V1 — corrupt rows are visible but not reportable yet */
           }}
+          onExportAll={exportImport.triggerExport}
+          onImport={exportImport.triggerImport}
           onShowHelp={() => {
             setView('about');
           }}

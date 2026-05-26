@@ -19,6 +19,8 @@ const baseConfig: RenderConfigInput = {
   background: { type: 'solid', color: '#1e1e1e' },
   canvasBackground: { type: 'solid', color: '#1e1e1e' },
   canvasPadding: 10,
+  titleColor: '#a0a0a0',
+  titleFontSize: 12,
   showWindowControls: true,
   windowStyle: 'mac',
   showLineNumbers: false,

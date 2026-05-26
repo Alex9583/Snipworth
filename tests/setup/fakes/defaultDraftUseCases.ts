@@ -1,5 +1,7 @@
 import { ArchiveDraft } from '@/application/use-cases/ArchiveDraft';
 import { DeleteDraft } from '@/application/use-cases/DeleteDraft';
+import { ExportAllDrafts } from '@/application/use-cases/ExportAllDrafts';
+import { ImportDrafts } from '@/application/use-cases/ImportDrafts';
 import { ListDrafts } from '@/application/use-cases/ListDrafts';
 import { OpenDraft } from '@/application/use-cases/OpenDraft';
 import { RestoreDraft } from '@/application/use-cases/RestoreDraft';
@@ -18,6 +20,8 @@ export interface DefaultDraftUseCases {
   readonly archiveDraft: ArchiveDraft;
   readonly restoreDraft: RestoreDraft;
   readonly listDrafts: ListDrafts;
+  readonly exportAllDrafts: ExportAllDrafts;
+  readonly importDrafts: ImportDrafts;
 }
 
 export function buildDefaultDraftUseCases(
@@ -33,5 +37,7 @@ export function buildDefaultDraftUseCases(
     archiveDraft: new ArchiveDraft(repository, clock),
     restoreDraft: new RestoreDraft(repository, clock),
     listDrafts: new ListDrafts(repository),
+    exportAllDrafts: new ExportAllDrafts(repository, clock),
+    importDrafts: new ImportDrafts(repository, ids),
   };
 }

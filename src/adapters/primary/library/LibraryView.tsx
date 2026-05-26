@@ -21,6 +21,8 @@ interface LibraryViewProps {
   readonly onCreateFirstDraft: () => void;
   readonly onReportCorruption: () => void;
   readonly onShowHelp: () => void;
+  readonly onExportAll: () => void;
+  readonly onImport: () => void;
 }
 
 export function LibraryView({
@@ -31,6 +33,8 @@ export function LibraryView({
   onCreateFirstDraft,
   onReportCorruption,
   onShowHelp,
+  onExportAll,
+  onImport,
 }: LibraryViewProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<DraftId | null>(null);
 
@@ -73,6 +77,8 @@ export function LibraryView({
           library.setFilters({ ...library.filters, status });
         }}
         onClearFilter={handleClearFilter}
+        onExportAll={onExportAll}
+        onImport={onImport}
       />
 
       <div className="flex flex-1 flex-col gap-3 overflow-auto px-6 pt-5 pb-6">

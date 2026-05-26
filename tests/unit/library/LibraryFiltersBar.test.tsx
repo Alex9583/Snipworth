@@ -21,6 +21,8 @@ function renderBar(overrides: Partial<BarProps> = {}) {
     onNewDraft: vi.fn(),
     onStatusFilterChange: vi.fn(),
     onClearFilter: vi.fn(),
+    onExportAll: vi.fn(),
+    onImport: vi.fn(),
   };
   return render(<LibraryFiltersBar {...defaults} {...overrides} />);
 }
@@ -110,12 +112,24 @@ describe('LibraryFiltersBar', () => {
     expect(onStatusFilterChange).toHaveBeenCalledExactlyOnceWith('archived');
   });
 
-  it('should_render_the_export_all_zip_button_as_disabled_in_V1_0', () => {
-    renderBar();
+  it('should_call_onExportAll_when_export_button_is_clicked', async () => {
+    const user = userEvent.setup();
+    const onExportAll = vi.fn();
+    renderBar({ onExportAll });
 
-    expect(
-      screen.getByRole('button', { name: LIBRARY_FILTERS_BAR.exportAllButton }),
-    ).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: LIBRARY_FILTERS_BAR.exportAllButton }));
+
+    expect(onExportAll).toHaveBeenCalledOnce();
+  });
+
+  it('should_call_onImport_when_import_button_is_clicked', async () => {
+    const user = userEvent.setup();
+    const onImport = vi.fn();
+    renderBar({ onImport });
+
+    await user.click(screen.getByRole('button', { name: LIBRARY_FILTERS_BAR.importButton }));
+
+    expect(onImport).toHaveBeenCalledOnce();
   });
 
   it('should_close_the_currently_open_dropdown_when_user_opens_another_dropdown', async () => {

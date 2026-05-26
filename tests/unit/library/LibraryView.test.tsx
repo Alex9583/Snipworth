@@ -56,6 +56,8 @@ describe('LibraryView', () => {
     const onCreateFirstDraft = vi.fn();
     const onReportCorruption = vi.fn();
     const onShowHelp = vi.fn();
+    const onExportAll = vi.fn();
+    const onImport = vi.fn();
     render(
       <LibraryView
         library={library}
@@ -65,9 +67,19 @@ describe('LibraryView', () => {
         onCreateFirstDraft={onCreateFirstDraft}
         onReportCorruption={onReportCorruption}
         onShowHelp={onShowHelp}
+        onExportAll={onExportAll}
+        onImport={onImport}
       />,
     );
-    return { library, onOpenDraft, onCreateFirstDraft, onReportCorruption, onShowHelp };
+    return {
+      library,
+      onOpenDraft,
+      onCreateFirstDraft,
+      onReportCorruption,
+      onShowHelp,
+      onExportAll,
+      onImport,
+    };
   }
 
   it('should_render_the_empty_state_when_status_is_loaded_and_no_drafts_are_present', () => {

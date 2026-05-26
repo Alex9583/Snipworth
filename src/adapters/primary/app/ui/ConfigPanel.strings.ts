@@ -8,6 +8,8 @@ export const CONFIG_PANEL = {
   canvasBackgroundLabel: 'Canvas background',
   canvasBackgroundTypeLabel: 'Canvas background type',
   canvasPaddingLabel: 'Canvas padding',
+  titleColorLabel: 'Title color',
+  titleFontSizeLabel: 'Title size',
   defaultPlatformLabel: 'Default platform',
   backgroundTypeSolid: 'Solid',
   backgroundTypeGradient: 'Gradient',
