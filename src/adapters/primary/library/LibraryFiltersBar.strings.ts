@@ -14,7 +14,7 @@ export const LIBRARY_FILTERS_BAR = {
   newDraftButton: 'New draft',
   statusLabel: 'Status',
   statusOptions: STATUS_OPTIONS,
-  exportAllButton: 'Export (ZIP)',
+  exportAllButton: 'Export',
   importButton: 'Import',
   clearFilterLabel: (filterName: string) => `Clear ${filterName} filter`,
 } as const;

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 
 import type { Clock } from '@/application/ports/Clock';
 import type { ExportAllDrafts } from '@/application/use-cases/ExportAllDrafts';
@@ -8,9 +7,7 @@ import type { ImportDrafts } from '@/application/use-cases/ImportDrafts';
 import { exportBundleSchema } from './exportBundleSchema';
 
 const STATUS_DISMISS_MS = 5000;
-const DRAFTS_ENTRY = 'drafts.json';
-const ZIP_MIME = 'application/zip';
-const ZIP_COMPRESSION_LEVEL = 6;
+const JSON_MIME = 'application/json';
 
 export type ExportOutcome =
   | { readonly kind: 'exported' }
@@ -36,9 +33,9 @@ export interface ExportImportHandle {
   readonly importStatus: ImportOutcome | null;
 }
 
-function buildZipFilename(at: Date): string {
+function buildJsonFilename(at: Date): string {
   const iso = at.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-  return `snipworth-export-${iso}.zip`;
+  return `snipworth-export-${iso}.json`;
 }
 
 function downloadBlob(blob: Blob, filename: string): void {
@@ -78,10 +75,9 @@ export function useExportImport(input: UseExportImportInput): ExportImportHandle
           setExportStatus({ kind: 'empty' });
           return;
         }
-        const json = JSON.stringify(outcome.bundle);
-        const zipped = zipSync({ [DRAFTS_ENTRY]: strToU8(json) }, { level: ZIP_COMPRESSION_LEVEL });
-        const blob = new Blob([zipped], { type: ZIP_MIME });
-        downloadBlob(blob, buildZipFilename(clock.now()));
+        const json = JSON.stringify(outcome.bundle, null, 2);
+        const blob = new Blob([json], { type: JSON_MIME });
+        downloadBlob(blob, buildJsonFilename(clock.now()));
         setExportStatus({ kind: 'exported' });
       } catch (cause) {
         setExportStatus({ kind: 'export_failed', cause });
@@ -92,7 +88,7 @@ export function useExportImport(input: UseExportImportInput): ExportImportHandle
   const triggerImport = useCallback(() => {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = '.zip';
+    fileInput.accept = '.json';
     fileInput.addEventListener('change', () => {
       const file = fileInput.files?.[0];
       if (file === undefined) return;
@@ -111,16 +107,8 @@ async function handleImportFile(
   onImportedRef: React.RefObject<() => void>,
 ): Promise<void> {
   try {
-    const buffer = await file.arrayBuffer();
-    const files = unzipSync(new Uint8Array(buffer));
-
-    const entry = files[DRAFTS_ENTRY];
-    if (entry === undefined) {
-      setStatus({ kind: 'invalid_file', message: `Missing ${DRAFTS_ENTRY} in archive` });
-      return;
-    }
-
-    const raw: unknown = JSON.parse(strFromU8(entry));
+    const text = await file.text();
+    const raw: unknown = JSON.parse(text);
     const parsed = exportBundleSchema.safeParse(raw);
     if (!parsed.success) {
       setStatus({ kind: 'invalid_file', message: parsed.error.message });
