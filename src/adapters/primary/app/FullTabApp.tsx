@@ -130,6 +130,7 @@ export function FullTabApp({
     session.applySnapshot(snapshot);
     setCode(snapshot.code);
     pickLanguage(snapshot.language);
+    patchConfig(snapshot.config);
   });
 
   useEffect(() => {
