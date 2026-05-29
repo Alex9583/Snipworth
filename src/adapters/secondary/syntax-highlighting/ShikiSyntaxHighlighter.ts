@@ -4,6 +4,7 @@ import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 import type { HighlightedCode, SyntaxHighlighter } from '@/application/ports/SyntaxHighlighter';
 import {
   LANGUAGE_ALIASES,
+  canonicalLanguage,
   isSupportedLanguage,
   type SupportedLanguage,
 } from '@/domain/syntax-highlighting/SupportedLanguages';
@@ -93,7 +94,7 @@ export class ShikiSyntaxHighlighter implements SyntaxHighlighter {
       resolvedLanguage !== FALLBACK_LANGUAGE &&
       !isLanguageLoaded(highlighter, resolvedLanguage)
     ) {
-      await highlighter.loadLanguage(canonicalLanguage(resolvedLanguage));
+      await highlighter.loadLanguage(canonicalLanguage(resolvedLanguage) as SupportedLanguage);
     }
     if (!highlighter.getLoadedThemes().includes(resolvedTheme)) {
       await highlighter.loadTheme(resolvedTheme);
@@ -120,11 +121,6 @@ function resolveLanguage(name: string): string {
   if (isSupportedLanguage(name)) return name;
   if (name in LANGUAGE_ALIASES) return name;
   return FALLBACK_LANGUAGE;
-}
-
-function canonicalLanguage(name: string): SupportedLanguage {
-  const aliased = (LANGUAGE_ALIASES as Readonly<Record<string, SupportedLanguage>>)[name];
-  return aliased ?? (name as SupportedLanguage);
 }
 
 function isLanguageLoaded(highlighter: Highlighter, name: string): boolean {

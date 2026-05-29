@@ -4,6 +4,7 @@ import {
   LANGUAGE_ALIASES,
   PICKER_LANGUAGES,
   SUPPORTED_LANGUAGES,
+  canonicalLanguage,
   isSupportedLanguage,
 } from '@/domain/syntax-highlighting/SupportedLanguages';
 
@@ -23,6 +24,26 @@ describe('SupportedLanguages', () => {
     const unsupported = PICKER_LANGUAGES.filter((lang) => !canonical.has(lang) && !plain.has(lang));
 
     expect(unsupported).toEqual([]);
+  });
+
+  it('should_offer_every_supported_language_in_the_picker', () => {
+    const offered = new Set<string>(PICKER_LANGUAGES);
+
+    const missing = SUPPORTED_LANGUAGES.filter((lang) => !offered.has(lang));
+
+    expect(missing).toEqual([]);
+  });
+
+  it('should_not_list_any_language_more_than_once_in_the_picker', () => {
+    expect(new Set(PICKER_LANGUAGES).size).toBe(PICKER_LANGUAGES.length);
+  });
+
+  it('should_return_the_name_unchanged_when_it_is_not_an_alias', () => {
+    expect(canonicalLanguage('typescript')).toBe('typescript');
+  });
+
+  it('should_resolve_an_alias_to_its_canonical_language', () => {
+    expect(canonicalLanguage('objectivec')).toBe('objective-c');
   });
 
   it('should_recognize_a_canonical_language_as_supported', () => {

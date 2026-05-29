@@ -53,19 +53,46 @@ export const PICKER_LANGUAGES = [
   'jsx',
   'tsx',
   'python',
-  'rust',
-  'go',
   'java',
+  'csharp',
   'cpp',
-  'json',
-  'html',
-  'css',
+  'c',
+  'go',
+  'rust',
+  'ruby',
+  'php',
+  'swift',
+  'kotlin',
+  'shell',
   'bash',
   'sql',
-  'markdown',
+  'json',
   'yaml',
-] as const;
+  'html',
+  'css',
+  'scss',
+  'less',
+  'markdown',
+  'graphql',
+  'xml',
+  'lua',
+  'perl',
+  'r',
+  'objective-c',
+  'diff',
+  'ini',
+  'makefile',
+  'vb',
+  'wasm',
+] as const satisfies readonly (SupportedLanguage | 'plaintext')[];
 
 export function isSupportedLanguage(name: string): name is SupportedLanguage {
   return (SUPPORTED_LANGUAGES as readonly string[]).includes(name);
+}
+
+export function canonicalLanguage(name: string): string {
+  if (Object.hasOwn(LANGUAGE_ALIASES, name)) {
+    return LANGUAGE_ALIASES[name as keyof typeof LANGUAGE_ALIASES];
+  }
+  return name;
 }

@@ -1,27 +1,29 @@
 import { clsx } from 'clsx';
 
+import { languageDisplayLabel } from '@/adapters/primary/shared/languageLabels';
 import type { DetectionStatus } from '@/application/use-cases/LoadCapturedCode';
 import { PICKER_LANGUAGES } from '@/domain/syntax-highlighting/SupportedLanguages';
 
 import { Badge } from './Badge';
+import { LANGUAGE_PICKER } from './LanguagePicker.strings';
 
 interface LanguagePickerProps {
   readonly value: string;
   readonly detection: DetectionStatus;
   readonly onChange: (next: string) => void;
+  readonly onAutoDetect: () => void;
   readonly label?: string;
   readonly className?: string;
 }
 
-const DEFAULT_LABEL = 'Language';
-const FALLBACK_BADGE_LABEL = 'auto-detected fallback';
-const AUTO_BADGE_LABEL = 'auto';
+const AUTO_OPTION_VALUE = '__auto__';
 
 export function LanguagePicker({
   value,
   detection,
   onChange,
-  label = DEFAULT_LABEL,
+  onAutoDetect,
+  label = LANGUAGE_PICKER.defaultLabel,
   className,
 }: LanguagePickerProps) {
   const options = optionListFor(value);
@@ -30,21 +32,29 @@ export function LanguagePicker({
       {detection.kind === 'fallback' ? (
         <Badge>
           <span aria-hidden>⚠</span>
-          <span className="ml-1">{FALLBACK_BADGE_LABEL}</span>
+          <span className="ml-1">{LANGUAGE_PICKER.fallbackBadgeLabel}</span>
         </Badge>
       ) : null}
-      {detection.kind === 'auto-detected' ? <Badge>{AUTO_BADGE_LABEL}</Badge> : null}
+      {detection.kind === 'auto-detected' ? <Badge>{LANGUAGE_PICKER.autoBadgeLabel}</Badge> : null}
       <select
         aria-label={label}
         value={value}
         onChange={(event) => {
-          onChange(event.target.value);
+          const selected = event.target.value;
+          if (selected === AUTO_OPTION_VALUE) {
+            onAutoDetect();
+            return;
+          }
+          onChange(selected);
         }}
         className="bg-elevated text-ink h-7 rounded-sm px-2 text-xs"
       >
+        {detection.kind === 'manual' ? (
+          <option value={AUTO_OPTION_VALUE}>{LANGUAGE_PICKER.autoOptionLabel}</option>
+        ) : null}
         {options.map((option) => (
           <option key={option} value={option}>
-            {option}
+            {languageDisplayLabel(option)}
           </option>
         ))}
       </select>

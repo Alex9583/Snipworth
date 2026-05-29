@@ -17,6 +17,7 @@ interface CodeColumnProps {
   readonly language: string;
   readonly detection: DetectionStatus;
   readonly onLanguageChange: (next: string) => void;
+  readonly onAutoDetect: () => void;
   readonly theme: string;
   readonly fontSize: number;
   readonly getHighlight: HighlightLookup;
@@ -30,6 +31,7 @@ export function CodeColumn({
   language,
   detection,
   onLanguageChange,
+  onAutoDetect,
   theme,
   fontSize,
   getHighlight,
@@ -55,7 +57,12 @@ export function CodeColumn({
           placeholder={FULL_TAB_APP.titlePlaceholder}
           label={FULL_TAB_APP.titleLabel}
         />
-        <LanguagePicker value={language} detection={detection} onChange={onLanguageChange} />
+        <LanguagePicker
+          value={language}
+          detection={detection}
+          onChange={onLanguageChange}
+          onAutoDetect={onAutoDetect}
+        />
       </div>
       <div className="min-h-0 flex-1 p-3">
         <LiveCodeEditor

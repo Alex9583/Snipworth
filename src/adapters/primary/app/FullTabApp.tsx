@@ -62,7 +62,7 @@ export function FullTabApp({
   const [now, setNow] = useState(() => new Date());
   const [openSeq, setOpenSeq] = useState(0);
 
-  const { code, setCode, language, detection, pickLanguage, resetLanguage } =
+  const { code, setCode, language, detection, pickLanguage, requestAutoDetection, resetLanguage } =
     useEditorLanguageState(fullTabBootstrapInbox, loadCapturedCode, autoDetectLanguage);
 
   const { prefs, hasLoaded, renderConfig, patchConfig, patchPrefs } = useUserPreferences(
@@ -212,6 +212,7 @@ export function FullTabApp({
               language={language}
               detection={detection}
               onLanguageChange={pickLanguage}
+              onAutoDetect={requestAutoDetection}
               theme={renderConfig.theme}
               fontSize={renderConfig.fontSize}
               getHighlight={getHighlight}

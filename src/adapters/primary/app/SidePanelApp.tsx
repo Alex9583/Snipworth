@@ -48,11 +48,8 @@ export function SidePanelApp({
   const [toastVisible, setToastVisible] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const { code, setCode, language, detection, pickLanguage } = useEditorLanguageState(
-    captureInbox,
-    loadCapturedCode,
-    autoDetectLanguage,
-  );
+  const { code, setCode, language, detection, pickLanguage, requestAutoDetection } =
+    useEditorLanguageState(captureInbox, loadCapturedCode, autoDetectLanguage);
 
   const { prefs, hasLoaded, renderConfig, patchConfig, patchPrefs, completeOnboarding } =
     useUserPreferences(userPreferencesStore, reportSidePanelFailure);
@@ -190,6 +187,7 @@ export function SidePanelApp({
               language={language}
               detection={detection}
               onLanguageChange={pickLanguage}
+              onAutoDetect={requestAutoDetection}
               theme={renderConfig.theme}
               fontSize={renderConfig.fontSize}
               getHighlight={getHighlight}

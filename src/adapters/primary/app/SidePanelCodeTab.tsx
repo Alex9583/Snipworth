@@ -18,6 +18,7 @@ interface SidePanelCodeTabProps {
   readonly language: string;
   readonly detection: DetectionStatus;
   readonly onLanguageChange: (next: string) => void;
+  readonly onAutoDetect: () => void;
   readonly theme: string;
   readonly fontSize: number;
   readonly getHighlight: HighlightLookup;
@@ -32,6 +33,7 @@ export function SidePanelCodeTab({
   language,
   detection,
   onLanguageChange,
+  onAutoDetect,
   theme,
   fontSize,
   getHighlight,
@@ -46,7 +48,12 @@ export function SidePanelCodeTab({
           placeholder={SIDE_PANEL_APP.titlePlaceholder}
           label={SIDE_PANEL_APP.titleLabel}
         />
-        <LanguagePicker value={language} detection={detection} onChange={onLanguageChange} />
+        <LanguagePicker
+          value={language}
+          detection={detection}
+          onChange={onLanguageChange}
+          onAutoDetect={onAutoDetect}
+        />
       </div>
       <LiveCodeEditor
         value={code}

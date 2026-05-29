@@ -1,6 +1,7 @@
 import defaultHljs from 'highlight.js/lib/common';
 
 import type { DetectionOutcome, LanguageDetector } from '@/application/ports/LanguageDetector';
+import { canonicalLanguage } from '@/domain/syntax-highlighting/SupportedLanguages';
 
 export interface HighlightAutoLike {
   readonly highlightAuto: (code: string) => { language?: string; relevance: number };
@@ -15,7 +16,7 @@ export class HighlightJsLanguageDetector implements LanguageDetector {
       return {
         kind: 'detected',
         result: {
-          language: result.language ?? 'plaintext',
+          language: canonicalLanguage(result.language ?? 'plaintext'),
           relevance: result.relevance,
         },
       };
