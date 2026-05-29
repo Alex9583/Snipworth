@@ -5,9 +5,11 @@ import { LiveCodeEditor } from './LiveCodeEditor';
 import { APP } from './app.strings';
 import type { HighlightLookup } from './highlightCache';
 import { EditorStats } from './ui/EditorStats';
+import { FormatButton } from './ui/FormatButton';
 import { LanguagePicker } from './ui/LanguagePicker';
 import { TitleInput } from './ui/TitleInput';
 import { CodeIcon } from './ui/icons';
+import type { FormatHandle } from './useFormatHandle';
 
 interface CodeColumnProps {
   readonly title: string;
@@ -18,6 +20,7 @@ interface CodeColumnProps {
   readonly detection: DetectionStatus;
   readonly onLanguageChange: (next: string) => void;
   readonly onAutoDetect: () => void;
+  readonly formatHandle: FormatHandle;
   readonly theme: string;
   readonly fontSize: number;
   readonly getHighlight: HighlightLookup;
@@ -32,6 +35,7 @@ export function CodeColumn({
   detection,
   onLanguageChange,
   onAutoDetect,
+  formatHandle,
   theme,
   fontSize,
   getHighlight,
@@ -62,6 +66,11 @@ export function CodeColumn({
           detection={detection}
           onChange={onLanguageChange}
           onAutoDetect={onAutoDetect}
+        />
+        <FormatButton
+          canFormat={formatHandle.canFormat}
+          onFormat={formatHandle.onFormat}
+          status={formatHandle.status}
         />
       </div>
       <div className="min-h-0 flex-1 p-3">

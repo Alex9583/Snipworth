@@ -8,6 +8,7 @@ import type { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLangu
 import type { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import type { DeleteDraft } from '@/application/use-cases/DeleteDraft';
 import type { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
+import type { FormatCode } from '@/application/use-cases/FormatCode';
 import type { ListDrafts } from '@/application/use-cases/ListDrafts';
 import type { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
 import type { OpenDraft } from '@/application/use-cases/OpenDraft';
@@ -27,6 +28,7 @@ export interface AppDependencies {
   readonly downloadSnippetAsImage: DownloadSnippetAsImage;
   readonly loadCapturedCode: LoadCapturedCode;
   readonly autoDetectLanguage: AutoDetectLanguage;
+  readonly formatCode: FormatCode;
   readonly captureInbox: CaptureInbox;
   readonly fullTabBootstrapInbox: CaptureInbox;
   readonly syntaxHighlighter: SyntaxHighlighter;

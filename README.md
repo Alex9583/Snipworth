@@ -26,11 +26,12 @@ A Chrome extension for developers who share code on social media. Turn any snipp
 - Paste or capture code via right-click → _"Snipworth this code"_
 - Auto-detected language with manual override (any language supported by Shiki)
 - Syntax highlighting with [Shiki](https://shiki.style/) (VS Code-level quality)
+- One-click formatting powered by [Prettier](https://prettier.io/) — JavaScript, TypeScript, JSON, CSS, HTML, Markdown, YAML, and GraphQL
 - Customize theme (dark / light), monospace font, size, canvas background, padding, and more
 - Copy straight to the clipboard or download as PNG / SVG at 1× / 2× / 4×
 - Draft library — save snippets, come back later to refine them, filter by platform / language / status / tags
 - Social-media ready — per-platform presets (dimensions, aspect ratio, character limit), captions, and hashtags
-- Export & import — back up your entire library as a ZIP file or move it to another machine
+- Export & import — back up your entire library as a JSON file or move it to another machine
 - 100% local — your data never leaves your machine
 - Open source (MIT), no tracking, no analytics
 

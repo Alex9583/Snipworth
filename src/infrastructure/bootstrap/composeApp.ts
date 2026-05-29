@@ -6,6 +6,7 @@ import { BrowserClipboardCopier } from '@/adapters/secondary/clipboard/BrowserCl
 import { SystemClock } from '@/adapters/secondary/clock/SystemClock';
 import { DexieDraftRepository } from '@/adapters/secondary/dexie/DexieDraftRepository';
 import { BrowserBlobDownloader } from '@/adapters/secondary/download/BrowserBlobDownloader';
+import { PrettierCodeFormatter } from '@/adapters/secondary/code-formatting/PrettierCodeFormatter';
 import { ChromeStorageInboxReader } from '@/adapters/secondary/error-channel/ChromeStorageInboxReader';
 import { MessagingErrorReporter } from '@/adapters/secondary/error-channel/MessagingErrorReporter';
 import { MessagingInboxAcknowledger } from '@/adapters/secondary/error-channel/MessagingInboxAcknowledger';
@@ -21,6 +22,7 @@ import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DeleteDraft } from '@/application/use-cases/DeleteDraft';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
+import { FormatCode } from '@/application/use-cases/FormatCode';
 import { ListDrafts } from '@/application/use-cases/ListDrafts';
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
 import { OpenDraft } from '@/application/use-cases/OpenDraft';
@@ -60,6 +62,7 @@ export function composeApp(): AppDependencies {
     ),
     loadCapturedCode: new LoadCapturedCode(languageDetector),
     autoDetectLanguage: new AutoDetectLanguage(languageDetector),
+    formatCode: new FormatCode(new PrettierCodeFormatter()),
     captureInbox: new ChromeStorageCaptureInbox(),
     fullTabBootstrapInbox: new ChromeStorageCaptureInbox(FULL_TAB_BOOTSTRAP_KEY),
     syntaxHighlighter: new ShikiSyntaxHighlighter(),

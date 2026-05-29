@@ -32,6 +32,7 @@ import { createHighlightCache } from './highlightCache';
 import { TabTopNav } from './ui/TabTopNav';
 import { useEditorLanguageState } from './useEditorLanguageState';
 import { useEditorSession } from './useEditorSession';
+import { useFormatHandle } from './useFormatHandle';
 import { useSnippetExportHandles } from './useSnippetExportHandles';
 import { useUserPreferences } from './useUserPreferences';
 
@@ -43,6 +44,7 @@ export function FullTabApp({
   downloadSnippetAsImage,
   loadCapturedCode,
   autoDetectLanguage,
+  formatCode,
   fullTabBootstrapInbox,
   syntaxHighlighter,
   userPreferencesStore,
@@ -64,6 +66,13 @@ export function FullTabApp({
 
   const { code, setCode, language, detection, pickLanguage, requestAutoDetection, resetLanguage } =
     useEditorLanguageState(fullTabBootstrapInbox, loadCapturedCode, autoDetectLanguage);
+
+  const formatHandle = useFormatHandle({
+    useCase: formatCode,
+    code,
+    language,
+    applyFormattedCode: setCode,
+  });
 
   const { prefs, hasLoaded, renderConfig, patchConfig, patchPrefs } = useUserPreferences(
     userPreferencesStore,
@@ -213,6 +222,7 @@ export function FullTabApp({
               detection={detection}
               onLanguageChange={pickLanguage}
               onAutoDetect={requestAutoDetection}
+              formatHandle={formatHandle}
               theme={renderConfig.theme}
               fontSize={renderConfig.fontSize}
               getHighlight={getHighlight}
