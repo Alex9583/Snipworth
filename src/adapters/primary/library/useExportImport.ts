@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { Clock } from '@/application/ports/Clock';
+import type { CountDrafts } from '@/application/use-cases/CountDrafts';
 import type { ExportAllDrafts } from '@/application/use-cases/ExportAllDrafts';
-import type { ImportDrafts } from '@/application/use-cases/ImportDrafts';
+import type { ImportDrafts, ImportMode } from '@/application/use-cases/ImportDrafts';
+import type { DraftSnapshot } from '@/domain/drafts/Draft';
 
 import { exportBundleSchema } from './exportBundleSchema';
+import { openJsonFile } from './openJsonFile';
+import { saveJsonFile } from './saveJsonFile';
 
 const STATUS_DISMISS_MS = 5000;
-const JSON_MIME = 'application/json';
 
 export type ExportOutcome =
   | { readonly kind: 'exported' }
@@ -19,11 +22,18 @@ export type ImportOutcome =
   | { readonly kind: 'invalid_file'; readonly message: string }
   | { readonly kind: 'import_failed'; readonly cause: unknown };
 
+export interface PendingImport {
+  readonly incomingCount: number;
+}
+
 export interface UseExportImportInput {
   readonly exportAllDrafts: Pick<ExportAllDrafts, 'execute'>;
   readonly importDrafts: Pick<ImportDrafts, 'execute'>;
+  readonly countDrafts: Pick<CountDrafts, 'execute'>;
   readonly clock: Pick<Clock, 'now'>;
   readonly onImported: () => void;
+  readonly openFile?: () => Promise<File | null>;
+  readonly saveFile?: (json: string, filename: string) => void;
 }
 
 export interface ExportImportHandle {
@@ -31,37 +41,71 @@ export interface ExportImportHandle {
   readonly exportStatus: ExportOutcome | null;
   readonly triggerImport: () => void;
   readonly importStatus: ImportOutcome | null;
+  readonly pendingImport: PendingImport | null;
+  readonly confirmImport: (mode: ImportMode) => void;
+  readonly cancelImport: () => void;
 }
+
+type ParsedFile =
+  | { readonly ok: true; readonly drafts: readonly DraftSnapshot[] }
+  | { readonly ok: false; readonly message: string };
 
 function buildJsonFilename(at: Date): string {
   const iso = at.toISOString().slice(0, 19).replace(/[T:]/g, '-');
   return `snipworth-export-${iso}.json`;
 }
 
-function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+async function mayHaveExistingDrafts(countDrafts: Pick<CountDrafts, 'execute'>): Promise<boolean> {
+  const outcome = await countDrafts.execute();
+  return outcome.kind === 'storage_unavailable' || outcome.total > 0;
+}
+
+async function parseImportFile(file: File): Promise<ParsedFile> {
+  const text = await file.text();
+  const raw: unknown = JSON.parse(text);
+  const parsed = exportBundleSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.message };
+  }
+  return { ok: true, drafts: parsed.data.drafts };
 }
 
 export function useExportImport(input: UseExportImportInput): ExportImportHandle {
-  const { exportAllDrafts, importDrafts, clock, onImported } = input;
+  const { exportAllDrafts, importDrafts, countDrafts, clock, onImported } = input;
 
   const [exportStatus, setExportStatus] = useState<ExportOutcome | null>(null);
   const [importStatus, setImportStatus] = useState<ImportOutcome | null>(null);
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
 
   const onImportedRef = useRef(onImported);
-  useEffect(() => {
-    onImportedRef.current = onImported;
-  }, [onImported]);
+  onImportedRef.current = onImported;
+  const openFileRef = useRef(input.openFile ?? openJsonFile);
+  openFileRef.current = input.openFile ?? openJsonFile;
+  const saveFileRef = useRef(input.saveFile ?? saveJsonFile);
+  saveFileRef.current = input.saveFile ?? saveJsonFile;
+  const stagedDraftsRef = useRef<readonly DraftSnapshot[]>([]);
 
   useAutoDismiss(exportStatus, setExportStatus);
   useAutoDismiss(importStatus, setImportStatus);
+
+  const runImport = useCallback(
+    (drafts: readonly DraftSnapshot[], mode: ImportMode): void => {
+      void (async () => {
+        try {
+          const outcome = await importDrafts.execute(drafts, mode);
+          if (outcome.kind === 'storage_unavailable') {
+            setImportStatus({ kind: 'import_failed', cause: outcome.cause });
+            return;
+          }
+          setImportStatus({ kind: 'imported', count: outcome.count });
+          onImportedRef.current();
+        } catch (cause) {
+          setImportStatus({ kind: 'import_failed', cause });
+        }
+      })();
+    },
+    [importDrafts],
+  );
 
   const triggerExport = useCallback(() => {
     void (async () => {
@@ -76,8 +120,7 @@ export function useExportImport(input: UseExportImportInput): ExportImportHandle
           return;
         }
         const json = JSON.stringify(outcome.bundle, null, 2);
-        const blob = new Blob([json], { type: JSON_MIME });
-        downloadBlob(blob, buildJsonFilename(clock.now()));
+        saveFileRef.current(json, buildJsonFilename(clock.now()));
         setExportStatus({ kind: 'exported' });
       } catch (cause) {
         setExportStatus({ kind: 'export_failed', cause });
@@ -86,46 +129,53 @@ export function useExportImport(input: UseExportImportInput): ExportImportHandle
   }, [exportAllDrafts, clock]);
 
   const triggerImport = useCallback(() => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.json';
-    fileInput.addEventListener('change', () => {
-      const file = fileInput.files?.[0];
-      if (file === undefined) return;
-      void handleImportFile(file, importDrafts, setImportStatus, onImportedRef);
-    });
-    fileInput.click();
-  }, [importDrafts]);
+    void (async () => {
+      const file = await openFileRef.current();
+      if (file === null) return;
+      let parsed: ParsedFile;
+      try {
+        parsed = await parseImportFile(file);
+      } catch (cause) {
+        setImportStatus({ kind: 'import_failed', cause });
+        return;
+      }
+      if (!parsed.ok) {
+        setImportStatus({ kind: 'invalid_file', message: parsed.message });
+        return;
+      }
+      if (await mayHaveExistingDrafts(countDrafts)) {
+        stagedDraftsRef.current = parsed.drafts;
+        setPendingImport({ incomingCount: parsed.drafts.length });
+        return;
+      }
+      runImport(parsed.drafts, 'add');
+    })();
+  }, [countDrafts, runImport]);
 
-  return { triggerExport, exportStatus, triggerImport, importStatus };
-}
+  const confirmImport = useCallback(
+    (mode: ImportMode) => {
+      const drafts = stagedDraftsRef.current;
+      stagedDraftsRef.current = [];
+      setPendingImport(null);
+      runImport(drafts, mode);
+    },
+    [runImport],
+  );
 
-async function handleImportFile(
-  file: File,
-  importDrafts: Pick<ImportDrafts, 'execute'>,
-  setStatus: (status: ImportOutcome) => void,
-  onImportedRef: React.RefObject<() => void>,
-): Promise<void> {
-  try {
-    const text = await file.text();
-    const raw: unknown = JSON.parse(text);
-    const parsed = exportBundleSchema.safeParse(raw);
-    if (!parsed.success) {
-      setStatus({ kind: 'invalid_file', message: parsed.error.message });
-      return;
-    }
+  const cancelImport = useCallback(() => {
+    stagedDraftsRef.current = [];
+    setPendingImport(null);
+  }, []);
 
-    const outcome = await importDrafts.execute(parsed.data.drafts);
-    if (outcome.kind === 'storage_unavailable') {
-      setStatus({ kind: 'import_failed', cause: outcome.cause });
-      return;
-    }
-
-    setStatus({ kind: 'imported', count: outcome.count });
-    onImportedRef.current();
-  } catch (cause) {
-    setStatus({ kind: 'import_failed', cause });
-  }
+  return {
+    triggerExport,
+    exportStatus,
+    triggerImport,
+    importStatus,
+    pendingImport,
+    confirmImport,
+    cancelImport,
+  };
 }
 
 function useAutoDismiss<T>(status: T | null, setStatus: (next: T | null) => void): void {

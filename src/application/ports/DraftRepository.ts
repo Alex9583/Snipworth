@@ -28,9 +28,19 @@ export type DeleteDraftOutcome =
   | { readonly kind: 'deleted' }
   | { readonly kind: 'storage_unavailable'; readonly cause: unknown };
 
+export type ReplaceAllDraftsOutcome =
+  | { readonly kind: 'replaced' }
+  | { readonly kind: 'storage_unavailable'; readonly cause: unknown };
+
+export type CountAllDraftsOutcome =
+  | { readonly kind: 'counted'; readonly total: number }
+  | { readonly kind: 'storage_unavailable'; readonly cause: unknown };
+
 export interface DraftRepository {
   save(draft: Draft): Promise<SaveDraftOutcome>;
   findById(id: DraftId): Promise<FindDraftOutcome>;
   findAll(): Promise<FindAllDraftsOutcome>;
   delete(id: DraftId): Promise<DeleteDraftOutcome>;
+  replaceAll(drafts: readonly Draft[]): Promise<ReplaceAllDraftsOutcome>;
+  countAll(): Promise<CountAllDraftsOutcome>;
 }

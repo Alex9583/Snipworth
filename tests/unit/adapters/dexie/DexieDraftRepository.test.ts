@@ -261,6 +261,72 @@ describe('DexieDraftRepository.delete', () => {
   });
 });
 
+describe('DexieDraftRepository.replaceAll', () => {
+  it('should_replace_every_existing_draft_with_the_given_set', async () => {
+    const repo = new DexieDraftRepository(db);
+    await repo.save(buildDraft({ id: 'old-1' as DraftId, title: 'Old One' }));
+    await repo.save(buildDraft({ id: 'old-2' as DraftId, title: 'Old Two' }));
+
+    const replacement = buildDraft({ id: 'new-1' as DraftId, title: 'New One' });
+    const outcome = await repo.replaceAll([replacement]);
+    expect(outcome).toEqual({ kind: 'replaced' });
+
+    const found = await repo.findAll();
+    expect(found.kind).toBe('loaded');
+    if (found.kind === 'loaded') {
+      expect(found.drafts.map((d) => d.id)).toEqual(['new-1']);
+    }
+  });
+
+  it('should_clear_the_table_when_replaceAll_is_called_with_an_empty_set', async () => {
+    const repo = new DexieDraftRepository(db);
+    await repo.save(buildDraft({ id: 'old-1' as DraftId }));
+
+    const outcome = await repo.replaceAll([]);
+    expect(outcome).toEqual({ kind: 'replaced' });
+
+    const found = await repo.findAll();
+    expect(found).toEqual({ kind: 'loaded', drafts: [], corrupt: [] });
+  });
+
+  it('should_drop_pre_existing_corrupt_rows_when_replaceAll_runs', async () => {
+    const repo = new DexieDraftRepository(db);
+    await db.drafts.put({
+      id: 'broken',
+      title: 'X',
+    } as unknown as Parameters<typeof db.drafts.put>[0]);
+
+    const outcome = await repo.replaceAll([buildDraft({ id: 'clean' as DraftId })]);
+    expect(outcome).toEqual({ kind: 'replaced' });
+
+    const found = await repo.findAll();
+    expect(found.kind).toBe('loaded');
+    if (found.kind === 'loaded') {
+      expect(found.drafts.map((d) => d.id)).toEqual(['clean']);
+      expect(found.corrupt).toEqual([]);
+    }
+  });
+});
+
+describe('DexieDraftRepository.countAll', () => {
+  it('should_return_zero_when_the_table_is_empty', async () => {
+    const repo = new DexieDraftRepository(db);
+
+    expect(await repo.countAll()).toEqual({ kind: 'counted', total: 0 });
+  });
+
+  it('should_count_every_row_including_archived_drafts', async () => {
+    const repo = new DexieDraftRepository(db);
+    await repo.save(buildDraft({ id: 'active' as DraftId }));
+    const archived = buildDraft({ id: 'archived' as DraftId }).archive(
+      new Date(CREATED_AT.getTime() + 60_000),
+    );
+    await repo.save(archived);
+
+    expect(await repo.countAll()).toEqual({ kind: 'counted', total: 2 });
+  });
+});
+
 describe('DexieDraftRepository — corrupt findById', () => {
   it('should_return_corrupt_when_the_row_does_not_match_the_schema', async () => {
     const repo = new DexieDraftRepository(db);

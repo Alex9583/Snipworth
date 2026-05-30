@@ -6,6 +6,7 @@ import type { UserPreferencesStore } from '@/application/ports/UserPreferencesSt
 import type { ArchiveDraft } from '@/application/use-cases/ArchiveDraft';
 import type { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import type { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
+import type { CountDrafts } from '@/application/use-cases/CountDrafts';
 import type { DeleteDraft } from '@/application/use-cases/DeleteDraft';
 import type { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import type { FormatCode } from '@/application/use-cases/FormatCode';
@@ -44,4 +45,5 @@ export interface AppDependencies {
   readonly listDrafts: ListDrafts;
   readonly exportAllDrafts: ExportAllDrafts;
   readonly importDrafts: ImportDrafts;
+  readonly countDrafts: CountDrafts;
 }

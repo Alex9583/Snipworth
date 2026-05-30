@@ -15,7 +15,7 @@ describe('ImportDrafts', () => {
   it('should_import_nothing_when_given_empty_array', async () => {
     const { repo, idGen, useCase } = buildHarness();
 
-    const outcome = await useCase.execute([]);
+    const outcome = await useCase.execute([], 'add');
 
     expect(outcome).toEqual({ kind: 'imported', count: 0 });
     const findAll = await repo.findAll();
@@ -29,7 +29,7 @@ describe('ImportDrafts', () => {
     const original = anActiveDraft({ id: 'original-id' });
     const snapshot = original.toSnapshot();
 
-    const outcome = await useCase.execute([snapshot]);
+    const outcome = await useCase.execute([snapshot], 'add');
 
     expect(outcome).toEqual({ kind: 'imported', count: 1 });
     const findAll = await repo.findAll();
@@ -56,7 +56,7 @@ describe('ImportDrafts', () => {
     const snap1 = anActiveDraft({ id: 'old-1' }).toSnapshot();
     const snap2 = anActiveDraft({ id: 'old-2' }).toSnapshot();
 
-    const outcome = await useCase.execute([snap1, snap2]);
+    const outcome = await useCase.execute([snap1, snap2], 'add');
 
     expect(outcome).toEqual({ kind: 'imported', count: 2 });
     const findAll = await repo.findAll();
@@ -71,7 +71,55 @@ describe('ImportDrafts', () => {
     const cause = new Error('quota exceeded');
     repo.failNextSaveWith(cause);
 
-    const outcome = await useCase.execute([snapshot]);
+    const outcome = await useCase.execute([snapshot], 'add');
+
+    expect(outcome).toEqual({ kind: 'storage_unavailable', cause });
+  });
+
+  it('should_keep_existing_drafts_when_mode_is_add', async () => {
+    const { repo, useCase } = buildHarness();
+    await repo.save(anActiveDraft({ id: 'existing' }));
+    const incoming = anActiveDraft({ id: 'incoming-source' }).toSnapshot();
+
+    const outcome = await useCase.execute([incoming], 'add');
+
+    expect(outcome).toEqual({ kind: 'imported', count: 1 });
+    const findAll = await repo.findAll();
+    if (findAll.kind !== 'loaded') throw new Error('expected loaded');
+    expect(findAll.drafts.map((d) => d.id).toSorted()).toEqual(['existing', 'imported-1']);
+  });
+
+  it('should_replace_existing_drafts_when_mode_is_replace', async () => {
+    const { repo, useCase } = buildHarness();
+    await repo.save(anActiveDraft({ id: 'existing' }));
+    const incoming = anActiveDraft({ id: 'incoming-source' }).toSnapshot();
+
+    const outcome = await useCase.execute([incoming], 'replace');
+
+    expect(outcome).toEqual({ kind: 'imported', count: 1 });
+    const findAll = await repo.findAll();
+    if (findAll.kind !== 'loaded') throw new Error('expected loaded');
+    expect(findAll.drafts.map((d) => d.id)).toEqual(['imported-1']);
+  });
+
+  it('should_clear_the_library_when_replacing_with_an_empty_array', async () => {
+    const { repo, useCase } = buildHarness();
+    await repo.save(anActiveDraft({ id: 'existing' }));
+
+    const outcome = await useCase.execute([], 'replace');
+
+    expect(outcome).toEqual({ kind: 'imported', count: 0 });
+    const findAll = await repo.findAll();
+    if (findAll.kind !== 'loaded') throw new Error('expected loaded');
+    expect(findAll.drafts).toHaveLength(0);
+  });
+
+  it('should_return_storage_unavailable_when_replace_fails', async () => {
+    const { repo, useCase } = buildHarness();
+    const cause = new Error('quota exceeded');
+    repo.failNextReplaceAllWith(cause);
+
+    const outcome = await useCase.execute([anActiveDraft().toSnapshot()], 'replace');
 
     expect(outcome).toEqual({ kind: 'storage_unavailable', cause });
   });

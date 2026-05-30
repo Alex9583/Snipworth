@@ -58,6 +58,8 @@ describe('LibraryView', () => {
     const onShowHelp = vi.fn();
     const onExportAll = vi.fn();
     const onImport = vi.fn();
+    const onConfirmImport = vi.fn();
+    const onCancelImport = vi.fn();
     render(
       <LibraryView
         library={library}
@@ -69,6 +71,11 @@ describe('LibraryView', () => {
         onShowHelp={onShowHelp}
         onExportAll={onExportAll}
         onImport={onImport}
+        exportStatus={null}
+        importStatus={null}
+        pendingImport={null}
+        onConfirmImport={onConfirmImport}
+        onCancelImport={onCancelImport}
       />,
     );
     return {
@@ -79,6 +86,8 @@ describe('LibraryView', () => {
       onShowHelp,
       onExportAll,
       onImport,
+      onConfirmImport,
+      onCancelImport,
     };
   }
 

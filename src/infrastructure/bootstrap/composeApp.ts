@@ -20,6 +20,7 @@ import { ChromeTabOpener } from '@/adapters/secondary/tab/ChromeTabOpener';
 import { ArchiveDraft } from '@/application/use-cases/ArchiveDraft';
 import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
+import { CountDrafts } from '@/application/use-cases/CountDrafts';
 import { DeleteDraft } from '@/application/use-cases/DeleteDraft';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
 import { FormatCode } from '@/application/use-cases/FormatCode';
@@ -81,5 +82,6 @@ export function composeApp(): AppDependencies {
     listDrafts: new ListDrafts(draftRepository),
     exportAllDrafts: new ExportAllDrafts(draftRepository, clock),
     importDrafts: new ImportDrafts(draftRepository, ids),
+    countDrafts: new CountDrafts(draftRepository),
   };
 }

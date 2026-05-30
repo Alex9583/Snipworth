@@ -58,6 +58,7 @@ export function FullTabApp({
   listDrafts,
   exportAllDrafts,
   importDrafts,
+  countDrafts,
 }: AppDependencies) {
   const [view, setView] = useState<FullTabView>('editor');
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -100,6 +101,7 @@ export function FullTabApp({
   const exportImport = useExportImport({
     exportAllDrafts,
     importDrafts,
+    countDrafts,
     clock,
     onImported: () => {
       void refreshLibrary();
@@ -288,6 +290,11 @@ export function FullTabApp({
           }}
           onExportAll={exportImport.triggerExport}
           onImport={exportImport.triggerImport}
+          exportStatus={exportImport.exportStatus}
+          importStatus={exportImport.importStatus}
+          pendingImport={exportImport.pendingImport}
+          onConfirmImport={exportImport.confirmImport}
+          onCancelImport={exportImport.cancelImport}
           onShowHelp={() => {
             setView('about');
           }}
