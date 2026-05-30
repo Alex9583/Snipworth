@@ -10,6 +10,8 @@ import type { FontFamily } from '@/domain/rendering/RenderConfig';
 interface PreviewProps {
   hast: Root;
   title?: string;
+  titleColor?: string;
+  titleFontSize?: number;
   fontFamily?: FontFamily;
   fontSize?: number;
   background?: string;
@@ -30,6 +32,8 @@ const HAST_NORMALIZE =
 export function Preview({
   hast,
   title,
+  titleColor = '#a0a0a0',
+  titleFontSize = 12,
   fontFamily = 'JetBrains Mono',
   fontSize = 14,
   background = '#1C1C21',
@@ -69,7 +73,12 @@ export function Preview({
             />
           ))}
           {title !== undefined && title.length > 0 && (
-            <span className="flex-1 truncate text-center text-xs text-white/50">{title}</span>
+            <span
+              className="flex-1 truncate text-center"
+              style={{ color: titleColor, fontSize: `${String(titleFontSize)}px` }}
+            >
+              {title}
+            </span>
           )}
         </div>
         <div

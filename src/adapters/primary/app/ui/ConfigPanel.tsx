@@ -7,6 +7,7 @@ import {
   CANVAS_PADDING_RANGE,
   fontFamilies,
   FONT_SIZE_RANGE,
+  TITLE_FONT_SIZE_RANGE,
   type Background,
   type FontFamily,
   type RenderConfigSnapshot,
@@ -24,12 +25,13 @@ const DARK_THEMES = themesByVariant('dark');
 const LIGHT_THEMES = themesByVariant('light');
 
 const [FONT_SIZE_MIN, FONT_SIZE_MAX] = FONT_SIZE_RANGE;
+const [TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX] = TITLE_FONT_SIZE_RANGE;
 const [CANVAS_PADDING_MIN, CANVAS_PADDING_MAX] = CANVAS_PADDING_RANGE;
 const [ANGLE_MIN, ANGLE_MAX] = ANGLE_RANGE;
 
 const FALLBACK_BACKGROUND_COLOR = '#1C1C21';
 
-const ROW_CLASSES = 'border-line flex flex-col gap-1.5 border-b py-2.5 last:border-b-0';
+const ROW_CLASSES = 'border-line flex flex-col gap-1.5 border-b px-3 py-2.5 last:border-b-0';
 const ROW_HEADER_CLASSES = 'flex items-center justify-between';
 const ROW_LABEL_CLASSES = 'text-ink-muted text-sm';
 const ROW_HINT_CLASSES = 'text-ink-muted font-mono text-xs tabular-nums';
@@ -51,56 +53,99 @@ export function ConfigPanel({
   onDefaultPlatformChange,
 }: ConfigPanelProps) {
   return (
-    <div className="flex flex-col">
-      <ThemeRow
-        value={value.theme}
-        onChange={(theme) => {
-          onChange({ theme });
-        }}
-      />
-      <SelectRow
-        label={CONFIG_PANEL.fontFamilyLabel}
-        value={value.fontFamily}
-        options={fontFamilies}
-        onChange={(fontFamily) => {
-          onChange({ fontFamily: fontFamily as FontFamily });
-        }}
-      />
-      <SliderRow
-        label={CONFIG_PANEL.fontSizeLabel}
-        value={value.fontSize}
-        min={FONT_SIZE_MIN}
-        max={FONT_SIZE_MAX}
-        onChange={(fontSize) => {
-          onChange({ fontSize });
-        }}
-      />
-      <ColorRow
-        label={CONFIG_PANEL.backgroundColorLabel}
-        value={readSolidColor(value.background)}
-        onChange={(color) => {
-          onChange({ background: { type: 'solid', color } });
-        }}
-      />
-      <BackgroundPickerRow
-        label={CONFIG_PANEL.canvasBackgroundLabel}
-        value={value.canvasBackground}
-        onChange={(canvasBackground) => {
-          onChange({ canvasBackground });
-        }}
-      />
-      <SliderRow
-        label={CONFIG_PANEL.canvasPaddingLabel}
-        hint={percentHintLabel(value.canvasPadding)}
-        value={value.canvasPadding}
-        min={CANVAS_PADDING_MIN}
-        max={CANVAS_PADDING_MAX}
-        onChange={(canvasPadding) => {
-          onChange({ canvasPadding });
-        }}
-      />
-      <PlatformRow value={defaultPlatform} onChange={onDefaultPlatformChange} />
+    <div className="flex flex-col gap-5">
+      <Section title={CONFIG_PANEL.sectionCodeAppearance}>
+        <ThemeRow
+          value={value.theme}
+          onChange={(theme) => {
+            onChange({ theme });
+          }}
+        />
+        <SelectRow
+          label={CONFIG_PANEL.fontFamilyLabel}
+          value={value.fontFamily}
+          options={fontFamilies}
+          onChange={(fontFamily) => {
+            onChange({ fontFamily: fontFamily as FontFamily });
+          }}
+        />
+        <SliderRow
+          label={CONFIG_PANEL.fontSizeLabel}
+          value={value.fontSize}
+          min={FONT_SIZE_MIN}
+          max={FONT_SIZE_MAX}
+          onChange={(fontSize) => {
+            onChange({ fontSize });
+          }}
+        />
+        <ColorRow
+          label={CONFIG_PANEL.backgroundColorLabel}
+          value={readSolidColor(value.background)}
+          onChange={(color) => {
+            onChange({ background: { type: 'solid', color } });
+          }}
+        />
+      </Section>
+
+      <Section title={CONFIG_PANEL.sectionCanvas}>
+        <BackgroundPickerRow
+          label={CONFIG_PANEL.canvasBackgroundLabel}
+          value={value.canvasBackground}
+          onChange={(canvasBackground) => {
+            onChange({ canvasBackground });
+          }}
+        />
+        <SliderRow
+          label={CONFIG_PANEL.canvasPaddingLabel}
+          hint={percentHintLabel(value.canvasPadding)}
+          value={value.canvasPadding}
+          min={CANVAS_PADDING_MIN}
+          max={CANVAS_PADDING_MAX}
+          onChange={(canvasPadding) => {
+            onChange({ canvasPadding });
+          }}
+        />
+      </Section>
+
+      <Section title={CONFIG_PANEL.sectionTitle}>
+        <ColorRow
+          label={CONFIG_PANEL.titleColorLabel}
+          value={value.titleColor}
+          onChange={(titleColor) => {
+            onChange({ titleColor });
+          }}
+        />
+        <SliderRow
+          label={CONFIG_PANEL.titleFontSizeLabel}
+          value={value.titleFontSize}
+          min={TITLE_FONT_SIZE_MIN}
+          max={TITLE_FONT_SIZE_MAX}
+          onChange={(titleFontSize) => {
+            onChange({ titleFontSize });
+          }}
+        />
+      </Section>
+
+      <Section title={CONFIG_PANEL.sectionPreferences}>
+        <PlatformRow value={defaultPlatform} onChange={onDefaultPlatformChange} />
+      </Section>
     </div>
+  );
+}
+
+interface SectionProps {
+  title: string;
+  children: ReactNode;
+}
+
+function Section({ title, children }: SectionProps) {
+  return (
+    <fieldset className="flex flex-col">
+      <legend className="text-ink-subtle mb-1 text-xs font-semibold uppercase tracking-wider">
+        {title}
+      </legend>
+      <div className="border-line flex flex-col rounded-lg border">{children}</div>
+    </fieldset>
   );
 }
 

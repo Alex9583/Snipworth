@@ -7,6 +7,7 @@ import {
   DownloadIcon,
   PlusIcon,
   SearchIcon,
+  UploadIcon,
   XIcon,
 } from '@/adapters/primary/app/ui/icons';
 import { Input } from '@/adapters/primary/app/ui/Input';
@@ -33,6 +34,8 @@ interface LibraryFiltersBarProps {
   readonly onNewDraft: () => void;
   readonly onStatusFilterChange: (status: DraftStatus) => void;
   readonly onClearFilter: (key: keyof LibraryFilters) => void;
+  readonly onExportAll: () => void;
+  readonly onImport: () => void;
 }
 
 export function LibraryFiltersBar({
@@ -46,6 +49,8 @@ export function LibraryFiltersBar({
   onNewDraft,
   onStatusFilterChange,
   onClearFilter,
+  onExportAll,
+  onImport,
 }: LibraryFiltersBarProps) {
   const [query, setQuery] = useState('');
   const debouncedEmit = useDebouncedCallback(onSearchChange, SEARCH_DEBOUNCE_MS);
@@ -122,11 +127,17 @@ export function LibraryFiltersBar({
         />
       </div>
       <div className="flex items-center gap-2">
-        <span title={LIBRARY_FILTERS_BAR.exportAllTooltip}>
-          <Button variant="outline" size="sm" iconLeft={<DownloadIcon size={13} />} disabled>
-            {LIBRARY_FILTERS_BAR.exportAllButton}
-          </Button>
-        </span>
+        <Button variant="outline" size="sm" iconLeft={<UploadIcon size={13} />} onClick={onImport}>
+          {LIBRARY_FILTERS_BAR.importButton}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          iconLeft={<DownloadIcon size={13} />}
+          onClick={onExportAll}
+        >
+          {LIBRARY_FILTERS_BAR.exportAllButton}
+        </Button>
         <Button size="sm" iconLeft={<PlusIcon size={13} />} onClick={onNewDraft}>
           {LIBRARY_FILTERS_BAR.newDraftButton}
         </Button>

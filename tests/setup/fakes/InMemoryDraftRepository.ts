@@ -1,8 +1,10 @@
 import type {
+  CountAllDraftsOutcome,
   DeleteDraftOutcome,
   DraftRepository,
   FindAllDraftsOutcome,
   FindDraftOutcome,
+  ReplaceAllDraftsOutcome,
   SaveDraftOutcome,
 } from '@/application/ports/DraftRepository';
 import { Draft, type DraftSnapshot } from '@/domain/drafts/Draft';
@@ -20,6 +22,10 @@ export class InMemoryDraftRepository implements DraftRepository {
   private pendingFindAllOutcome: FindAllDraftsOutcome | undefined;
   private pendingDeleteThrow: Error | undefined;
   private pendingDeleteOutcome: DeleteDraftOutcome | undefined;
+  private pendingReplaceAllThrow: Error | undefined;
+  private pendingReplaceAllOutcome: ReplaceAllDraftsOutcome | undefined;
+  private pendingCountAllThrow: Error | undefined;
+  private pendingCountAllOutcome: CountAllDraftsOutcome | undefined;
 
   get savedSnapshots(): readonly DraftSnapshot[] {
     return this.savedHistory;
@@ -59,6 +65,14 @@ export class InMemoryDraftRepository implements DraftRepository {
 
   enqueueNextSaveOutcome(outcome: SaveDraftOutcome): void {
     this.pendingSaveOutcome = outcome;
+  }
+
+  failNextReplaceAllWith(error: Error): void {
+    this.pendingReplaceAllThrow = error;
+  }
+
+  failNextCountAllWith(error: Error): void {
+    this.pendingCountAllThrow = error;
   }
 
   save(draft: Draft): Promise<SaveDraftOutcome> {
@@ -126,5 +140,38 @@ export class InMemoryDraftRepository implements DraftRepository {
     }
     this.store.delete(id);
     return Promise.resolve({ kind: 'deleted' });
+  }
+
+  replaceAll(drafts: readonly Draft[]): Promise<ReplaceAllDraftsOutcome> {
+    if (this.pendingReplaceAllThrow !== undefined) {
+      const error = this.pendingReplaceAllThrow;
+      this.pendingReplaceAllThrow = undefined;
+      return Promise.reject(error);
+    }
+    if (this.pendingReplaceAllOutcome !== undefined) {
+      const outcome = this.pendingReplaceAllOutcome;
+      this.pendingReplaceAllOutcome = undefined;
+      return Promise.resolve(outcome);
+    }
+    this.store.clear();
+    this.corruptRows.clear();
+    for (const draft of drafts) {
+      this.store.set(draft.id, draft.toSnapshot());
+    }
+    return Promise.resolve({ kind: 'replaced' });
+  }
+
+  countAll(): Promise<CountAllDraftsOutcome> {
+    if (this.pendingCountAllThrow !== undefined) {
+      const error = this.pendingCountAllThrow;
+      this.pendingCountAllThrow = undefined;
+      return Promise.reject(error);
+    }
+    if (this.pendingCountAllOutcome !== undefined) {
+      const outcome = this.pendingCountAllOutcome;
+      this.pendingCountAllOutcome = undefined;
+      return Promise.resolve(outcome);
+    }
+    return Promise.resolve({ kind: 'counted', total: this.store.size });
   }
 }

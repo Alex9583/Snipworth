@@ -26,16 +26,14 @@ A Chrome extension for developers who share code on social media. Turn any snipp
 - Paste or capture code via right-click → _"Snipworth this code"_
 - Auto-detected language with manual override (any language supported by Shiki)
 - Syntax highlighting with [Shiki](https://shiki.style/) (VS Code-level quality)
-- Customize theme (dark / light), monospace font, size, background, and more
+- One-click formatting powered by [Prettier](https://prettier.io/) — JavaScript/JSX, TypeScript/TSX, JSON, CSS/SCSS/Less, HTML, Markdown, YAML, and GraphQL
+- Customize theme (dark / light), monospace font, size, canvas background, padding, and more
 - Copy straight to the clipboard or download as PNG / SVG at 1× / 2× / 4×
+- Draft library — save snippets, come back later to refine them, filter by platform / language / status / tags
+- Social-media ready — per-platform presets (dimensions, aspect ratio, character limit), captions, and hashtags
+- Export & import — back up your entire library as a JSON file or move it to another machine
 - 100% local — your data never leaves your machine
 - Open source (MIT), no tracking, no analytics
-
-## Roadmap
-
-### V1 — Drafts Studio _(in design)_
-
-Save snippets you want to keep for later — either to come back and refine, or to schedule and post on social media. Fully local, searchable, with thumbnails. The current MVP focuses on the one-shot capture-and-export flow; persistent drafts land in V1.
 
 ## Install
 

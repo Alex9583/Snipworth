@@ -6,6 +6,7 @@ import { BrowserClipboardCopier } from '@/adapters/secondary/clipboard/BrowserCl
 import { SystemClock } from '@/adapters/secondary/clock/SystemClock';
 import { DexieDraftRepository } from '@/adapters/secondary/dexie/DexieDraftRepository';
 import { BrowserBlobDownloader } from '@/adapters/secondary/download/BrowserBlobDownloader';
+import { PrettierCodeFormatter } from '@/adapters/secondary/code-formatting/PrettierCodeFormatter';
 import { ChromeStorageInboxReader } from '@/adapters/secondary/error-channel/ChromeStorageInboxReader';
 import { MessagingErrorReporter } from '@/adapters/secondary/error-channel/MessagingErrorReporter';
 import { MessagingInboxAcknowledger } from '@/adapters/secondary/error-channel/MessagingInboxAcknowledger';
@@ -19,8 +20,10 @@ import { ChromeTabOpener } from '@/adapters/secondary/tab/ChromeTabOpener';
 import { ArchiveDraft } from '@/application/use-cases/ArchiveDraft';
 import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
+import { CountDrafts } from '@/application/use-cases/CountDrafts';
 import { DeleteDraft } from '@/application/use-cases/DeleteDraft';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
+import { FormatCode } from '@/application/use-cases/FormatCode';
 import { ListDrafts } from '@/application/use-cases/ListDrafts';
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
 import { OpenDraft } from '@/application/use-cases/OpenDraft';
@@ -28,6 +31,8 @@ import { OpenFullTabEditor } from '@/application/use-cases/OpenFullTabEditor';
 import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
 import { RestoreDraft } from '@/application/use-cases/RestoreDraft';
 import { SaveCurrentEditorAsDraft } from '@/application/use-cases/SaveCurrentEditorAsDraft';
+import { ExportAllDrafts } from '@/application/use-cases/ExportAllDrafts';
+import { ImportDrafts } from '@/application/use-cases/ImportDrafts';
 import { UpdateDraft } from '@/application/use-cases/UpdateDraft';
 
 import { getSnipworthDB } from './snipworth-db';
@@ -58,6 +63,7 @@ export function composeApp(): AppDependencies {
     ),
     loadCapturedCode: new LoadCapturedCode(languageDetector),
     autoDetectLanguage: new AutoDetectLanguage(languageDetector),
+    formatCode: new FormatCode(new PrettierCodeFormatter()),
     captureInbox: new ChromeStorageCaptureInbox(),
     fullTabBootstrapInbox: new ChromeStorageCaptureInbox(FULL_TAB_BOOTSTRAP_KEY),
     syntaxHighlighter: new ShikiSyntaxHighlighter(),
@@ -74,5 +80,8 @@ export function composeApp(): AppDependencies {
     archiveDraft: new ArchiveDraft(draftRepository, clock),
     restoreDraft: new RestoreDraft(draftRepository, clock),
     listDrafts: new ListDrafts(draftRepository),
+    exportAllDrafts: new ExportAllDrafts(draftRepository, clock),
+    importDrafts: new ImportDrafts(draftRepository, ids),
+    countDrafts: new CountDrafts(draftRepository),
   };
 }

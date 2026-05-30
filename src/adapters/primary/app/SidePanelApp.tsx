@@ -21,6 +21,7 @@ import { CodeIcon, EyeIcon, SettingsIcon } from './ui/icons';
 import { Tabs } from './ui/Tabs';
 import { useEditorLanguageState } from './useEditorLanguageState';
 import { useEditorSession } from './useEditorSession';
+import { useFormatHandle } from './useFormatHandle';
 import { useOpenFullTabAction } from './useOpenFullTabAction';
 import { useSnippetExportHandles } from './useSnippetExportHandles';
 import { useUserPreferences } from './useUserPreferences';
@@ -35,6 +36,7 @@ export function SidePanelApp({
   downloadSnippetAsImage,
   loadCapturedCode,
   autoDetectLanguage,
+  formatCode,
   captureInbox,
   syntaxHighlighter,
   userPreferencesStore,
@@ -48,11 +50,15 @@ export function SidePanelApp({
   const [toastVisible, setToastVisible] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const { code, setCode, language, detection, pickLanguage } = useEditorLanguageState(
-    captureInbox,
-    loadCapturedCode,
-    autoDetectLanguage,
-  );
+  const { code, setCode, language, detection, pickLanguage, requestAutoDetection } =
+    useEditorLanguageState(captureInbox, loadCapturedCode, autoDetectLanguage);
+
+  const formatHandle = useFormatHandle({
+    useCase: formatCode,
+    code,
+    language,
+    applyFormattedCode: setCode,
+  });
 
   const { prefs, hasLoaded, renderConfig, patchConfig, patchPrefs, completeOnboarding } =
     useUserPreferences(userPreferencesStore, reportSidePanelFailure);
@@ -190,6 +196,8 @@ export function SidePanelApp({
               language={language}
               detection={detection}
               onLanguageChange={pickLanguage}
+              onAutoDetect={requestAutoDetection}
+              formatHandle={formatHandle}
               theme={renderConfig.theme}
               fontSize={renderConfig.fontSize}
               getHighlight={getHighlight}

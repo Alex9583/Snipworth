@@ -15,6 +15,8 @@ const validInput: RenderConfigInput = {
   background: { type: 'solid', color: '#1e1e1e' },
   canvasBackground: { type: 'solid', color: '#1e1e1e' },
   canvasPadding: 10,
+  titleColor: '#a0a0a0',
+  titleFontSize: 12,
   showWindowControls: true,
   windowStyle: 'mac',
   showLineNumbers: false,
@@ -50,12 +52,18 @@ describe('RenderConfig.default', () => {
     expect(config.aspectRatio).toEqual({ kind: 'auto' });
     expect(config.exportScale).toBe(2);
     expect(config.exportFormat).toBe('png');
+    expect(config.titleColor).toBe('#a0a0a0');
+    expect(config.titleFontSize).toBe(12);
   });
 });
 
 describe('RenderConfig.from — happy path', () => {
   it('should_carry_every_input_field_into_the_value_object', () => {
-    const config = RenderConfig.from(validInput);
+    const config = RenderConfig.from({
+      ...validInput,
+      titleColor: '#ff0000',
+      titleFontSize: 16,
+    });
     expect(config.theme).toBe('github-dark');
     expect(config.fontFamily).toBe('JetBrains Mono');
     expect(config.fontSize).toBe(14);
@@ -74,6 +82,8 @@ describe('RenderConfig.from — happy path', () => {
     expect(config.aspectRatio).toEqual({ kind: 'auto' });
     expect(config.exportScale).toBe(2);
     expect(config.exportFormat).toBe('png');
+    expect(config.titleColor).toBe('#ff0000');
+    expect(config.titleFontSize).toBe(16);
   });
 
   it('should_isolate_highlightLines_from_caller_mutation_after_construction', () => {
@@ -126,6 +136,11 @@ describe('RenderConfig.from — string invariants', () => {
   it('should_reject_an_empty_theme', () => {
     expect(() => RenderConfig.from({ ...validInput, theme: '' })).toThrow(InvalidRenderConfig);
     expect(() => RenderConfig.from({ ...validInput, theme: '   ' })).toThrow(/theme/);
+  });
+
+  it('should_reject_an_empty_titleColor', () => {
+    expect(() => RenderConfig.from({ ...validInput, titleColor: '' })).toThrow(/titleColor/);
+    expect(() => RenderConfig.from({ ...validInput, titleColor: '   ' })).toThrow(/titleColor/);
   });
 
   it('should_reject_an_unknown_fontFamily', () => {
@@ -184,6 +199,8 @@ describe('RenderConfig.from — numeric invariants', () => {
     ['shadowBlur', 101, /shadowBlur must be in/],
     ['shadowOffsetY', -51, /shadowOffsetY must be in/],
     ['shadowOffsetY', 51, /shadowOffsetY must be in/],
+    ['titleFontSize', 7, /titleFontSize must be in/],
+    ['titleFontSize', 19, /titleFontSize must be in/],
   ] as const)('should_reject_when_%s_is_%s', (field, value, message) => {
     expect(() => RenderConfig.from({ ...validInput, [field]: value })).toThrow(message);
   });

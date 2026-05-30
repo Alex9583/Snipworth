@@ -1,4 +1,8 @@
 export const CONFIG_PANEL = {
+  sectionCodeAppearance: 'Code Appearance',
+  sectionCanvas: 'Canvas',
+  sectionTitle: 'Title',
+  sectionPreferences: 'Preferences',
   themeLabel: 'Theme',
   themeDarkGroupLabel: 'Dark',
   themeLightGroupLabel: 'Light',
@@ -8,6 +12,8 @@ export const CONFIG_PANEL = {
   canvasBackgroundLabel: 'Canvas background',
   canvasBackgroundTypeLabel: 'Canvas background type',
   canvasPaddingLabel: 'Canvas padding',
+  titleColorLabel: 'Title color',
+  titleFontSizeLabel: 'Title size',
   defaultPlatformLabel: 'Default platform',
   backgroundTypeSolid: 'Solid',
   backgroundTypeGradient: 'Gradient',

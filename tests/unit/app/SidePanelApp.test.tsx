@@ -13,6 +13,7 @@ import type { CaptureCourier, DeliverCaptureOutcome } from '@/application/ports/
 import { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
 import { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
+import { FormatCode } from '@/application/use-cases/FormatCode';
 import { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
 import { OpenFullTabEditor } from '@/application/use-cases/OpenFullTabEditor';
 import { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
@@ -39,6 +40,7 @@ import { SpyErrorReporter } from '../../setup/fakes/SpyErrorReporter';
 import { SpyFontPreloader } from '../../setup/fakes/SpyFontPreloader';
 import { SpyFullTabOpener } from '../../setup/fakes/SpyFullTabOpener';
 import { SpyImageExporter } from '../../setup/fakes/SpyImageExporter';
+import { StubCodeFormatter } from '../../setup/fakes/StubCodeFormatter';
 import { StubLanguageDetector } from '../../setup/fakes/StubLanguageDetector';
 
 class EmptyInboxReader implements InboxReader {
@@ -153,6 +155,9 @@ function defaultAppProps(): AppProps {
         kind: 'detected',
         result: { language: 'typescript', relevance: 12 },
       }),
+    ),
+    formatCode: new FormatCode(
+      new StubCodeFormatter({ supports: false, outcome: { kind: 'formatted', code: '' } }),
     ),
     captureInbox: new FakeCaptureInbox(),
     fullTabBootstrapInbox: new FakeCaptureInbox(),

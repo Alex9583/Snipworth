@@ -2,10 +2,12 @@ import { Draft } from '@/domain/drafts/Draft';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import type {
   CorruptDraftRow,
+  CountAllDraftsOutcome,
   DeleteDraftOutcome,
   DraftRepository,
   FindAllDraftsOutcome,
   FindDraftOutcome,
+  ReplaceAllDraftsOutcome,
   SaveDraftOutcome,
 } from '@/application/ports/DraftRepository';
 
@@ -63,6 +65,30 @@ export class DexieDraftRepository implements DraftRepository {
     try {
       await this.database.drafts.delete(id);
       return { kind: 'deleted' };
+    } catch (cause) {
+      return { kind: 'storage_unavailable', cause };
+    }
+  }
+
+  async replaceAll(drafts: readonly Draft[]): Promise<ReplaceAllDraftsOutcome> {
+    const rows = drafts.map((draft) => draft.toSnapshot());
+    try {
+      await this.database.transaction('rw', this.database.drafts, async () => {
+        await this.database.drafts.clear();
+        if (rows.length > 0) {
+          await this.database.drafts.bulkPut(rows);
+        }
+      });
+      return { kind: 'replaced' };
+    } catch (cause) {
+      return { kind: 'storage_unavailable', cause };
+    }
+  }
+
+  async countAll(): Promise<CountAllDraftsOutcome> {
+    try {
+      const total = await this.database.drafts.count();
+      return { kind: 'counted', total };
     } catch (cause) {
       return { kind: 'storage_unavailable', cause };
     }

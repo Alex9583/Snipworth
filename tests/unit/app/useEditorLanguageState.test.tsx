@@ -152,6 +152,26 @@ describe('useEditorLanguageState', () => {
     expect(result.current.detection).toEqual({ kind: 'manual' });
   });
 
+  it('should_re_detect_the_current_code_when_auto_detection_is_requested_after_a_manual_pick', () => {
+    const inbox = new FakeCaptureInbox();
+    const { result } = renderHook(() =>
+      useEditorLanguageState(inbox, aDetectingLoader(), anAutoDetect('rust')),
+    );
+
+    act(() => {
+      result.current.setCode('fn main() {}');
+    });
+    act(() => {
+      result.current.pickLanguage('go');
+    });
+    act(() => {
+      result.current.requestAutoDetection();
+    });
+
+    expect(result.current.language).toBe('rust');
+    expect(result.current.detection).toEqual({ kind: 'auto-detected' });
+  });
+
   it('should_keep_the_manual_pick_visible_even_when_the_code_is_empty', () => {
     const inbox = new FakeCaptureInbox();
     const { result } = renderHook(() =>

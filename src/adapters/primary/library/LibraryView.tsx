@@ -1,17 +1,21 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import type { HighlightLookup } from '@/adapters/primary/app/highlightCache';
+import type { ImportMode } from '@/application/use-cases/ImportDrafts';
 import type { DraftSnapshot, DraftStatus } from '@/domain/drafts/Draft';
 import { DraftId } from '@/domain/drafts/DraftId';
 import type { Platform } from '@/domain/drafts/Platform';
 
 import { DeleteDraftDialog } from './DeleteDraftDialog';
 import { DraftCard } from './DraftCard';
+import { ExportImportStatus } from './ExportImportStatus';
+import { ImportModeDialog } from './ImportModeDialog';
 import { LibraryCorruptBanner } from './LibraryCorruptBanner';
 import { LibraryEmptyState } from './LibraryEmptyState';
 import { LibraryFiltersBar } from './LibraryFiltersBar';
 import { draftsCountLabel, LIBRARY_VIEW } from './LibraryView.strings';
 import type { LibraryDraftsHandle, LibraryFilters } from './useLibraryDrafts';
+import type { ExportOutcome, ImportOutcome, PendingImport } from './useExportImport';
 
 interface LibraryViewProps {
   readonly library: LibraryDraftsHandle;
@@ -21,6 +25,13 @@ interface LibraryViewProps {
   readonly onCreateFirstDraft: () => void;
   readonly onReportCorruption: () => void;
   readonly onShowHelp: () => void;
+  readonly onExportAll: () => void;
+  readonly onImport: () => void;
+  readonly exportStatus: ExportOutcome | null;
+  readonly importStatus: ImportOutcome | null;
+  readonly pendingImport: PendingImport | null;
+  readonly onConfirmImport: (mode: ImportMode) => void;
+  readonly onCancelImport: () => void;
 }
 
 export function LibraryView({
@@ -31,6 +42,13 @@ export function LibraryView({
   onCreateFirstDraft,
   onReportCorruption,
   onShowHelp,
+  onExportAll,
+  onImport,
+  exportStatus,
+  importStatus,
+  pendingImport,
+  onConfirmImport,
+  onCancelImport,
 }: LibraryViewProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<DraftId | null>(null);
 
@@ -73,6 +91,8 @@ export function LibraryView({
           library.setFilters({ ...library.filters, status });
         }}
         onClearFilter={handleClearFilter}
+        onExportAll={onExportAll}
+        onImport={onImport}
       />
 
       <div className="flex flex-1 flex-col gap-3 overflow-auto px-6 pt-5 pb-6">
@@ -129,6 +149,20 @@ export function LibraryView({
           if (id !== null) void library.delete(id);
         }}
       />
+
+      <ImportModeDialog
+        open={pendingImport !== null}
+        incomingCount={pendingImport?.incomingCount ?? 0}
+        onAdd={() => {
+          onConfirmImport('add');
+        }}
+        onReplace={() => {
+          onConfirmImport('replace');
+        }}
+        onCancel={onCancelImport}
+      />
+
+      <ExportImportStatus exportStatus={exportStatus} importStatus={importStatus} />
     </div>
   );
 }

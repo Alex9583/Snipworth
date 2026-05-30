@@ -6,8 +6,10 @@ import type { UserPreferencesStore } from '@/application/ports/UserPreferencesSt
 import type { ArchiveDraft } from '@/application/use-cases/ArchiveDraft';
 import type { AutoDetectLanguage } from '@/application/use-cases/AutoDetectLanguage';
 import type { CopySnippetAsImage } from '@/application/use-cases/CopySnippetAsImage';
+import type { CountDrafts } from '@/application/use-cases/CountDrafts';
 import type { DeleteDraft } from '@/application/use-cases/DeleteDraft';
 import type { DownloadSnippetAsImage } from '@/application/use-cases/DownloadSnippetAsImage';
+import type { FormatCode } from '@/application/use-cases/FormatCode';
 import type { ListDrafts } from '@/application/use-cases/ListDrafts';
 import type { LoadCapturedCode } from '@/application/use-cases/LoadCapturedCode';
 import type { OpenDraft } from '@/application/use-cases/OpenDraft';
@@ -15,6 +17,8 @@ import type { OpenFullTabEditor } from '@/application/use-cases/OpenFullTabEdito
 import type { ReportSidePanelFailure } from '@/application/use-cases/ReportSidePanelFailure';
 import type { RestoreDraft } from '@/application/use-cases/RestoreDraft';
 import type { SaveCurrentEditorAsDraft } from '@/application/use-cases/SaveCurrentEditorAsDraft';
+import type { ExportAllDrafts } from '@/application/use-cases/ExportAllDrafts';
+import type { ImportDrafts } from '@/application/use-cases/ImportDrafts';
 import type { UpdateDraft } from '@/application/use-cases/UpdateDraft';
 
 export interface AppDependencies {
@@ -25,6 +29,7 @@ export interface AppDependencies {
   readonly downloadSnippetAsImage: DownloadSnippetAsImage;
   readonly loadCapturedCode: LoadCapturedCode;
   readonly autoDetectLanguage: AutoDetectLanguage;
+  readonly formatCode: FormatCode;
   readonly captureInbox: CaptureInbox;
   readonly fullTabBootstrapInbox: CaptureInbox;
   readonly syntaxHighlighter: SyntaxHighlighter;
@@ -38,4 +43,7 @@ export interface AppDependencies {
   readonly archiveDraft: ArchiveDraft;
   readonly restoreDraft: RestoreDraft;
   readonly listDrafts: ListDrafts;
+  readonly exportAllDrafts: ExportAllDrafts;
+  readonly importDrafts: ImportDrafts;
+  readonly countDrafts: CountDrafts;
 }

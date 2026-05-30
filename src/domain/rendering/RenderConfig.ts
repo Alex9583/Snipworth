@@ -38,6 +38,7 @@ export const RADIUS_RANGE = [0, 64] as const;
 export const SHADOW_BLUR_RANGE = [0, 100] as const;
 export const SHADOW_OFFSET_RANGE = [-50, 50] as const;
 export const ANGLE_RANGE = [0, 360] as const;
+export const TITLE_FONT_SIZE_RANGE = [8, 18] as const;
 export const CANVAS_PADDING_RANGE = [0, 50] as const;
 
 export interface RenderConfigInput {
@@ -58,6 +59,8 @@ export interface RenderConfigInput {
   readonly shadowBlur: number;
   readonly shadowOffsetY: number;
   readonly aspectRatio: AspectRatio;
+  readonly titleColor: string;
+  readonly titleFontSize: number;
   readonly exportScale: ExportScale;
   readonly exportFormat: ExportFormat;
 }
@@ -79,6 +82,8 @@ export interface RenderConfigSnapshot {
   readonly shadow: boolean;
   readonly shadowBlur: number;
   readonly shadowOffsetY: number;
+  readonly titleColor: string;
+  readonly titleFontSize: number;
   readonly aspectRatio: AspectRatio;
   readonly exportScale: ExportScale;
   readonly exportFormat: ExportFormat;
@@ -108,6 +113,8 @@ export class RenderConfig {
   readonly shadow: boolean;
   readonly shadowBlur: number;
   readonly shadowOffsetY: number;
+  readonly titleColor: string;
+  readonly titleFontSize: number;
   readonly aspectRatio: AspectRatio;
   readonly exportScale: ExportScale;
   readonly exportFormat: ExportFormat;
@@ -129,6 +136,8 @@ export class RenderConfig {
     this.shadow = props.shadow;
     this.shadowBlur = props.shadowBlur;
     this.shadowOffsetY = props.shadowOffsetY;
+    this.titleColor = props.titleColor;
+    this.titleFontSize = props.titleFontSize;
     this.aspectRatio = props.aspectRatio;
     this.exportScale = props.exportScale;
     this.exportFormat = props.exportFormat;
@@ -148,6 +157,8 @@ export class RenderConfig {
     requireHighlightLines(input.highlightLines);
     requireRange(input.shadowBlur, SHADOW_BLUR_RANGE, 'shadowBlur');
     requireRange(input.shadowOffsetY, SHADOW_OFFSET_RANGE, 'shadowOffsetY');
+    requireNonEmpty(input.titleColor, 'titleColor');
+    requireRange(input.titleFontSize, TITLE_FONT_SIZE_RANGE, 'titleFontSize');
     requireBackground(input.background);
     requireBackground(input.canvasBackground);
     requireRange(input.canvasPadding, CANVAS_PADDING_RANGE, 'canvasPadding');
@@ -174,6 +185,8 @@ export class RenderConfig {
       showLineNumbers: false,
       firstLineNumber: 1,
       highlightLines: [],
+      titleColor: '#a0a0a0',
+      titleFontSize: 12,
       shadow: true,
       shadowBlur: 30,
       shadowOffsetY: 8,
@@ -202,6 +215,8 @@ export class RenderConfig {
       showLineNumbers: this.showLineNumbers,
       firstLineNumber: this.firstLineNumber,
       highlightLines: [...this.highlightLines],
+      titleColor: this.titleColor,
+      titleFontSize: this.titleFontSize,
       shadow: this.shadow,
       shadowBlur: this.shadowBlur,
       shadowOffsetY: this.shadowOffsetY,

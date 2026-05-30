@@ -7,8 +7,10 @@ import { SIDE_PANEL_APP } from './SidePanelApp.strings';
 import { APP } from './app.strings';
 import type { HighlightLookup } from './highlightCache';
 import { EditorStats } from './ui/EditorStats';
+import { FormatButton } from './ui/FormatButton';
 import { LanguagePicker } from './ui/LanguagePicker';
 import { TitleInput } from './ui/TitleInput';
+import type { FormatHandle } from './useFormatHandle';
 
 interface SidePanelCodeTabProps {
   readonly title: string;
@@ -18,6 +20,8 @@ interface SidePanelCodeTabProps {
   readonly language: string;
   readonly detection: DetectionStatus;
   readonly onLanguageChange: (next: string) => void;
+  readonly onAutoDetect: () => void;
+  readonly formatHandle: FormatHandle;
   readonly theme: string;
   readonly fontSize: number;
   readonly getHighlight: HighlightLookup;
@@ -32,6 +36,8 @@ export function SidePanelCodeTab({
   language,
   detection,
   onLanguageChange,
+  onAutoDetect,
+  formatHandle,
   theme,
   fontSize,
   getHighlight,
@@ -46,7 +52,17 @@ export function SidePanelCodeTab({
           placeholder={SIDE_PANEL_APP.titlePlaceholder}
           label={SIDE_PANEL_APP.titleLabel}
         />
-        <LanguagePicker value={language} detection={detection} onChange={onLanguageChange} />
+        <LanguagePicker
+          value={language}
+          detection={detection}
+          onChange={onLanguageChange}
+          onAutoDetect={onAutoDetect}
+        />
+        <FormatButton
+          canFormat={formatHandle.canFormat}
+          onFormat={formatHandle.onFormat}
+          status={formatHandle.status}
+        />
       </div>
       <LiveCodeEditor
         value={code}

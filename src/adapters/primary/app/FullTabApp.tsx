@@ -15,6 +15,7 @@ import { CaptionBar } from '@/adapters/primary/library/CaptionBar';
 import { SaveDraftButton } from '@/adapters/primary/library/SaveDraftButton';
 import { LibraryView } from '@/adapters/primary/library/LibraryView';
 import { toSaveBinding, useDraftBinding } from '@/adapters/primary/library/useDraftBinding';
+import { useExportImport } from '@/adapters/primary/library/useExportImport';
 import { useLibraryDrafts } from '@/adapters/primary/library/useLibraryDrafts';
 import type { DraftId } from '@/domain/drafts/DraftId';
 import { RenderConfig } from '@/domain/rendering/RenderConfig';
@@ -31,6 +32,7 @@ import { createHighlightCache } from './highlightCache';
 import { TabTopNav } from './ui/TabTopNav';
 import { useEditorLanguageState } from './useEditorLanguageState';
 import { useEditorSession } from './useEditorSession';
+import { useFormatHandle } from './useFormatHandle';
 import { useSnippetExportHandles } from './useSnippetExportHandles';
 import { useUserPreferences } from './useUserPreferences';
 
@@ -42,6 +44,7 @@ export function FullTabApp({
   downloadSnippetAsImage,
   loadCapturedCode,
   autoDetectLanguage,
+  formatCode,
   fullTabBootstrapInbox,
   syntaxHighlighter,
   userPreferencesStore,
@@ -53,14 +56,24 @@ export function FullTabApp({
   archiveDraft,
   restoreDraft,
   listDrafts,
+  exportAllDrafts,
+  importDrafts,
+  countDrafts,
 }: AppDependencies) {
   const [view, setView] = useState<FullTabView>('editor');
   const canvasRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(() => new Date());
   const [openSeq, setOpenSeq] = useState(0);
 
-  const { code, setCode, language, detection, pickLanguage, resetLanguage } =
+  const { code, setCode, language, detection, pickLanguage, requestAutoDetection, resetLanguage } =
     useEditorLanguageState(fullTabBootstrapInbox, loadCapturedCode, autoDetectLanguage);
+
+  const formatHandle = useFormatHandle({
+    useCase: formatCode,
+    code,
+    language,
+    applyFormattedCode: setCode,
+  });
 
   const { prefs, hasLoaded, renderConfig, patchConfig, patchPrefs } = useUserPreferences(
     userPreferencesStore,
@@ -84,6 +97,16 @@ export function FullTabApp({
 
   const library = useLibraryDrafts({ listDrafts, archiveDraft, restoreDraft, deleteDraft });
   const refreshLibrary = library.refresh;
+
+  const exportImport = useExportImport({
+    exportAllDrafts,
+    importDrafts,
+    countDrafts,
+    clock,
+    onImported: () => {
+      void refreshLibrary();
+    },
+  });
 
   const handleViewChange = useCallback(
     (next: FullTabView) => {
@@ -118,6 +141,7 @@ export function FullTabApp({
     session.applySnapshot(snapshot);
     setCode(snapshot.code);
     pickLanguage(snapshot.language);
+    patchConfig(snapshot.config);
   });
 
   useEffect(() => {
@@ -199,6 +223,8 @@ export function FullTabApp({
               language={language}
               detection={detection}
               onLanguageChange={pickLanguage}
+              onAutoDetect={requestAutoDetection}
+              formatHandle={formatHandle}
               theme={renderConfig.theme}
               fontSize={renderConfig.fontSize}
               getHighlight={getHighlight}
@@ -262,6 +288,13 @@ export function FullTabApp({
           onReportCorruption={() => {
             /* no-op for V1 — corrupt rows are visible but not reportable yet */
           }}
+          onExportAll={exportImport.triggerExport}
+          onImport={exportImport.triggerImport}
+          exportStatus={exportImport.exportStatus}
+          importStatus={exportImport.importStatus}
+          pendingImport={exportImport.pendingImport}
+          onConfirmImport={exportImport.confirmImport}
+          onCancelImport={exportImport.cancelImport}
           onShowHelp={() => {
             setView('about');
           }}

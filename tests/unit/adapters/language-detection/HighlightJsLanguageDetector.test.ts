@@ -63,6 +63,19 @@ describe('HighlightJsLanguageDetector', () => {
     expect(outcome.result.relevance).toBeGreaterThan(0);
   });
 
+  it('should_resolve_an_aliased_detected_language_to_its_canonical_form', () => {
+    const hljsStub: HljsLike = {
+      highlightAuto: () => ({ language: 'objectivec', relevance: 12 }),
+    };
+    const detector = new HighlightJsLanguageDetector(hljsStub);
+
+    const outcome = detector.detect('@implementation Foo @end');
+
+    expect(outcome.kind).toBe('detected');
+    if (outcome.kind !== 'detected') return;
+    expect(outcome.result.language).toBe('objective-c');
+  });
+
   it('should_return_detection_failed_when_hljs_throws', () => {
     const cause = new Error('hljs blew up on pathological input');
     const hljsStub: HljsLike = {
