@@ -16,6 +16,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 
 
 
+
+## [1.1.0] - 2026-05-30
+
+### Added
+
+- Add one-click code formatting, language auto-detection, and JSON library export/import
+
 ## [1.0.0] - 2026-05-25
 
 ### Added
