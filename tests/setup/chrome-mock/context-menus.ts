@@ -1,3 +1,4 @@
+import { withRuntimeLastError } from './runtime';
 import type { ChromeMock } from './types';
 
 type ContextMenusMock = NonNullable<ChromeMock['contextMenus']>;
@@ -20,9 +21,20 @@ export function buildContextMenusMock(): ContextMenusMock {
   return {
     create: (properties: CreateProperties, callback?: () => void) => {
       const id: number | string = properties.id ?? nextAutoId++;
+      if (created.some((menu) => menu.id === id)) {
+        withRuntimeLastError(`Cannot create item with duplicate id ${String(id)}`, () =>
+          callback?.(),
+        );
+        return id;
+      }
       created.push({ id, properties });
       callback?.();
       return id;
+    },
+    removeAll: (callback?: () => void): Promise<void> => {
+      created.length = 0;
+      callback?.();
+      return Promise.resolve();
     },
     onClicked: {
       addListener: (cb: ClickListener) => {

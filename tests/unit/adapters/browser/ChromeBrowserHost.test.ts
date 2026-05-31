@@ -101,6 +101,19 @@ describe('ChromeBrowserHost — installCaptureContextMenu', () => {
     expect(menus[0]?.properties.contexts).toEqual(['selection']);
   });
 
+  it('should_remain_installed_when_installed_a_second_time', async () => {
+    const host = new ChromeBrowserHost(() => undefined);
+
+    const first = await host.installCaptureContextMenu();
+    const second = await host.installCaptureContextMenu();
+
+    expect(first).toEqual({ kind: 'installed' });
+    expect(second).toEqual({ kind: 'installed' });
+    const menus = readCreatedMenus();
+    expect(menus).toHaveLength(1);
+    expect(menus[0]?.id).toBe(CAPTURE_MENU_ID);
+  });
+
   it('should_return_failed_with_cause_when_chrome_runtime_lastError_is_set', async () => {
     const host = new ChromeBrowserHost(() => undefined);
     const original = chrome.contextMenus.create;

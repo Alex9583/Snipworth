@@ -62,21 +62,23 @@ export class ChromeBrowserHost implements BrowserHost {
   installCaptureContextMenu(): Promise<InstallContextMenuOutcome> {
     return new Promise((resolve) => {
       try {
-        chrome.contextMenus.create(
-          {
-            id: CAPTURE_MENU_ID,
-            title: CAPTURE_MENU_TITLE,
-            contexts: ['selection'],
-          },
-          () => {
-            const lastError = chrome.runtime.lastError;
-            if (lastError !== undefined) {
-              resolve({ kind: 'failed', cause: new Error(lastError.message ?? 'unknown') });
-              return;
-            }
-            resolve({ kind: 'installed' });
-          },
-        );
+        chrome.contextMenus.removeAll(() => {
+          chrome.contextMenus.create(
+            {
+              id: CAPTURE_MENU_ID,
+              title: CAPTURE_MENU_TITLE,
+              contexts: ['selection'],
+            },
+            () => {
+              const lastError = chrome.runtime.lastError;
+              if (lastError !== undefined) {
+                resolve({ kind: 'failed', cause: new Error(lastError.message ?? 'unknown') });
+                return;
+              }
+              resolve({ kind: 'installed' });
+            },
+          );
+        });
       } catch (cause) {
         resolve({ kind: 'failed', cause });
       }
