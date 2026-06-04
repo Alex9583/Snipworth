@@ -17,6 +17,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versio
 
 
 
+
+## [1.1.1] - 2026-06-04
+
+### Fixed
+
+- Fix duplicate context menu id error on browser and extension update
+
 ## [1.1.0] - 2026-05-30
 
 ### Added
